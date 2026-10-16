@@ -78,6 +78,10 @@ pub const PLUGINS: &[PluginSource] = &[
         id: "sponsorblock",
         source: include_str!("../plugins/sponsorblock.js"),
     },
+    PluginSource {
+        id: "album-actions",
+        source: include_str!("../plugins/album-actions.js"),
+    },
 ];
 
 /// All plugin sources concatenated in registration order, each with a
@@ -212,6 +216,11 @@ pub fn manifest() -> serde_json::Value {
             "options": [
                 { "path": ["apiURL"], "type": "string", "label": "API base URL", "default": "https://sponsor.ajay.app" },
             ],
+        },
+        {
+            "id": "album-actions",
+            "name": "Album actions",
+            "description": "Bulk like/dislike buttons for album and playlist pages, with a fill percentage.",
         },
     ])
 }

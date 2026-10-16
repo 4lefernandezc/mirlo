@@ -189,9 +189,12 @@ __MIRLO_PLUGINS__.register('video-toggle', {
     // (upstream runs in a later injection phase); wait for the container.
     const playerContainer = await __MIRLO_PLUGINS__.waitForElement('#player');
 
-    // Upstream repositions the `precise-volume` HUD; that plugin is not
-    // ported yet, so the hook is a no-op.
-    const moveVolumeHud = ctx.isEnabled('precise-volume') ? () => {} : () => {};
+    // Upstream imports `precise-volume`'s moveVolumeHud directly; here the
+    // hook is resolved through the plugin host when that plugin is enabled.
+    const moveVolumeHud = (showVideo) => {
+      if (!ctx.isEnabled('precise-volume')) return;
+      window.__MIRLO_PLUGINS__.get('precise-volume')?.moveVolumeHud?.(showVideo);
+    };
 
     const player = document.querySelector('ytmusic-player');
     const video = document.querySelector('video');

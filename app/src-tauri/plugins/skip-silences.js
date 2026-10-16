@@ -17,6 +17,7 @@ __MIRLO_PLUGINS__.register('skip-silences', {
   HISTORY: 10,
 
   config: null,
+  analyser: null,
   isSilent: false,
   hasAudioStarted: false,
   speakingHistory: null,
@@ -46,10 +47,8 @@ __MIRLO_PLUGINS__.register('skip-silences', {
     }
   },
 
-  audioCanPlayListener(e) {
+  setupAnalyser(audioContext, sourceNode) {
     const video = document.querySelector('video');
-    const { audioContext } = e.detail;
-    const sourceNode = e.detail.audioSource;
 
     // Use an audio analyser similar to Hark
     // https://github.com/otalk/hark/blob/master/hark.bundle.js
@@ -59,6 +58,7 @@ __MIRLO_PLUGINS__.register('skip-silences', {
     const fftBins = new Float32Array(analyser.frequencyBinCount);
 
     sourceNode.connect(analyser);
+    this.analyser = analyser;
 
     const looper = () => {
       setTimeout(() => {
@@ -117,13 +117,17 @@ __MIRLO_PLUGINS__.register('skip-silences', {
     this.hasAudioStarted = false;
     this.speakingHistory = Array.from({ length: this.HISTORY }).fill(0);
 
-    document.addEventListener('ytmd:audio-can-play', this.audioCanPlayListener, {
-      passive: true,
-    });
+    // Upstream waits for `ytmd:audio-can-play`; the Mirlo host may wire the
+    // audio graph before this plugin starts, so use the race-free accessor
+    // (and ignore later re-announcements, which upstream would leak
+    // analysers on).
+    const { audioContext, audioSource } = await window.__MIRLO_PLUGINS__.audio();
+    this.setupAnalyser(audioContext, audioSource);
   },
 
   stop() {
-    document.removeEventListener('ytmd:audio-can-play', this.audioCanPlayListener);
+    this.analyser?.disconnect();
+    this.analyser = null;
 
     if (this.playOrSeekHandler) {
       const video = document.querySelector('video');

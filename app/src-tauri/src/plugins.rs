@@ -50,6 +50,14 @@ pub const PLUGINS: &[PluginSource] = &[
         id: "skip-silences",
         source: include_str!("../plugins/skip-silences.js"),
     },
+    PluginSource {
+        id: "equalizer",
+        source: include_str!("../plugins/equalizer.js"),
+    },
+    PluginSource {
+        id: "precise-volume",
+        source: include_str!("../plugins/precise-volume.js"),
+    },
 ];
 
 /// All plugin sources concatenated in registration order, each with a

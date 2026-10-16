@@ -9,7 +9,8 @@ mod config;
 mod plugins;
 
 use std::path::Path;
-use std::sync::Mutex;
+use std::str::FromStr;
+use std::sync::{Mutex, OnceLock};
 
 use config::Config;
 use serde_json::Value;
@@ -86,6 +87,19 @@ fn hotkey_handler(app: &AppHandle, shortcut: &Shortcut, event: ShortcutEvent) {
             app,
             &format!("window.__mirlo && window.__mirlo.player.{action}()"),
         );
+        return;
+    }
+
+    // Plugin-registered global shortcuts (e.g. precise-volume's volume steps).
+    let plugin_js = plugin_hotkey_table().lock().ok().and_then(|table| {
+        table
+            .iter()
+            .find(|(registered, _)| registered == shortcut)
+            .map(|(_, js)| js.clone())
+    });
+    if let Some(js) = plugin_js {
+        println!("[mirlo] hotkey: plugin ({js})");
+        eval_in_player(app, &js);
     }
 }
 
@@ -100,6 +114,56 @@ fn register_hotkeys(app: &AppHandle) {
             eprintln!("[mirlo] could not register hotkey {name}: {err}");
         }
     }
+}
+
+/// Global shortcuts configured by plugins (currently `precise-volume`).
+/// The config stores tauri accelerator strings (e.g. "Ctrl+Alt+ArrowUp");
+/// they are registered at startup, so changing them needs an app restart
+/// (upstream registers them in its backend at start too).
+fn register_plugin_hotkeys(app: &AppHandle, config: &Config) {
+    let Some(plugin) = config.plugins.get("precise-volume") else {
+        return;
+    };
+    if !plugin
+        .get("enabled")
+        .and_then(Value::as_bool)
+        .unwrap_or(false)
+    {
+        return;
+    }
+    let shortcuts = plugin.get("globalShortcuts");
+    for (key, increase) in [("volumeUp", true), ("volumeDown", false)] {
+        let accelerator = shortcuts
+            .and_then(|value| value.get(key))
+            .and_then(Value::as_str)
+            .unwrap_or("");
+        if accelerator.is_empty() {
+            continue;
+        }
+        match Shortcut::from_str(accelerator) {
+            Ok(shortcut) => {
+                let js = format!(
+                    "window.__mirlo.plugins.get('precise-volume')?.changeVolume({increase})"
+                );
+                if let Ok(mut table) = plugin_hotkey_table().lock() {
+                    table.push((shortcut, js));
+                }
+                if let Err(err) = app.global_shortcut().register(shortcut) {
+                    eprintln!(
+                        "[mirlo] could not register plugin hotkey {key} ({accelerator}): {err}"
+                    );
+                }
+            }
+            Err(err) => {
+                eprintln!("[mirlo] invalid accelerator for {key}: {accelerator} ({err})");
+            }
+        }
+    }
+}
+
+fn plugin_hotkey_table() -> &'static Mutex<Vec<(Shortcut, String)>> {
+    static TABLE: OnceLock<Mutex<Vec<(Shortcut, String)>>> = OnceLock::new();
+    TABLE.get_or_init(|| Mutex::new(Vec::new()))
 }
 
 fn create_tray(app: &tauri::App) -> tauri::Result<()> {
@@ -297,6 +361,7 @@ pub fn run() {
             if config.hotkeys_enabled {
                 register_hotkeys(&handle);
             }
+            register_plugin_hotkeys(&handle, &config);
             create_tray(app)?;
 
             println!(

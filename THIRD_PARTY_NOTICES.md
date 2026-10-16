@@ -22,6 +22,8 @@ code and material included in this repository, with their license terms.
 | `app/src-tauri/plugins/exponential-volume.js` | `src/plugins/exponential-volume/` |
 | `app/src-tauri/plugins/playback-speed.js` | `src/plugins/playback-speed/` |
 | `app/src-tauri/plugins/skip-silences.js` | `src/plugins/skip-silences/` |
+| `app/src-tauri/plugins/equalizer.js` | `src/plugins/equalizer/` |
+| `app/src-tauri/plugins/precise-volume.js` | `src/plugins/precise-volume/` |
 
 Each file carries an attribution header with its upstream paths and the
 deviations made for the Mirlo plugin host (no Electron/SolidJS; the host

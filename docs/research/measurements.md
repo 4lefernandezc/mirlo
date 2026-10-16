@@ -14,6 +14,35 @@ Delta: **~66% less private memory** for the WebView2 shell on this test.
 
 Largest PoC components: renderer 192 MB, GPU process 130 MB, browser 34 MB.
 
+## Phase A — Tauri 2 shell (2026-10-16)
+
+Same machine and runtime, same metric. The Tauri 2.12 release shell ran with
+the persistent profile seeded from the Phase 0 PoC (logged-in home page,
+same session), idle for ~3 minutes. Measured by attaching to the running
+process so the app could be closed gracefully afterwards.
+
+| Build | Processes | Private (sum) | Working set (sum) |
+|---|---|---|---|
+| Mirlo Phase A (Tauri 2.12 shell) | 10 | **371.1 MB** | 821.4 MB |
+| Mirlo Phase 0 PoC (WebView2 + wry) | 10 | 399.1 MB | 829.3 MB |
+| pear-desktop v3.11.0 (Electron) | 6 | 1178.7 MB | 1559.6 MB |
+
+Phase A acceptance criterion (< 450 MB idle private) is met. Largest
+components in this run: renderer 165.8 MB, GPU 121.0 MB, browser 31.2 MB
+(private working set).
+
+Evidence: `images/phase-a-idle.png` is a window capture of the idle shell
+(official player loaded with the seeded session). The image shows a private
+logged-in session — **redact or replace it before the repository becomes
+public.**
+
+Reproduce (attach form keeps graceful shutdown):
+
+```powershell
+# with the release build running and idle
+powershell -NoProfile -File tools/measure-memory.ps1 -ProcessName "mirlo" -SettleSeconds 20
+```
+
 ## Conditions and caveats
 
 - PoC measured with a logged-in session (heavier page); Electron, fresh

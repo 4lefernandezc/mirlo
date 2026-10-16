@@ -17,15 +17,18 @@ Phases are ordered. Each phase ends with an updated `AGENTS.md`, a
 - [x] First memory measurements: ~399 MB private vs ~1179 MB for the Electron
       build (`research/measurements.md`).
 
-## Phase A — Tauri 2 base (NEXT)
+## Phase A — Tauri 2 base (DONE, 2026-10-16)
 
-- [ ] Scaffold `app/` (Tauri 2, Rust + minimal frontend).
-- [ ] Window loads the official player with persistent profile.
-- [ ] Injected bridge implementing the MVP subset of the `ytmd:*` contract.
-- [ ] Ad-block v0 (injection) ported; v1 (network-level) prototype.
-- [ ] Global hotkeys, single instance, tray.
-- [ ] Settings storage (JSON or SQLite) + config plumbing.
-- [ ] Re-measure memory; acceptance: < 450 MB idle private.
+- [x] Scaffold `app/` (Tauri 2, Rust + minimal frontend).
+- [x] Window loads the official player with a persistent profile
+      (`data_directory` → `%LOCALAPPDATA%\Mirlo\webview2-profile`).
+- [x] Injected bridge implementing the MVP subset of the `ytmd:*` contract
+      (get/set-config, player state reports, reload/restart, player control).
+- [x] Ad-block v0 (injection) ported, OFF by default (ADR-0003).
+- [ ] Ad-block v1 (network-level `WebResourceRequested`) — stretch goal, next.
+- [x] Global hotkeys, single instance, tray.
+- [x] Settings storage (JSON at `%LOCALAPPDATA%\Mirlo\config.json`).
+- [x] Re-measure memory: 371.1 MB idle private (< 450 MB target).
 
 ## Phase B — Renderer plugins
 

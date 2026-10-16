@@ -49,6 +49,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Verified live: styles/body classes/album-color variables/video-toggle
     button applied; enable/disable via config + reload; no measurable idle
     memory overhead (368.4 MB with all six enabled).
+- Phase B batch 2a — audio infrastructure and three ports:
+  - On-demand Web Audio provider in the bridge (only wires
+    `AudioContext`/`MediaElementSource` when an enabled plugin declares
+    `audio: true`) with the upstream-compatible `ytmd:audio-can-play` event
+    and `host.audio()`/`onAudioReady` helpers.
+  - Ports (all default OFF): exponential-volume (restores the original
+    `volume` descriptor on stop), playback-speed (song-menu slider,
+    forced `playbackRate`), skip-silences (analyser-based).
+  - `crossfade` is **excluded** (ADR-0003 addendum): upstream extracts the
+    next track's stream URL through InnerTube to fade it.
 
 ### Changed
 

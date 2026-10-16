@@ -26,7 +26,7 @@ extracted by static scan of every plugin directory (imports of `electron`).
 | bypass-age-restrictions | review | — | Hold: ToS review required |
 | captions-selector | renderer | — | Bridge, batch 3 |
 | compact-sidebar | renderer | — | Bridge, batch 1 |
-| crossfade | renderer | — | Bridge, batch 2 |
+| crossfade | renderer | — | **Excluded** (ADR-0003): pulls the next track's stream via InnerTube |
 | custom-output-device | renderer | — | Bridge, later |
 | disable-autoplay | renderer | — | Bridge, batch 1 |
 | discord | native | `app` | Rust rich-presence (Phase C) |
@@ -66,6 +66,10 @@ extracted by static scan of every plugin directory (imports of `electron`).
   unobtrusive-player, disable-autoplay) landed in `app/src-tauri/plugins/`
   (2026-10-16) with attribution headers and THIRD_PARTY_NOTICES.md entries;
   all default OFF until the settings UI exists.
+- Batch 2a (exponential-volume, playback-speed, skip-silences) landed with
+  an on-demand Web Audio provider in the bridge (`audio: true` plugins get
+  `ytmd:audio-can-play`); crossfade was excluded for the InnerTube reason
+  above.
 - Two channels of the app run outside plugins too (the application core):
   window management, tray, and the `ytmd:*` bridge itself — see
   `ipc-contract.md`.

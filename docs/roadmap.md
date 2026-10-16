@@ -36,8 +36,15 @@ Phases are ordered. Each phase ends with an updated `AGENTS.md`, a
       config, lifecycle, style injection, `videodatachange` compat layer).
 - [x] Port batch 1 (UI/CSS, all default OFF): blur-nav-bar, compact-sidebar,
       album-color-theme, video-toggle, unobtrusive-player, disable-autoplay.
-- [ ] Port batch 2 (audio): equalizer, precise-volume, crossfade,
-      playback-speed, exponential-volume, skip-silences.
+- [x] Audio infrastructure: on-demand Web Audio graph (`AudioContext` +
+      `MediaElementSource`) with the upstream-compatible
+      `ytmd:audio-can-play` event.
+- [x] Port batch 2a (audio, all default OFF): exponential-volume,
+      playback-speed, skip-silences.
+- [ ] Port batch 2b: equalizer, precise-volume (volume hotkeys need shell
+      work).
+- [~] crossfade — **excluded**: upstream fades the next track by extracting
+      its stream URL via InnerTube, which ADR-0003 forbids.
 - [ ] Port batch 3 (content): sponsorblock, synced-lyrics,
       skip-disliked-songs, quality-changer, album-actions, captions-selector,
       navigation.

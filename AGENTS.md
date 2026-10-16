@@ -83,7 +83,31 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     `set_plugin_config` persistence from a plugin; **368.4 MB idle private**
     with all six on (Phase A baseline 371.1). Screenshot:
     `docs/research/images/phase-b-batch1.png`.
-  - Remaining Phase B: port batches 2 (audio) and 3 (content), settings UI.
+  - Remaining Phase B: equalizer + precise-volume (batch 2 leftovers), port
+    batch 3 (content), settings UI.
+- **Phase B batch 2a — DONE (2026-10-16)**: audio infrastructure + 3 ports.
+  - **Audio provider** in the bridge: `AudioContext` +
+    `createMediaElementSource(video)` created **on demand** (only when an
+    enabled plugin declares `audio: true`; upstream always wires it —
+    deviation) and announced via upstream-compatible
+    `ytmd:audio-can-play` (`{audioContext, audioSource}`) plus
+    `host.audio()` / `host.onAudioReady(cb)`; context resume on first click
+    if suspended.
+  - Ports (all default OFF): exponential-volume (patches
+    `HTMLMediaElement.prototype.volume`; `stop()` restores the descriptor —
+    deviation), playback-speed (plain-DOM paper-slider injected into the
+    song menu; forces `video.playbackRate`), skip-silences (analyser-based;
+    consumes the audio provider).
+  - **crossfade excluded** (ADR-0003): upstream fetches the next track's
+    stream URL via InnerTube (`youtubei.js`) to fade it — stream extraction
+    is out of policy. Recorded in THIRD_PARTY_NOTICES.md + ADR-0003 addendum.
+  - Verified (CDP): all nine plugins start with zero console errors; audio
+    graph `state=running`; volume patch present with stored read-back;
+    forced playbackRate returns to 1; slider DOM built + menu observer
+    armed (menu-open injection left to real interaction); 331.8 MB idle
+    private with nine plugins on (run-to-run page variance ±5%).
+  - Left for next session: equalizer (large UI + filters), precise-volume
+    (needs shell volume hotkeys), then the settings UI.
 - Machine facts: Windows 11 x64; Rust 1.99.1 (MSVC) installed; VS 2019 Build
   Tools present; WebView2 runtime 155 present; Node 24 present; npm available.
 - Build artifacts must NOT go into OneDrive: always set
@@ -117,40 +141,26 @@ Carry-over notes:
   `build.rs`'s `AppManifest::commands` + `capabilities/main.json` (`allow-*`),
   or the remote page gets `not allowed by ACL`.
 
-### Resume notes — Phase B batch 2 (session checkpoint, 2026-10-16)
+### Resume notes — Phase B (next session, 2026-10-16)
 
-State: batch 1 committed (`103c18f` feature, `59ea3ef` docs). This session:
-audio infrastructure + start of batch 2. Scope chosen (batch 2a):
+State: batch 1 committed (`103c18f`/`59ea3ef`), batch 2a committed after this
+checkpoint (audio provider + exponential-volume, playback-speed,
+skip-silences; crossfade excluded). Next, in this order:
 
-- **Audio provider in the bridge** (replaces upstream renderer.ts wiring):
-  create `AudioContext` + `createMediaElementSource(video)` on demand —
-  only when at least one enabled plugin declares `audio: true` in its
-  registration — and dispatch `ytmd:audio-can-play` on `document` with
-  `{audioContext, audioSource}` (once per page load; upstream also re-fires
-  per video `canplaythrough`). Default-off plugins therefore never reroute
-  audio (safe by default; upstream always wires it — deviation noted).
-  Expose `host.audio()`/`host.onAudioReady(cb)` for plugins that start after
-  the event (equalizer etc.).
-- Batch 2 ports proposed for this session, in this order:
-  1. exponential-volume (small; gain curve via `audioSource`)
-  2. playback-speed (player API `setPlaybackRate` + player-bar UI)
-  3. crossfade (needs song info; check upstream for dependencies)
-  4. skip-silences (analyser-based silence detection)
-  Leftovers (next session): equalizer (large UI + filters), precise-volume
-  (needs shell volume hotkeys), then settings UI before enabling batch 2
-  defaults discussion.
-- Upstream sources to port (extracted tree):
-  `%TEMP%\opencode\ytm311\src\pear-desktop-3.11.0\src\plugins\` +
-  `src\utils\` helpers. Attribution table in THIRD_PARTY_NOTICES.md must be
-  extended per port.
-- Verification recipe (worked well in batch 1): build to
-  `%TEMP%\opencode\ytm-target`, launch with `MIRLO_DEBUG_PORT=9222`,
-  probe with `node %TEMP%\opencode\cdp-eval.mjs`; enable plugins by editing
-  config `plugins` map then page reload; capture window evidence with
-  `%TEMP%\opencode\capture-window.ps1`. Beware: CDP + YT `debugger;` =
-  frozen renderer (recover with app restart); `CloseMainWindow()` graceful.
-- Memory/pattern: with plugins on, idle stays ~368 MB; measurements row in
-  `docs/research/measurements.md` (add batch 2 row when done).
+1. **equalizer** (upstream `src/plugins/equalizer/`): large UI (in bar) +
+   BiquadFilters via `host.audio()`; the host graph lets the plugin
+   `disconnect()` the source and re-route through filters (like upstream).
+2. **precise-volume** (upstream `src/plugins/precise-volume/renderer.ts`):
+   renderer HUD + slider uses the audio graph/player; the volume *hotkeys*
+   live in the shell (Rust): extend `register_hotkeys` with volume steps
+   or a `set_volume_by` command that evals into the page.
+3. **Settings UI**: small Tauri window (local page in `ui/`) listing
+   `host.ids()` with enable toggles + options, backed by `get_config`/
+   `set_plugin_config`; then decide flipping defaults-on for stable plugins.
+
+Verification recipe and traps: see the sections below (CDP + console capture
+via `%TEMP%\opencode\cdp-console.mjs` shows plugin starts/errors; `cdp-eval.mjs`
+for probes; `capture-window.ps1` for screenshots).
 
 ## Traps and dev notes
 

@@ -22,6 +22,14 @@ tauri-plugin-single-instance = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
+# Ad-block v1 hooks into the WebView2 controller directly. webview2-com must
+# match the version tauri 2.12 uses so its COM types are interchangeable, and
+# `windows` must be the same major the vendored webview2-com-sys links against
+# (0.62). Win32_System_Com provides IStream, Win32_UI_Shell SHCreateMemStream.
+[target.'cfg(windows)'.dependencies]
+webview2-com = "0.39"
+windows = { version = "0.62", features = ["Win32_System_Com", "Win32_UI_Shell"] }
+
 [profile.release]
 codegen-units = 1
 lto = true

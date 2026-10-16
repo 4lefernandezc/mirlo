@@ -25,7 +25,9 @@ Phases are ordered. Each phase ends with an updated `AGENTS.md`, a
 - [x] Injected bridge implementing the MVP subset of the `ytmd:*` contract
       (get/set-config, player state reports, reload/restart, player control).
 - [x] Ad-block v0 (injection) ported, OFF by default (ADR-0003).
-- [ ] Ad-block v1 (network-level `WebResourceRequested`) — stretch goal, next.
+- [x] Ad-block v1 (network-level `WebResourceRequested` on WebView2),
+      verified live (real doubleclick requests blocked, 403 on ad
+      navigations, playback unaffected); OFF by default (ADR-0003).
 - [x] Global hotkeys, single instance, tray.
 - [x] Settings storage (JSON at `%LOCALAPPDATA%\Mirlo\config.json`).
 - [x] Re-measure memory: 371.1 MB idle private (< 450 MB target).

@@ -60,6 +60,30 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
   - Leftovers scheduled: ad-block v1 (network-level `WebResourceRequested`),
     settings UI (Phase B), `windows_subsystem` switch + file logging
     (Phase D).
+- **Phase B — IN PROGRESS**: plugin host + batch 1 landed (2026-10-16).
+  - Bridge plugin host (`window.__MIRLO_PLUGINS__`): `register(id, def)` with
+    `defaults` / `styles` / lifecycle (`start(ctx)`, `onPlayerApiReady(api,
+    ctx)`, `onConfigChange(cfg)`, `stop()`); per-plugin options live in
+    `config.json` under `plugins` (schema v2; defaults in each plugin file,
+    the shell stores only user changes); styles via `adoptedStyleSheets`;
+    `waitForElement` helper; `ids()`/`get()` debug accessors.
+  - New command `set_plugin_config` (ACL `allow-set-plugin-config`) so plugin
+    contexts can persist options (`ctx.setConfig`).
+  - Compatibility layer: the player element's native `videodatachange` is
+    re-emitted on `document` (+ `ytmd:src-changed` on the video at
+    `dataloaded`), mirroring pear-desktop's `song-info-front`.
+  - Port batch 1, all **default OFF**: blur-nav-bar, compact-sidebar,
+    album-color-theme, video-toggle, unobtrusive-player, disable-autoplay
+    (`app/src-tauri/plugins/*.js`; attribution headers +
+    THIRD_PARTY_NOTICES.md table).
+  - Verified live (CDP): six plugins enabled → 5 style sheets, body classes,
+    computed `backdrop-filter: blur(8px)`, compact sidebar, album-color CSS
+    vars, video-toggle button inside `#player`, autoplay pause on load;
+    dynamic disable/enable via config + page reload (no app restart);
+    `set_plugin_config` persistence from a plugin; **368.4 MB idle private**
+    with all six on (Phase A baseline 371.1). Screenshot:
+    `docs/research/images/phase-b-batch1.png`.
+  - Remaining Phase B: port batches 2 (audio) and 3 (content), settings UI.
 - Machine facts: Windows 11 x64; Rust 1.99.1 (MSVC) installed; VS 2019 Build
   Tools present; WebView2 runtime 155 present; Node 24 present; npm available.
 - Build artifacts must NOT go into OneDrive: always set
@@ -68,25 +92,27 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 
 ## Next step — Phase B (renderer plugins)
 
-Goal: plugin host in the injected bridge + first port batches. Suggested plan:
+Goal: continue Phase B — plugin host and batch 1 are done (see "Current
+state"); next, in this order:
 
-1. Plugin manifest + per-plugin enable/disable/config in `config.json`; bridge
-   loads enabled plugins at document start (replacing the static bridge where
-   needed) and exposes a plugin lifecycle (start/stop/settings).
-2. Port batch 1 (UI/CSS): blur-nav-bar, compact-sidebar, album-color-theme,
-   video-toggle, unobtrusive-player, disable-autoplay — keep upstream
-   comments, add attribution headers, log in `THIRD_PARTY_NOTICES.md`.
-3. Then audio batch (equalizer, precise-volume, crossfade, playback-speed,
-   exponential-volume, skip-silences) and content batch (sponsorblock,
-   synced-lyrics, skip-disliked-songs, quality-changer, ...).
-4. Plugin settings UI in the shell (small settings window or tray surface).
+1. Port batch 2 (audio): equalizer, precise-volume, crossfade,
+   playback-speed, exponential-volume, skip-silences. These use the Web Audio
+   context; the host may need an `audioContext` provider (upstream wires
+   `audioSource`/`audioContext` in its renderer core and dispatches
+   `ytmd:audio-can-play`; see `src/renderer.ts` in the extracted sources).
+2. Port batch 3 (content): sponsorblock, synced-lyrics, skip-disliked-songs,
+   quality-changer, album-actions, captions-selector, navigation.
+3. Plugin settings UI in the shell (small settings window listing plugins
+   with enable toggles + options, backed by `set_plugin_config` and
+   `get_config`).
 
 Carry-over notes:
 
-- Consider a `ytmd:*` compatibility shim in the bridge so ported plugin code
-  needs minimal diffs (see `docs/research/ipc-contract.md`).
-- Ad-block v1 (network-level `WebResourceRequested` via the WebView2
-  controller) can ride along with any bridge/network work.
+- Ports keep upstream comments + attribution headers and are logged in
+  `THIRD_PARTY_NOTICES.md`.
+- `defaults: { enabled: false }` for every new port: Mirlo ships plugin
+  features opt-in until the settings UI exists (upstream defaults may differ;
+  note deviations in the file header).
 - Any new renderer→shell command must be added to BOTH `invoke_handler` and
   `build.rs`'s `AppManifest::commands` + `capabilities/main.json` (`allow-*`),
   or the remote page gets `not allowed by ACL`.
@@ -98,6 +124,17 @@ Carry-over notes:
   `AppManifest::commands`) referenced in the capability. `invoke_handler`
   alone is not enough for remote origins; failures surface as
   `Command ... not allowed by ACL` (debug builds print a full explanation).
+- Plugin init order: `#movie_player` can exist **before DOMContentLoaded**;
+  the host only calls `onPlayerApiReady` after a plugin's `start()` resolved
+  (its config is loaded by then), and `#player` can be re-created during
+  YouTube Music's boot — plugins that inject UI into it must re-attach
+  (see video-toggle's observer).
+- The boot config (`window.__MIRLO_BOOT__`) is templated per window creation;
+  the host refreshes through `get_config` at plugin init, so config edits +
+  page reload apply without restarting the app.
+- With a CDP session attached, YouTube Music's bundle can execute `debugger;`
+  statements and freeze the renderer (every `Runtime.evaluate` times out).
+  Detach/reload to recover; not a Mirlo bug.
 - Windows `data_directory` = WebView2 UserDataFolder; WebView2 uses/creates
   `<dir>\EBWebView` — same layout as the wry PoC profile, which is how the
   session was carried over.
@@ -136,11 +173,13 @@ Carry-over notes:
 ## Repository layout
 
 ```
-app/                        Tauri 2 application (Phase A, implemented)
+app/                        Tauri 2 application (Phases A+B, in progress)
   ui/index.html             Static fallback page (frontendDist, no build step)
   src-tauri/src/lib.rs      Shell: window, commands, hotkeys, tray, single-instance
-  src-tauri/src/config.rs   JSON settings store
-  src-tauri/src/bridge.js   Initialization script injected into the player page
+  src-tauri/src/config.rs   JSON settings store (schema v2: plugins map)
+  src-tauri/src/bridge.js   Bridge + plugin host injected into the player page
+  src-tauri/src/plugins.rs  Plugin source registry (include_str!)
+  src-tauri/plugins/*.js    Renderer plugin ports (one file per plugin)
   src-tauri/capabilities/   Remote-URL capability (ACL) for the bridge
 docs/
   architecture.md           Target architecture

@@ -62,6 +62,10 @@ extracted by static scan of every plugin directory (imports of `electron`).
 ## Notes
 
 - "Batch N" refers to the port order in `docs/roadmap.md` (Phase B).
+- Batch 1 (blur-nav-bar, compact-sidebar, album-color-theme, video-toggle,
+  unobtrusive-player, disable-autoplay) landed in `app/src-tauri/plugins/`
+  (2026-10-16) with attribution headers and THIRD_PARTY_NOTICES.md entries;
+  all default OFF until the settings UI exists.
 - Two channels of the app run outside plugins too (the application core):
   window management, tray, and the `ytmd:*` bridge itself — see
   `ipc-contract.md`.

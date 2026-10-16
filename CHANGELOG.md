@@ -34,6 +34,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Idle memory measured at 371.1 MB private (acceptance < 450 MB); see
     `docs/research/measurements.md`.
 - Icon generation tool (`tools/gen-icons.ps1`) and a placeholder app icon set.
+- Renderer plugin host (Phase B) in the injected bridge:
+  - `window.__MIRLO_PLUGINS__` with per-plugin defaults, option overrides in
+    `config.json` (`plugins` map, schema v2), style injection through adopted
+    stylesheets and the lifecycle hooks `start`, `onPlayerApiReady`,
+    `onConfigChange`, `stop`.
+  - New `set_plugin_config` command so plugin contexts can persist options.
+  - Compatibility layer re-emitting the player's native `videodatachange`
+    event on `document` (plus `ytmd:src-changed`), mirroring pear-desktop's
+    `song-info-front`.
+  - First port batch (all default OFF, attribution headers and entries in
+    `THIRD_PARTY_NOTICES.md`): blur-nav-bar, compact-sidebar,
+    album-color-theme, video-toggle, unobtrusive-player, disable-autoplay.
+  - Verified live: styles/body classes/album-color variables/video-toggle
+    button applied; enable/disable via config + reload; no measurable idle
+    memory overhead (368.4 MB with all six enabled).
 
 ### Changed
 

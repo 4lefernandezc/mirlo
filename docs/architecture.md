@@ -64,6 +64,25 @@ plugins) is next. See [roadmap.md](roadmap.md).
 
 ## Plugin model
 
+**Implemented (Phase B, batch 1).** The injected bridge exposes a plugin host
+(`window.__MIRLO_PLUGINS__`) with this shape:
+
+- `register(id, def)` — each plugin file (one per upstream plugin) declares
+  `defaults` (option defaults, including `enabled`), optional `styles` (CSS,
+  injected as adopted stylesheets while active) and lifecycle methods
+  `start(ctx)`, `onPlayerApiReady(api, ctx)`, `onConfigChange(cfg)`, `stop()`.
+- **Config** — per-plugin options live in `config.json` under `plugins`
+  (`{ "<id>": { "enabled": bool, ...options } }`; schema v2). The shell stores
+  only user changes; defaults live in the plugin file. `ctx.setConfig()`
+  persists through the `set_plugin_config` command.
+- **Compatibility** — the YouTube player element's native `videodatachange`
+  event is re-emitted on `document` (and `ytmd:src-changed` on the video at
+  `dataloaded`), mirroring pear-desktop's `song-info-front`, so ported plugin
+  code needs minimal diffs.
+- The boot config (`window.__MIRLO_BOOT__`) is templated per window creation;
+  the host refreshes through `get_config` at init, so config edits apply on
+  page reload without restarting the app.
+
 Two classes of plugins, matching what Phase 0 found in pear-desktop v3.11.0
 (`research/plugin-inventory.md`):
 

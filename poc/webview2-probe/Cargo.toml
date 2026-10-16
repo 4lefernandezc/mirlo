@@ -5,6 +5,6 @@ edition = "2021"
 description = "PoC: YouTube Music en WebView2 - validacion de riesgos para cliente nativo ligero"
 
 [dependencies]
-wry = "0.53"
+wry = "0.57"
 tao = "0.34"
 global-hotkey = "0.7"

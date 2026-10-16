@@ -32,6 +32,7 @@ code and material included in this repository, with their license terms.
 | `app/src-tauri/plugins/navigation.js` | `src/plugins/navigation/` |
 | `app/src-tauri/plugins/sponsorblock.js` | `src/plugins/sponsorblock/` |
 | `app/src-tauri/plugins/album-actions.js` | `src/plugins/album-actions/` |
+| `app/src-tauri/plugins/synced-lyrics.js` | `src/plugins/synced-lyrics/` (reduced: LRCLib provider + LRC parser + minimal panel) |
 
 Not ported (policy): `crossfade` (fades the next track by fetching its
 stream URL through InnerTube — stream extraction is excluded, ADR-0003) and

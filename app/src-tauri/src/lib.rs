@@ -6,6 +6,7 @@
 //! `docs/research/ipc-contract.md` for the design context.
 
 mod config;
+mod plugins;
 
 use std::path::Path;
 use std::sync::Mutex;
@@ -142,7 +143,13 @@ fn create_main_window(
         "version": env!("CARGO_PKG_VERSION"),
         "config": config,
     });
-    let script = format!("window.__MIRLO_BOOT__ = {boot};\n{BRIDGE_JS}");
+    // Order: boot config → core bridge (defines the plugin host) → plugin
+    // modules (register themselves) → host init (starts enabled plugins).
+    let script = format!(
+        "window.__MIRLO_BOOT__ = {boot};\n{core}\n{plugins}\nwindow.__MIRLO_PLUGINS__.init();\n",
+        core = BRIDGE_JS,
+        plugins = plugins::combined_script(),
+    );
     let url = WebviewUrl::External(PLAYER_URL.parse()?);
 
     let mut builder = WebviewWindowBuilder::new(app, MAIN_WINDOW, url)
@@ -196,6 +203,22 @@ fn set_config(
         .map_err(|_| "config lock poisoned".to_string())?;
     *current = config.clone();
     Ok(config)
+}
+
+#[tauri::command]
+fn set_plugin_config(
+    app: AppHandle,
+    state: tauri::State<'_, AppState>,
+    plugin_id: String,
+    config: Value,
+) -> Result<Config, String> {
+    let mut current = state
+        .config
+        .lock()
+        .map_err(|_| "config lock poisoned".to_string())?;
+    current.plugins.insert(plugin_id, config);
+    config::save(&app, &current)?;
+    Ok(current.clone())
 }
 
 #[tauri::command]
@@ -286,6 +309,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_config,
             set_config,
+            set_plugin_config,
             get_path,
             report_player_state,
             reload_player,

@@ -9,7 +9,21 @@ code and material included in this repository, with their license terms.
 - License: MIT, © pear-devs
 - Usage: adapted plugin code, with upstream attribution in each ported file.
 
-**No pear-desktop code is currently included in this repository.**
+**Ported plugin code included in this repository:**
+
+| Mirlo file | Upstream (pear-desktop v3.11.0) |
+|---|---|
+| `app/src-tauri/plugins/blur-nav-bar.js` | `src/plugins/blur-nav-bar/` |
+| `app/src-tauri/plugins/compact-sidebar.js` | `src/plugins/compact-sidebar/` |
+| `app/src-tauri/plugins/album-color-theme.js` | `src/plugins/album-color-theme/` |
+| `app/src-tauri/plugins/video-toggle.js` | `src/plugins/video-toggle/` |
+| `app/src-tauri/plugins/unobtrusive-player.js` | `src/plugins/unobtrusive-player/` |
+| `app/src-tauri/plugins/disable-autoplay.js` | `src/plugins/disable-autoplay/` |
+
+Each file carries an attribution header with its upstream paths and the
+deviations made for the Mirlo plugin host (no Electron/SolidJS; the host
+provides per-plugin config, style injection and a `videodatachange`
+compatibility layer).
 
 ## Trademarks
 

@@ -10,6 +10,7 @@
     "core:default",
     "allow-get-config",
     "allow-set-config",
+    "allow-set-plugin-config",
     "allow-get-path",
     "allow-report-player-state",
     "allow-reload-player",

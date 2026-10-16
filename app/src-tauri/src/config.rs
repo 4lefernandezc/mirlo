@@ -6,11 +6,14 @@
 //! `docs/architecture.md`).
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 
 /// Bumped when the on-disk shape changes in a way that needs migration.
-pub const CONFIG_VERSION: u32 = 1;
+/// v2 adds the per-plugin configuration map (`plugins`).
+pub const CONFIG_VERSION: u32 = 2;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
@@ -22,6 +25,10 @@ pub struct Config {
     pub adblock: bool,
     /// Whether the global media hotkeys are registered.
     pub hotkeys_enabled: bool,
+    /// Per-plugin settings: `{ "<plugin-id>": { "enabled": bool, ...options } }`.
+    /// Plugin option schemas and defaults live in the bridge (`plugins/*.js`);
+    /// the shell stores only what the user changed.
+    pub plugins: BTreeMap<String, Value>,
 }
 
 impl Default for Config {
@@ -30,6 +37,7 @@ impl Default for Config {
             version: CONFIG_VERSION,
             adblock: false,
             hotkeys_enabled: true,
+            plugins: BTreeMap::new(),
         }
     }
 }
@@ -53,12 +61,18 @@ pub fn profile_dir(app: &AppHandle) -> PathBuf {
 }
 
 /// Loads the config from disk; falls back to defaults (logging the problem)
-/// when the file is missing or invalid.
+/// when the file is missing or invalid. Older versions are normalized in
+/// memory (additive changes only; no field renames yet).
 pub fn load(app: &AppHandle) -> Config {
     let path = config_path(app);
     match std::fs::read_to_string(&path) {
         Ok(text) => match serde_json::from_str::<Config>(&text) {
-            Ok(config) => config,
+            Ok(mut config) => {
+                if config.version < CONFIG_VERSION {
+                    config.version = CONFIG_VERSION;
+                }
+                config
+            }
             Err(err) => {
                 eprintln!("[mirlo] config.json invalid ({err}); using defaults");
                 Config::default()
@@ -110,6 +124,26 @@ mod tests {
         assert!(config.adblock);
         assert_eq!(config.version, CONFIG_VERSION);
         assert!(config.hotkeys_enabled);
+        assert!(config.plugins.is_empty());
+    }
+
+    #[test]
+    fn plugin_map_roundtrips() {
+        let config: Config = serde_json::from_str(
+            r#"{
+                "plugins": {
+                    "video-toggle": { "enabled": true, "mode": "native" },
+                    "blur-nav-bar": { "enabled": false }
+                }
+            }"#,
+        )
+        .unwrap();
+        assert_eq!(config.plugins.len(), 2);
+        assert_eq!(config.plugins["video-toggle"]["mode"], "native");
+
+        let text = serde_json::to_string(&config).unwrap();
+        let back: Config = serde_json::from_str(&text).unwrap();
+        assert_eq!(config, back);
     }
 
     #[test]
@@ -118,6 +152,7 @@ mod tests {
             version: CONFIG_VERSION,
             adblock: true,
             hotkeys_enabled: false,
+            ..Config::default()
         };
         let text = serde_json::to_string(&config).unwrap();
         let back: Config = serde_json::from_str(&text).unwrap();

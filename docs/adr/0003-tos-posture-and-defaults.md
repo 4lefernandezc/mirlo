@@ -30,3 +30,12 @@ wants to minimize legal exposure and follow a standard open-source posture.
   unclear; deviations require a documented review (new ADR).
 - The downstream community may fork to add excluded functionality; upstream
   will not merge it.
+
+## Addendum (2026-10-16)
+
+- **crossfade is excluded** from the Phase B ports: the upstream plugin fades
+  the next track by fetching its stream URL through InnerTube
+  (`youtubei.js` → `getBasicInfo().streaming_data`) and playing it with
+  Howler. That is stream extraction under decision 1, so Mirlo does not port
+  it (same category as `downloader`). See `THIRD_PARTY_NOTICES.md` and
+  `research/plugin-inventory.md`.

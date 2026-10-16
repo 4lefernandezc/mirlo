@@ -141,7 +141,7 @@
   const activePlugins = new Set();
   const startedPlugins = new Set();
   const apiNotified = new Set();
-  const hostState = { api: null, dataloaded: false };
+  const hostState = { api: null, dataloaded: false, audio: null };
 
   function pluginDefaults(def) {
     return Object.assign({ enabled: false }, (def && def.defaults) || {});
@@ -207,6 +207,61 @@
     };
   }
 
+  // --- Audio provider (Web Audio graph, on demand) ----------------------
+  //
+  // Upstream pear-desktop always wires `AudioContext` +
+  // `createMediaElementSource(video)` in its renderer core and dispatches
+  // `ytmd:audio-can-play`. Mirlo only wires it when at least one enabled
+  // plugin declares `audio: true`, so default-off plugins never reroute
+  // audio (and a MediaElementSource is only ever created once per element).
+  const audioWaiters = [];
+
+  function wantsAudio() {
+    for (const [id, def] of pluginRegistry) {
+      if (isPluginEnabled(id) && def.audio === true) return true;
+    }
+    return false;
+  }
+
+  function dispatchAudioCanPlay() {
+    document.dispatchEvent(
+      new CustomEvent('ytmd:audio-can-play', { detail: hostState.audio })
+    );
+    for (const resolve of audioWaiters.splice(0)) resolve(hostState.audio);
+  }
+
+  function setupAudio() {
+    if (hostState.audio || !wantsAudio()) return;
+    const video = q('video');
+    if (!video) return;
+    const audioContext = new AudioContext();
+    const audioSource = audioContext.createMediaElementSource(video);
+    audioSource.connect(audioContext.destination);
+    hostState.audio = { audioContext, audioSource };
+
+    // Autoplay policy can start the context suspended; resume on the first
+    // user gesture (the player itself is click-driven anyway).
+    if (audioContext.state === 'suspended') {
+      document.addEventListener('click', () => audioContext.resume(), { once: true });
+    }
+
+    dispatchAudioCanPlay();
+    // Like upstream, re-announce per video once enough data is buffered.
+    const loadstartListener = () => {
+      video.addEventListener('canplaythrough', dispatchAudioCanPlay, { once: true });
+    };
+    video.addEventListener('loadstart', loadstartListener, { passive: true });
+    if (video.readyState === 4) dispatchAudioCanPlay();
+    console.log('[mirlo] audio graph wired (state: ' + audioContext.state + ')');
+  }
+
+  function audio() {
+    if (hostState.audio) return Promise.resolve(hostState.audio);
+    setupAudio();
+    if (hostState.audio) return Promise.resolve(hostState.audio);
+    return new Promise((resolve) => audioWaiters.push(resolve));
+  }
+
   function domReady() {
     return new Promise((resolve) => {
       if (document.readyState === 'loading') {
@@ -263,6 +318,7 @@
         // announced only after this plugin's own start() has finished (its
         // config is loaded by then).
         startedPlugins.add(id);
+        setupAudio();
         notifyPlayerApi(id);
       });
     console.log(`[mirlo] plugin started: ${id}`);
@@ -335,6 +391,10 @@
     enable: (id) => startPlugin(id),
     disable: (id) => stopPlugin(id),
     waitForElement,
+    audio,
+    onAudioReady: (cb) => {
+      audio().then(cb);
+    },
     // Debug/inspection helpers (also used by the settings UI later).
     ids: () => [...pluginRegistry.keys()],
     get: (id) => pluginRegistry.get(id),
@@ -404,6 +464,7 @@
   function scan() {
     const v = q('video');
     if (v) attachVideo(v);
+    if (v) setupAudio();
     const apiElement = q('#movie_player');
     if (apiElement && !hostState.api) onPlayerApiReady(apiElement);
     if (location.href !== lastHref) {

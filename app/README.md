@@ -41,7 +41,10 @@ and reload the player window (or restart the app):
     "album-color-theme": { "enabled": true, "ratio": 0.5 },
     "video-toggle": { "enabled": true, "mode": "custom", "align": "left" },
     "unobtrusive-player": { "enabled": true },
-    "disable-autoplay": { "enabled": true, "applyOnce": false }
+    "disable-autoplay": { "enabled": true, "applyOnce": false },
+    "exponential-volume": { "enabled": true },
+    "playback-speed": { "enabled": true },
+    "skip-silences": { "enabled": true, "onlySkipBeginning": false }
   }
 }
 ```
@@ -50,7 +53,12 @@ Options per plugin: `album-color-theme.ratio` (0–1), `video-toggle.mode`
 (`custom` | `native` | `disabled`, needs reload), `video-toggle.align`
 (`left` | `middle` | `right`), `video-toggle.forceHide`,
 `video-toggle.hideVideo` (persisted by the switch button),
-`disable-autoplay.applyOnce`. Defaults live in `app/src-tauri/plugins/*.js`.
+`disable-autoplay.applyOnce`, `skip-silences.onlySkipBeginning`. Defaults
+live in `app/src-tauri/plugins/*.js`. Audio plugins wire a Web Audio graph
+on demand (only while at least one `audio: true` plugin is enabled).
+
+`crossfade` is not ported: upstream extracts the next track's stream through
+InnerTube, which ADR-0003 excludes.
 
 ## Behavior notes (Phase A)
 

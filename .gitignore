@@ -1,0 +1,26 @@
+# Rust
+target/
+**/*.rs.bk
+
+# Node
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Tauri
+app/src-tauri/target/
+
+# OS
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Editors
+.vscode/*
+!.vscode/settings.json.example
+.idea/
+
+# Logs and local env
+*.log
+.env
+.env.*

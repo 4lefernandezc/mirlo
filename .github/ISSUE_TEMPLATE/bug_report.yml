@@ -1,0 +1,54 @@
+name: Bug report
+description: Report a problem with Mirlo
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. **Do not report security
+        issues here** — see SECURITY.md for the private channel.
+  - type: input
+    id: version
+    attributes:
+      label: Version / commit
+      description: Which version or commit are you running?
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - App (Tauri shell)
+        - PoC (poc/webview2-probe)
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Also tell us what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open...
+        2. Click...
+        3. See error
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: |
+        Windows version and build, WebView2 runtime version, and memory usage
+        if relevant (run `tools/measure-memory.ps1` and paste the summary line).
+    validations:
+      required: false

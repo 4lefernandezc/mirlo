@@ -205,34 +205,55 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     503s during retries and SponsorBlock 404s). Screenshot:
     `docs/research/images/phase-b-lyrics.png` (CDP capture; prefer
     `cdp-screenshot.mjs` over PrintWindow for WebView2 evidence).
-- **Phase B — COMPLETE (all batches ported)**: 18 plugins shipped, all
-  default OFF, plus the plugin host, audio provider and settings UI.
-  crossfade excluded (ADR-0003). Leftovers for Phase B polish (next
-  session): flip stable plugins' defaults on (documented in CHANGELOG),
-  re-open ad-block v1 (network-level `WebResourceRequested`).
+- **Phase B — COMPLETE (all batches ported)**: 18 plugins shipped, plus the
+  plugin host, audio provider and settings UI. crossfade excluded
+  (ADR-0003).
+- **Phase B polish (defaults) — DONE (2026-10-16)**: stable additive plugins
+  now ship enabled by default (navigation, video-toggle, precise-volume,
+  captions-selector, quality-changer, compact-sidebar — each marked with a
+  comment in its `defaults`); behavioral/opinionated ones stay OFF. User
+  overrides in `config.json` always win.
 - Machine facts: Windows 11 x64; Rust 1.99.1 (MSVC) installed; VS 2019 Build
   Tools present; WebView2 runtime 155 present; Node 24 present; npm available.
 - Build artifacts must NOT go into OneDrive: always set
   `CARGO_TARGET_DIR=C:\Users\luigi\AppData\Local\Temp\opencode\ytm-target`
   (or any temp dir) before cargo commands.
 
-## Next step — Phase B polish, then Phase C
+## Next step — Ad-block v1, then Phase C
 
-Phase B is complete (18 plugins + host + audio provider + settings UI).
-Next, in order:
+Phase B is complete and the stable defaults are on. Next: **ad-block v1**
+(network-level blocking on the WebView2 controller), a Phase A leftover.
+Implementation-ready notes (APIs verified present in the vendored crates):
 
-1. **Flip stable plugins' defaults on** — pick the batch-1/batch-2 set that
-   has been exercised (e.g. compact-sidebar, video-toggle, disable-autoplay,
-   exponential-volume, precise-volume, skip-disliked-songs, navigation,
-   captions-selector, quality-changer, sponsorblock) and set their
-   `defaults.enabled = true` in the plugin files, documenting the change in
-   CHANGELOG. Keep risky/opinionated ones OFF (album-color-theme,
-   unobtrusive-player, equalizer, skip-silences, synced-lyrics,
-   album-actions, blur-nav-bar — verify against upstream defaults first).
-2. **Ad-block v1** — network-level blocking via WebResourceRequested on the
-   WebView2 controller (`with_webview` + `ICoreWebView2`), replacing the
-   injection-based v0; keep it OFF by default (ADR-0003).
-3. Then Phase C (SMTC/media keys, notifications, scrobbler, Discord).
+1. **Deps**: add `webview2-com = "0.39"` (exact version tauri 2.12 uses, so
+   COM types match) and `windows = { version = "0.62", features =
+   ["Win32_System_Com", "Win32_UI_Shell"] }` to `app/src-tauri/Cargo.toml`.
+2. **Wiring** (Windows-only module, call from `create_main_window` after
+   build): `window.with_webview(|platform| { let controller =
+   platform.controller(); let core = controller.CoreWebView2()?;
+   core.AddWebResourceRequestedFilter("*",
+   COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL)?;
+   core.add_WebResourceRequested(&WebResourceRequestedEventHandler::create(
+   Box::new(move |_sender, args| { ... })), &mut token) })` — handler helper
+   is `webview2_com::WebResourceRequestedEventHandler`; get the URI via
+   `args.Request()?.Uri()`.
+3. **Blocking a request**: no cancel API — build a response:
+   `ICoreWebView2_2::Environment()` →
+   `CreateWebResourceResponse(stream, 403, "Blocked", headers)` with an
+   empty `IStream` from `SHCreateMemStream(None, 0)`
+   (`windows::Win32::UI::Shell`), then `args.SetResponse(response)`.
+4. **Patterns**: reuse the v0 host regex (doubleclick.net,
+   googlesyndication, googleadservices, /pagead/, /api/stats/ads) plus a
+   small host allowlist-free blocklist; keep it simple and conservative.
+5. **Config**: apply at window creation when `config.adblock` is true
+   (reload applies, like v0); keep OFF by default (ADR-0003). Log a bounded
+   count of blocked requests for debugging.
+6. **Verify**: enable adblock + relaunch with CDP; probe
+   `performance.getEntriesByType('resource')` or fetch a known ad host from
+   the page and expect a blocked/403 result; confirm the player still plays
+   a track; measure memory unchanged; restore config.
+
+Then Phase C (SMTC/media keys, notifications, scrobbler, Discord).
 
 Carry-over notes:
 
@@ -247,11 +268,22 @@ Carry-over notes:
 
 ### Resume notes — Phase B (next session, 2026-10-16)
 
-State: Phase B is **complete** — batches 1/2a/2b/3a/3b/3c, the settings UI
-and synced-lyrics are committed (`103c18f`/`59ea3ef`, `40f6c73`/`a87f5d2`,
-`5ff899f`/`ecae580`, `e41100d`/`e5323d6`, `a66db7d`/`a633383`,
-`06c6b15`/`9a236ba`, and this session's pair). Next: the polish list in
-"Next step" above (defaults on, ad-block v1), then Phase C.
+State: Phase B is **complete** (18 plugins + host + audio provider +
+settings UI) and the stable plugin defaults are on. All committed:
+`103c18f`/`59ea3ef`, `40f6c73`/`a87f5d2`, `5ff899f`/`ecae580`,
+`e41100d`/`e5323d6`, `a66db7d`/`a633383`, `06c6b15`/`9a236ba`,
+`1e0432e`/`d86daaa`, and this session's defaults commit. Next: **ad-block
+v1** per "Next step" above (the notes there are implementation-ready:
+deps, API names and the verified absence of a cancel API).
+
+- The vendored `webview2-com 0.39.1` exposes
+  `WebResourceRequestedEventHandler` and the full
+  `Microsoft::Web::WebView2::Win32` surface; `PlatformWebview::controller()`
+  returns `ICoreWebView2Controller` (see tauri `webview/mod.rs:184`).
+- Keep the v0 injection blockers as the non-Windows/fallback path; v1 is
+  Windows-only for now (the shell is Windows-first until Phase E).
+
+Other carry-over notes:
 
 - Every new plugin needs: a `plugins/*.js` file registering itself (default
   `enabled: false`), an entry in `plugins.rs::PLUGINS` **and**

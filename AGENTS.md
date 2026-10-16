@@ -269,6 +269,34 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     `TryChangePlaybackPositionAsync(120 s)` moved `video.currentTime` to
     ~123 s; no `smtc:` errors in the log. Memory 387.5 MB after a full
     playback round trip (baseline 371.1 idle; within variance, < 450 MB).
+- **Phase C — notifications DONE (2026-10-16)**: track-change toasts.
+  - New module `app/src-tauri/src/notifications.rs` (native WinRT toasts; no
+    new dependencies): ToastGeneric XML built by hand (`toast_xml`, escaped),
+    `XmlDocument.LoadXml` → `ToastNotification.CreateToastNotification` →
+    `ToastNotifier.Show`. Unpackaged-app AUMID registered lazily on first
+    use at `HKCU\Software\Classes\AppUserModelId\Mirlo` (`DisplayName` +
+    `IconUri`; enough, no Start Menu shortcut needed).
+  - Gating: new config field `notifications` (default **true**, General
+    checkbox in the settings UI, label notes it only fires when the window
+    is not focused). Focus check uses **`GetForegroundWindow() == hwnd`**,
+    not tao's `window.is_focused()` — see traps.
+  - Dedup: the bridge re-emits `video-src-changed` 2-3x per track
+    (emptied/loadedmetadata/scan), so toasts are keyed by title and fire
+    once per actual change; the first track observed after launch never
+    toasts (it's the previous session's queue). The dedup bookkeeping runs
+    even while focused so focused changes still advance "last track"
+    (otherwise the next background change would be swallowed as "first").
+  - Shows title + artist (byline split reuse) + artwork from the videoId.
+  - Verified live (2026-10-16): startup/focused changes → 0 toasts; two
+    unfocused changes → exactly one toast each, correct titles
+    (`toast: Hey Now Now (n=1)`, `toast: Unglued (n=2)`) with the
+    bookkeeping advancing across focused changes. The AUMID registry key
+    was created by our code (`DisplayName`/`IconUri` present). **Banner not
+    visible in this environment because Windows notifications are disabled
+    at the user level** (`ToastNotifier.Setting()` = 2 `DisabledForUser` —
+    `Show()` succeeds and the OS drops the toast silently; the module logs
+    this once per run). Memory 409 MB fresh idle with all features; 427.9
+    after a long playback session — both < 450 target.
 - Machine facts: Windows 11 x64; Rust 1.99.1 (MSVC) installed; VS 2019 Build
   Tools present; WebView2 runtime 155 present; Node 24 present; npm available.
 - Build artifacts must NOT go into OneDrive: always set
@@ -277,19 +305,13 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 
 ## Next step — Phase C (remaining)
 
-SMTC is done. Remaining Phase C items:
+SMTC, ad-block v1 and notifications are done. Remaining Phase C items:
 
-1. **Notifications** on track change (`video-src-changed`): Windows toast
-   with title/artist. Decide the mechanism first — `tauri-plugin-notification`
-   (adds a dep; handles unpackaged-app toast registration) vs. native
-   `windows` crate toasts (needs an AUMID/Start Menu shortcut for unpackaged
-   Win32; more code, no new dep). The app is unpackaged, so check what the
-   plugin does for AUMID before choosing.
-2. **Scrobbler (Last.fm)**: needs an API key + user auth flow (browser-based
+1. **Scrobbler (Last.fm)**: needs an API key + user auth flow (browser-based
    token) — plan a settings-ui section; user credentials live in config.json
    (never commit). Shell-side HTTPS (tauri plugin-http or reqwest) or page
    fetch (CORS? Last.fm API allows CORS — verify).
-3. **Discord rich presence**: Discord IPC is a local named pipe
+2. **Discord rich presence**: Discord IPC is a local named pipe
    (`\\.\pipe\discord-ipc-0`); implement a minimal IPC client in the shell
    (no dep needed) and map `video-src-changed`/`play-or-paused` to
    SET_ACTIVITY payloads; OFF by default.
@@ -310,8 +332,8 @@ Carry-over notes:
 
 ### Resume notes — Phase C (next session, 2026-10-16)
 
-State: **ad-block v1 and SMTC are done and verified**. Remaining Phase C:
-notifications on track change, Last.fm scrobbler, Discord rich presence (see
+State: **ad-block v1, SMTC and notifications are done and verified**.
+Remaining Phase C: Last.fm scrobbler, Discord rich presence (see
 "Next step" above — mechanism options are noted there).
 
 - The vendored `webview2-com 0.39.1` exposes
@@ -331,6 +353,19 @@ notifications on track change, Last.fm scrobbler, Discord rich presence (see
   OS-side session and can drive `TryTogglePlayPauseAsync` /
   `TryChangePlaybackPositionAsync` — the same delivery path hardware media
   keys use, ideal for end-to-end tests.
+- Notifications: AUMID registered lazily in HKCU (DisplayName + IconUri);
+  the module logs `ToastNotifier.Setting()` once per run — this machine
+  reports `DisabledForUser` (2), so `Show()` succeeds but Windows drops the
+  toast (no banner, no history). PS 5.1 cannot bind
+  `ToastNotificationHistory.GetHistoryWithId` (`MethodNotFound`); use the
+  throwaway Rust probe at `%TEMP%\opencode\toast-probe\` (sends a toast and
+  reads the history for the AUMID) when that needs re-checking.
+- **Focus checks: never use tao `window.is_focused()` under WebView2** — the
+  WebView2 child keeps keyboard focus, the top-level never sees
+  `WM_SETFOCUS`, and tao's flag stays false while the window *is* the
+  foreground window (proved live). Use
+  `GetForegroundWindow() == window.hwnd()` (see `player_is_focused` in
+  `lib.rs`).
 
 Other carry-over notes:
 
@@ -416,6 +451,20 @@ for probes — pass a URL substring as 4th arg to target the settings window;
   prompt, which is a **separate CDP target**
   (`edge://permission-request-dialog/`) — deny it by clicking its
   `fluent-button` with text "Bloquear".
+- **tao `is_focused()` is false under WebView2 even when the window is
+  foreground** (the child window holds focus; the top-level never receives
+  `WM_SETFOCUS`). Any focus-dependent feature must use
+  `GetForegroundWindow() == hwnd` (see `player_is_focused`).
+- Windows toasts: `Show()` succeeds even with user notifications disabled —
+  check `ToastNotifier.Setting()` (`Enabled = 0`, `DisabledForUser = 2`).
+  `document.hasFocus()` in the page is *not* an OS-focus signal under
+  WebView2 (stays true while another window is foreground).
+- Driving focus for tests (headless shell cannot set foreground): focus the
+  app with a `SetCursorPos` + `mouse_event` click on its title bar; defocus
+  by minimizing (`ShowWindow(6)` — note the window may stay "foreground" for
+  `GetForegroundWindow` until another window is clicked) or by clicking
+  another window. `WScript.Shell.AppActivate` fails from the non-interactive
+  shell (foreground lock).
 - Force-killing the host leaves WebView2 trees shutting down slowly; verify
   with a process-tree walk (`Get-CimInstance Win32_Process` filtered by
   command line) and prefer graceful close (`CloseMainWindow()`).
@@ -455,6 +504,7 @@ app/                        Tauri 2 application (Phases A+B done; Phase C next)
   src-tauri/src/config.rs   JSON settings store (schema v2: plugins map)
   src-tauri/src/adblock.rs  Ad-block v1: WebResourceRequested handler (Windows)
   src-tauri/src/media_controls.rs  SMTC media session (Windows)
+  src-tauri/src/notifications.rs  Track-change toasts (Windows)
   src-tauri/src/bridge.js   Bridge + plugin host injected into the player page
   src-tauri/src/plugins.rs  Plugin source registry + settings manifest
   src-tauri/plugins/*.js    Renderer plugin ports (one file per plugin)

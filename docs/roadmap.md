@@ -63,7 +63,10 @@ Phases are ordered. Each phase ends with an updated `AGENTS.md`, a
 - [x] Media Session (SMTC): taskbar flyout + hardware media keys, session
       metadata (title/artist/album/thumbnail), timeline position and
       flyout-seek; verified live through the OS session manager.
-- [ ] Notifications (track change).
+- [x] Notifications (track change): native toasts with title/artist/artwork,
+      fired only while the player window is not focused; verified (0 toasts
+      focused, 1 per unfocused change; the OS banner is suppressed by this
+      machine's user-level notification setting).
 - [ ] Scrobbler (Last.fm).
 - [ ] Discord rich presence.
 - [ ] Optional: api-server, lumiastream, tuna-obs (community PRs welcome).

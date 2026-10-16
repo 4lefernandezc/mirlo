@@ -23,6 +23,8 @@ process so the app could be closed gracefully afterwards.
 
 | Build | Processes | Private (sum) | Working set (sum) |
 |---|---|---|---|
+| Mirlo Phase C (adblock+SMTC+notifications, long playback session) | 10 | 427.9 MB | 877.9 MB |
+| Mirlo Phase C (adblock+SMTC+notifications, fresh idle) | 10 | **409.0 MB** | 855.9 MB |
 | Mirlo ad-block v1 registered (18 plugins, post-navigation settles) | 9 | **371.1 MB** | 720.6 MB |
 | Mirlo Phase B (eleven renderer plugins on) | 9 | **300.3 MB** | 701.6 MB |
 | Mirlo Phase B (nine renderer plugins on) | 10 | **331.8 MB** | 781.0 MB |
@@ -39,7 +41,13 @@ versus the plugins-off baseline; run-to-run page variance is roughly ±5%
 the small differences as noise. The ad-block v1 run (wildcard
 `WebResourceRequested` filter registered, 18 plugins enabled, page
 re-navigated several times) measured 371.1 MB — identical to the Phase A
-baseline, so the network filter adds no measurable idle footprint. Largest
+baseline, so the network filter adds no measurable idle footprint. The
+Phase C runs (ad-block v1 + SMTC media session + notifications, 18 plugins)
+measured 409 MB fresh idle and 427.9 MB after a long playback round trip;
+both remain under the 450 MB acceptance with margin — the spread versus the
+371 MB run is dominated by page/cache state of the YouTube Music session,
+not by the native modules (a SMTC session and a toast callback are
+structurally tiny). Largest
 components in the Phase A run:
 renderer 165.8 MB, GPU 121.0 MB, browser 31.2 MB (private working set).
 

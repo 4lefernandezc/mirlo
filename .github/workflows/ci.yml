@@ -6,6 +6,29 @@ on:
   pull_request:
 
 jobs:
+  app:
+    name: App (Tauri 2, Windows)
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: app/src-tauri
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app/src-tauri -> target
+      - name: Format
+        run: cargo fmt --all --check
+      - name: Clippy
+        run: cargo clippy --all-targets -- -D warnings
+      - name: Test
+        run: cargo test --lib
+      - name: Build
+        run: cargo build --release
+
   poc:
     name: PoC (Rust, Windows)
     runs-on: windows-latest

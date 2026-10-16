@@ -82,6 +82,10 @@ pub const PLUGINS: &[PluginSource] = &[
         id: "album-actions",
         source: include_str!("../plugins/album-actions.js"),
     },
+    PluginSource {
+        id: "synced-lyrics",
+        source: include_str!("../plugins/synced-lyrics.js"),
+    },
 ];
 
 /// All plugin sources concatenated in registration order, each with a
@@ -221,6 +225,14 @@ pub fn manifest() -> serde_json::Value {
             "id": "album-actions",
             "name": "Album actions",
             "description": "Bulk like/dislike buttons for album and playlist pages, with a fill percentage.",
+        },
+        {
+            "id": "synced-lyrics",
+            "name": "Synced lyrics",
+            "description": "Lyrics panel with synced highlighting and click-to-seek (LRCLib provider; third-party calls only while enabled).",
+            "options": [
+                { "path": ["showLyricsEvenIfInexact"], "type": "boolean", "label": "Show approximate matches", "default": false },
+            ],
         },
     ])
 }

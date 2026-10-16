@@ -15,6 +15,33 @@ __MIRLO_PLUGINS__.register('captions-selector', {
     autoload: false,
     lastCaptionsCode: '',
   },
+  styles: [
+    `
+.mirlo-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 8px;
+  border: none;
+  background: none;
+  color: var(--yt-spec-text-primary, #aaaaaa);
+  cursor: pointer;
+  border-radius: 50%;
+}
+.mirlo-icon-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+.mirlo-icon-button svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+  fill: currentColor;
+}
+`,
+  ],
 
   api: null,
   config: null,
@@ -25,45 +52,26 @@ __MIRLO_PLUGINS__.register('captions-selector', {
   buildButton() {
     const label = 'Captions';
 
-    const button = document.createElement('yt-icon-button');
-    button.setAttribute('aria-disabled', 'false');
+    // A plain button with our own styles: a bare `yt-icon-button` custom
+    // element renders as a 300x300 unstyled block in YT Music.
+    const button = document.createElement('button');
+    button.className = 'mirlo-icon-button player-captions-button';
+    button.type = 'button';
     button.setAttribute('aria-label', label);
-    button.className = 'player-captions-button style-scope ytmusic-player-bar';
-    button.setAttribute('role', 'button');
-    button.setAttribute('tabindex', '0');
     button.setAttribute('title', label);
-
-    const shape = document.createElement('span');
-    shape.className = 'yt-icon-shape style-scope yt-icon yt-spec-icon-shape';
-
-    const holder = document.createElement('div');
-    holder.setAttribute('style', 'width:100%;height:100%;display:block;fill:currentcolor;');
 
     const svgNs = 'http://www.w3.org/2000/svg';
     const svg = document.createElementNS(svgNs, 'svg');
-    svg.setAttribute('class', 'style-scope yt-icon');
     svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-    svg.setAttribute(
-      'style',
-      'pointer-events:none;display:block;width:100%;height:100%;'
-    );
     svg.setAttribute('viewBox', '0 0 24 24');
 
     const path = document.createElementNS(svgNs, 'path');
-    path.setAttribute('class', 'style-scope yt-icon');
     path.setAttribute(
       'd',
       'M20 4H4c-1.103 0-2 .897-2 2v12c0 1.103.897 2 2 2h16c1.103 0 2-.897 2-2V6c0-1.103-.897-2-2-2zm-9 6H8v4h3v2H8c-1.103 0-2-.897-2-2v-4c0-1.103.897-2 2-2h3v2zm7 0h-3v4h3v2h-3c-1.103 0-2-.897-2-2v-4c0-1.103.897-2 2-2h3v2z'
     );
-    path.setAttribute('fill', 'currentColor');
-
-    const group = document.createElementNS(svgNs, 'g');
-    group.setAttribute('class', 'style-scope yt-icon');
-    group.appendChild(path);
-    svg.appendChild(group);
-    holder.appendChild(svg);
-    shape.appendChild(holder);
-    button.appendChild(shape);
+    svg.appendChild(path);
+    button.appendChild(svg);
 
     button.addEventListener('click', (e) => this.chooseCaptions(e));
     return button;

@@ -42,15 +42,20 @@ requests.
   `get-downloads-folder`, `get-path`, `get-main-plugin-names` (plugin metadata
   for the UI).
 
-## Mirlo mapping (Phase A/B)
+## Mirlo mapping (Phase A implemented, Phase B onwards extends)
 
-The bridge re-expresses this as:
-- Tauri **commands** for `get/set-config`, `get-path`, plugin metadata and the
-  queue/shuffle data.
-- Tauri **events** for player state (`play-or-paused`, `time-changed`, ...).
-- Shell **lifecycle** functions for `reload`/`restart`/fullscreen.
+The bridge (implemented in `app/src-tauri/src/bridge.js`, see
+`docs/architecture.md`) re-expresses this as:
+- Tauri **commands** (renderer → shell): `get_config`, `set_config`,
+  `get_path`, `report_player_state` (state events as `{kind, data}`),
+  `reload_player`, `restart_app`.
+- Tauri **events** (shell → observers, e.g. future SMTC/notifications):
+  `player-state` with the last reported payload.
+- Shell **lifecycle**: hotkeys `eval` player control directly
+  (`window.__mirlo.player.*`), matching the Phase 0 PoC wiring.
 - `get-renderer-script` becomes static: the initialization script (with the
-  enabled renderer plugins) is injected by the shell on every document start.
+  enabled renderer plugins, Phase B) is injected by the shell on every
+  document start.
 
 Naming: keep the semantics, not the exact strings. A compatibility shim may
 re-expose `ytmd:*` names internally to ease porting plugin code unchanged.

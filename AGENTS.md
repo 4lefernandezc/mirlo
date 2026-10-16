@@ -35,39 +35,82 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
   - Measured (idle, logged-in home, private working set — Task Manager metric):
     **PoC ≈ 399 MB vs Electron v3.11.0 ≈ 1179 MB**. Details:
     `docs/research/measurements.md`.
-- **Phase A — NOT STARTED**: Tauri 2 application scaffold (`app/`).
+- **Phase A — DONE (2026-10-16)**: Tauri 2 shell in `app/` (tauri 2.12,
+  plugins global-shortcut 2.4 / single-instance 2.5).
+  - Player window loads `music.youtube.com` with persistent WebView2 profile
+    (`%LOCALAPPDATA%\Mirlo\webview2-profile`; session carried over from the
+    Phase 0 PoC profile), bridge injected at document start.
+  - Bridge (MVP `ytmd:*` subset): `get_config`/`set_config`/`get_path`,
+    `report_player_state` events (`bridge-ready`, `player-api-loaded`,
+    `play-or-paused`, `time-changed`, `volume-changed`, `seeked`,
+    `video-src-changed`, `navigation`), `reload_player`/`restart_app`,
+    ad-block v0 ported (OFF by default, ADR-0003), player control used by
+    hotkeys.
+  - Global hotkeys Ctrl+Alt+Space/Right/Left, single-instance (focuses the
+    running window), tray (show/hide + quit), graceful close.
+  - Settings: `%LOCALAPPDATA%\Mirlo\config.json` (defaults written on first
+    run).
+  - Measured (idle, logged-in home, attached to running process):
+    **371.1 MB private** — acceptance < 450 MB met. Evidence:
+    `docs/research/images/phase-a-idle.png` (**contains a private session:
+    redact or replace before making the repo public**).
+  - Verified manually: bridge IPC end-to-end (via CDP + `MIRLO_DEBUG_PORT`),
+    hotkeys firing (silent play/pause round-trip), single-instance, graceful
+    shutdown with no orphan `msedgewebview2`.
+  - Leftovers scheduled: ad-block v1 (network-level `WebResourceRequested`),
+    settings UI (Phase B), `windows_subsystem` switch + file logging
+    (Phase D).
 - Machine facts: Windows 11 x64; Rust 1.99.1 (MSVC) installed; VS 2019 Build
   Tools present; WebView2 runtime 155 present; Node 24 present; npm available.
 - Build artifacts must NOT go into OneDrive: always set
   `CARGO_TARGET_DIR=C:\Users\luigi\AppData\Local\Temp\opencode\ytm-target`
   (or any temp dir) before cargo commands.
 
-## Next step — Phase A (Tauri 2 base)
+## Next step — Phase B (renderer plugins)
 
-Goal: `app/` with a Tauri 2 (Rust) shell that reaches PoC parity and adds the
-settings foundation. Suggested acceptance criteria:
+Goal: plugin host in the injected bridge + first port batches. Suggested plan:
 
-1. Window loads `https://music.youtube.com/` with a persistent WebView2 profile
-   (session survives restarts), same as the PoC.
-2. Injected bridge script implementing the inherited `ytmd:*` contract subset
-   needed for MVP (get/set-config, player state events, reload/restart).
-   Contract source: `docs/research/ipc-contract.md`.
-3. Ad-block v0: port the PoC injection blocking. v1 (network-level
-   `WebResourceRequested`) is a stretch goal for this phase.
-4. Global hotkeys and single-instance behavior.
-5. Docs updated + `CHANGELOG.md` entry + screenshot of memory usage.
-6. Re-measure memory with `tools/measure-memory.ps1` and record in
-   `docs/research/measurements.md`.
+1. Plugin manifest + per-plugin enable/disable/config in `config.json`; bridge
+   loads enabled plugins at document start (replacing the static bridge where
+   needed) and exposes a plugin lifecycle (start/stop/settings).
+2. Port batch 1 (UI/CSS): blur-nav-bar, compact-sidebar, album-color-theme,
+   video-toggle, unobtrusive-player, disable-autoplay — keep upstream
+   comments, add attribution headers, log in `THIRD_PARTY_NOTICES.md`.
+3. Then audio batch (equalizer, precise-volume, crossfade, playback-speed,
+   exponential-volume, skip-silences) and content batch (sponsorblock,
+   synced-lyrics, skip-disliked-songs, quality-changer, ...).
+4. Plugin settings UI in the shell (small settings window or tray surface).
 
-Notes/traps discovered so far:
+Carry-over notes:
 
-- wry 0.53 API: use `WebViewBuilder::new_with_web_context(&mut ctx)`;
-  `with_ipc_handler` receives `Request<String>`.
-- `WebContext::new(Some(profile_dir))` gives session persistence on Windows.
-- Force-killing the host leaves WebView2 trees shutting down slowly; always
-  verify with a process-tree walk, and prefer graceful close.
-- Google login works in WebView2 (no Electron UA blocking observed), but keep
-  the default Edge UA; re-test login after any UA or profile change.
+- Consider a `ytmd:*` compatibility shim in the bridge so ported plugin code
+  needs minimal diffs (see `docs/research/ipc-contract.md`).
+- Ad-block v1 (network-level `WebResourceRequested` via the WebView2
+  controller) can ride along with any bridge/network work.
+- Any new renderer→shell command must be added to BOTH `invoke_handler` and
+  `build.rs`'s `AppManifest::commands` + `capabilities/main.json` (`allow-*`),
+  or the remote page gets `not allowed by ACL`.
+
+## Traps and dev notes
+
+- Tauri 2 **remote IPC needs explicit ACL**: a capability with `remote.urls`
+  plus app-permission entries (`allow-<command>`, generated by `build.rs`'s
+  `AppManifest::commands`) referenced in the capability. `invoke_handler`
+  alone is not enough for remote origins; failures surface as
+  `Command ... not allowed by ACL` (debug builds print a full explanation).
+- Windows `data_directory` = WebView2 UserDataFolder; WebView2 uses/creates
+  `<dir>\EBWebView` — same layout as the wry PoC profile, which is how the
+  session was carried over.
+- `MIRLO_DEBUG_PORT=9222` (env) enables CDP on the WebView2 for inspection
+  (REA tools or any CDP client); off by default. Example probe:
+  `Runtime.evaluate` on the page target.
+- Force-killing the host leaves WebView2 trees shutting down slowly; verify
+  with a process-tree walk (`Get-CimInstance Win32_Process` filtered by
+  command line) and prefer graceful close (`CloseMainWindow()`).
+- The app console stays attached (no `windows_subsystem` yet) — useful for
+  smoke tests, to be replaced by file logging in Phase D.
+- `cargo test --lib` runs the config unit tests without needing a window or
+  WebView2 runtime.
 
 ## Critical facts and guardrails
 
@@ -93,29 +136,43 @@ Notes/traps discovered so far:
 ## Repository layout
 
 ```
-app/                        Tauri 2 application (Phase A; not yet created)
+app/                        Tauri 2 application (Phase A, implemented)
+  ui/index.html             Static fallback page (frontendDist, no build step)
+  src-tauri/src/lib.rs      Shell: window, commands, hotkeys, tray, single-instance
+  src-tauri/src/config.rs   JSON settings store
+  src-tauri/src/bridge.js   Initialization script injected into the player page
+  src-tauri/capabilities/   Remote-URL capability (ACL) for the bridge
 docs/
   architecture.md           Target architecture
   roadmap.md                Phases and status
   adr/                      Architecture decision records
-  research/                 Evidence from Phase 0 (plugin inventory, IPC contract,
-                            measurements, PoC validation)
+  research/                 Evidence (plugin inventory, IPC contract, measurements,
+                            PoC validation, idle screenshot)
 poc/webview2-probe/         Validated Rust + wry spike (seed for Phase A)
 tools/measure-memory.ps1    RAM measurement helper (process tree, private WS)
+tools/gen-icons.ps1         Regenerates app icons (placeholder mark)
 ```
 
 ## Commands
 
 ```powershell
-# Build the PoC (from repo root)
+# Build the app (from repo root; keep artifacts out of OneDrive)
 $env:CARGO_TARGET_DIR = "C:\Users\luigi\AppData\Local\Temp\opencode\ytm-target"
+cargo build --manifest-path app/src-tauri/Cargo.toml --release
+
+# Run the app
+cargo run --manifest-path app/src-tauri/Cargo.toml --release
+
+# Checks (run before every commit)
+cargo fmt --manifest-path app/src-tauri/Cargo.toml
+cargo clippy --manifest-path app/src-tauri/Cargo.toml --all-targets -- -D warnings
+cargo test --manifest-path app/src-tauri/Cargo.toml --lib
+
+# Measure memory of the running app (attach; keeps it alive)
+powershell -NoProfile -File tools/measure-memory.ps1 -ProcessName "mirlo" -SettleSeconds 20
+
+# Build the PoC
 cargo build --release --manifest-path poc/webview2-probe/Cargo.toml
-
-# Run the PoC
-cargo run --release --manifest-path poc/webview2-probe/Cargo.toml
-
-# Measure memory of a running exe's process tree (private working set)
-powershell -NoProfile -File tools/measure-memory.ps1 -ExePath "C:\path\to.exe"
 
 # Git
 git status

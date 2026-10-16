@@ -3,15 +3,15 @@
 A lightweight, open-source desktop client for YouTube Music.
 
 Mirlo wraps the **official YouTube Music web player** in a fast native shell
-(WebView2 on Windows, eventually cross-platform via [Tauri](https://tauri.app))
-instead of bundling an entire browser like Electron-based alternatives.
-First measurements of the validated proof of concept show **~66% lower private
-memory** than the Electron v3.11.0 build of pear-desktop (399 MB vs 1179 MB,
-idle, same test conditions).
+([Tauri](https://tauri.app) on Windows, cross-platform later) instead of
+bundling an entire browser like Electron-based alternatives. Measurements:
+**371 MB vs 1179 MB** private memory (Tauri shell vs the Electron v3.11.0
+build of pear-desktop, idle, same machine).
 
-> **Status: early development.** The WebView2 spike is validated
-> (`poc/webview2-probe/`); the Tauri application is under construction.
-> See [docs/roadmap.md](docs/roadmap.md) for the current phase.
+> **Status: early development.** The application shell is implemented in
+> `app/` (Tauri 2) and verified end to end (player, bridge, hotkeys, tray,
+> session persistence); the renderer plugin system is next. See
+> [docs/roadmap.md](docs/roadmap.md) for the current phase.
 
 ## Why Mirlo
 
@@ -39,12 +39,24 @@ software at your own risk.
 Requirements: Windows 10/11, Rust stable (MSVC toolchain), WebView2 runtime
 (preinstalled on modern Windows), MSVC Build Tools.
 
-Build and run the validated spike:
+Build and run the application (no Node.js or frontend build step):
 
 ```powershell
-cd poc/webview2-probe
-cargo run --release
+$env:CARGO_TARGET_DIR = "C:\Users\luigi\AppData\Local\Temp\opencode\ytm-target"
+cargo run --manifest-path app/src-tauri/Cargo.toml --release
 ```
+
+The first run creates `%LOCALAPPDATA%\Mirlo\` with `config.json` and the
+persistent WebView2 profile (the Google session survives restarts). Checks:
+
+```powershell
+cargo fmt --manifest-path app/src-tauri/Cargo.toml
+cargo clippy --manifest-path app/src-tauri/Cargo.toml --all-targets -- -D warnings
+cargo test --manifest-path app/src-tauri/Cargo.toml --lib
+```
+
+The original validated spike stays available at `poc/webview2-probe/`
+(`cargo run --release` from that directory).
 
 Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md),
 [docs/architecture.md](docs/architecture.md) and [AGENTS.md](AGENTS.md) (agent

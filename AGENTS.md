@@ -173,27 +173,43 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
   - Remaining Phase B: album-actions (medium, upstream 22 KB) and
     synced-lyrics (large, 86 KB, upstream uses Electron `net` — decide
     renderer fetch vs shell proxy before porting).
+- **Phase B batch 3b (partial) — DONE (2026-10-16)**: album-actions.
+  - Bulk like/dislike buttons (4, with a fill-percentage mask) for album
+    and playlist pages; page observer on `#browse-page`, per-page change
+    observer that re-runs the setup, and `loadFullList`/`applyToList` to
+    apply actions across a shelf. Built with DOM/SVG APIs (Trusted Types).
+  - Verified (CDP): plugin enabled, `buildButtonContainer()` produces the
+    four upstream buttons (`allundislike`, `alldislike`, `alllike`,
+    `allunlike`) with the mask overlays; no console exceptions on start.
+    Page-level UI (buttons injected into an album's action row) not
+    exercised in the automated pass — needs a real album/playlist visit.
+  - Remaining Phase B: synced-lyrics only.
 - Machine facts: Windows 11 x64; Rust 1.99.1 (MSVC) installed; VS 2019 Build
   Tools present; WebView2 runtime 155 present; Node 24 present; npm available.
 - Build artifacts must NOT go into OneDrive: always set
   `CARGO_TARGET_DIR=C:\Users\luigi\AppData\Local\Temp\opencode\ytm-target`
   (or any temp dir) before cargo commands.
 
-## Next step — Phase B (finish batch 3)
+## Next step — Phase B (synced-lyrics, the last plugin)
 
-Goal: finish the content batch — two plugins remain:
+Goal: port **synced-lyrics** (upstream 86 KB, 24 files). Decisions to make
+first:
 
-1. **album-actions** (upstream 22 KB, 6 files): add-to-playlist / album
-   actions UI. Check its templates for Trusted Types-safe construction.
-2. **synced-lyrics** (upstream 86 KB, 24 files): the big one. Upstream
-   fetches lyrics through Electron `net` (no CORS in main process); decide:
-   page `fetch` (works only if the provider sends CORS headers — test per
-   provider; upstream providers: youtubemusic, musixmatch, lrclib...), or a
-   shell proxy command (`fetch_lyrics` via reqwest) exposed to the bridge.
-   Port a reduced provider set first if needed; keep attribution.
+1. **Transport**: upstream fetches lyrics through Electron `net` (no CORS
+   in the main process). Options: (a) page `fetch` — test per provider
+   (upstream providers include youtubemusic, musixmatch, lrclib; lrclib and
+   musixmatch usually send permissive CORS headers, the SponsorBlock
+   precedent shows third-party fetches work), or (b) a shell proxy command
+   (`fetch_lyrics` via `reqwest`) added to the ACL checklist. Prefer (a)
+   with a small provider set (e.g. lrclib + youtubemusic metadata) and keep
+   attribution; add more providers later.
+2. **UI**: upstream renders a lyrics panel in the player page (search,
+   provider picker, karaoke-ish sync). Port a reduced but usable subset:
+   synced display + search + provider choice through
+   `__MIRLO_PLUGINS__.showChoiceMenu`.
 
-After that: consider flipping stable plugins' defaults on (documented in
-CHANGELOG) and re-open the ad-block v1 (network-level) item.
+After synced-lyrics: consider flipping stable plugins' defaults on
+(documented in CHANGELOG) and re-open the ad-block v1 (network-level) item.
 
 Carry-over notes:
 
@@ -208,11 +224,10 @@ Carry-over notes:
 
 ### Resume notes — Phase B (next session, 2026-10-16)
 
-State: batches 1, 2a, 2b, the settings UI and batch 3a (skip-disliked-songs,
-captions-selector, quality-changer, navigation, sponsorblock) are committed
+State: batches 1, 2a, 2b, the settings UI and batch 3a are committed
 (`103c18f`/`59ea3ef`, `40f6c73`/`a87f5d2`, `5ff899f`/`ecae580`,
-`e41100d`/`e5323d6`, and this session's pair). Next: the two remaining
-batch-3 plugins per "Next step" above (album-actions, then synced-lyrics).
+`e41100d`/`e5323d6`, `a66db7d`/`a633383`, and album-actions in this
+session). **Only synced-lyrics remains** — see "Next step" above.
 
 - Every new plugin needs: a `plugins/*.js` file registering itself (default
   `enabled: false`), an entry in `plugins.rs::PLUGINS` **and**

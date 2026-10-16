@@ -67,8 +67,11 @@ Phases are ordered. Each phase ends with an updated `AGENTS.md`, a
       fired only while the player window is not focused; verified (0 toasts
       focused, 1 per unfocused change; the OS banner is suppressed by this
       machine's user-level notification setting).
-- [ ] Scrobbler (Last.fm).
-- [ ] Discord rich presence.
+- [x] Discord Rich Presence: minimal IPC client (no deps), SET_ACTIVITY on
+      track/play-pause/seek changes; ships OFF until the user configures a
+      Discord application client id (Settings → General); protocol verified
+      live against the running Discord client.
+- [ ] Scrobbler (Last.fm) — needs a user-provided api_key/api_secret.
 - [ ] Optional: api-server, lumiastream, tuna-obs (community PRs welcome).
 
 ## Phase D — Packaging and release

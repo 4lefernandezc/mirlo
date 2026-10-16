@@ -297,6 +297,27 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     `Show()` succeeds and the OS drops the toast silently; the module logs
     this once per run). Memory 409 MB fresh idle with all features; 427.9
     after a long playback session — both < 450 target.
+- **Phase C — Discord rich presence DONE (2026-10-16)**: minimal IPC client,
+  **ships OFF** until a client id is configured.
+  - New module `app/src-tauri/src/discord.rs` (no dependencies): frame codec
+    (`u32-LE op | u32-LE len | JSON`), worker thread owning the connection
+    (`\\.\pipe\discord-ipc-0..9`), handshake `{v:1, client_id}`, READY/ERROR
+    handling, PING→PONG, reconnect pacing (5/10/30 s by state) and
+    change-detection so SET_ACTIVITY is sent only when the activity really
+    differs. Reader thread per connection keeps the pipe healthy.
+  - Settings → General: `Discord Rich Presence` checkbox + `client id` text
+    field (config `discord_rpc` / `discord_client_id`, default off/empty).
+    The activity maps `video-src-changed`/`play-or-paused`/`seeked` to
+    type 2 (Listening) with `details` = title, `state` = artist and a
+    `timestamps.start` while playing.
+  - Verified live against the running Discord client with a dummy id:
+    `connected to \\.\pipe\discord-ipc-0, handshake sent` →
+    `Discord closed the pipe: {"code":4000,"message":"Invalid Client ID"}`
+    — the round trip proves the frame codec and handshake are correct;
+    with a real app id Discord replies READY. Reconnect path exercised too.
+  - **What the user must do to activate it**: create a Discord application
+    (Developer Portal) and paste its client id in Settings (Mirlo cannot
+    ship one). The activity is displayed under that application's name.
 - Machine facts: Windows 11 x64; Rust 1.99.1 (MSVC) installed; VS 2019 Build
   Tools present; WebView2 runtime 155 present; Node 24 present; npm available.
 - Build artifacts must NOT go into OneDrive: always set
@@ -305,16 +326,19 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 
 ## Next step — Phase C (remaining)
 
-SMTC, ad-block v1 and notifications are done. Remaining Phase C items:
+SMTC, ad-block v1, notifications and Discord rich presence are done.
+Remaining Phase C item:
 
-1. **Scrobbler (Last.fm)**: needs an API key + user auth flow (browser-based
-   token) — plan a settings-ui section; user credentials live in config.json
-   (never commit). Shell-side HTTPS (tauri plugin-http or reqwest) or page
-   fetch (CORS? Last.fm API allows CORS — verify).
-2. **Discord rich presence**: Discord IPC is a local named pipe
-   (`\\.\pipe\discord-ipc-0`); implement a minimal IPC client in the shell
-   (no dep needed) and map `video-src-changed`/`play-or-paused` to
-   SET_ACTIVITY payloads; OFF by default.
+1. **Scrobbler (Last.fm)**: needs an api_key + api_secret (the user creates
+   the API account at last.fm/api — Mirlo cannot ship credentials) — plan a
+   settings-ui section; secrets live in config.json (never commit). Design
+   notes: auth flow is browser-token based (`api_key` + token → session
+   key), scrobble threshold ~50%/4 min, queue pending scrobbles for offline
+   resilience; shell-side HTTPS (reqwest or tauri plugin-http) since the
+   API needs signed requests (MD5 signatures — hashing without a big dep:
+   `md5` crate is tiny) or page fetch (Last.fm allows CORS — verify; the
+   signature needs the api_secret, which must NOT go into the page — so
+   shell-side is the right call, with the secret in config.json).
 
 Also still pending from Phase A/B leftovers: `windows_subsystem` switch +
 file logging (planned for Phase D).
@@ -332,9 +356,9 @@ Carry-over notes:
 
 ### Resume notes — Phase C (next session, 2026-10-16)
 
-State: **ad-block v1, SMTC and notifications are done and verified**.
-Remaining Phase C: Last.fm scrobbler, Discord rich presence (see
-"Next step" above — mechanism options are noted there).
+State: **ad-block v1, SMTC, notifications and Discord rich presence are
+done and verified**. Remaining Phase C: the Last.fm scrobbler only (the user
+must provide api_key/api_secret — see "Next step" above for the design).
 
 - The vendored `webview2-com 0.39.1` exposes
   `WebResourceRequestedEventHandler` and the full
@@ -366,6 +390,11 @@ Remaining Phase C: Last.fm scrobbler, Discord rich presence (see
   foreground window (proved live). Use
   `GetForegroundWindow() == window.hwnd()` (see `player_is_focused` in
   `lib.rs`).
+- Discord presence verification without a real client id: a dummy id makes
+  Discord answer `op=2 CLOSE {"code":4000,"message":"Invalid Client ID"}`
+  after a correct handshake — that reply proves the pipe connect + frame
+  codec + handshake; a real client id yields `READY`. Discord must be
+  running (`\\.\pipe\discord-ipc-0` exists).
 
 Other carry-over notes:
 
@@ -505,6 +534,7 @@ app/                        Tauri 2 application (Phases A+B done; Phase C next)
   src-tauri/src/adblock.rs  Ad-block v1: WebResourceRequested handler (Windows)
   src-tauri/src/media_controls.rs  SMTC media session (Windows)
   src-tauri/src/notifications.rs  Track-change toasts (Windows)
+  src-tauri/src/discord.rs  Discord Rich Presence IPC client (thin, no deps)
   src-tauri/src/bridge.js   Bridge + plugin host injected into the player page
   src-tauri/src/plugins.rs  Plugin source registry + settings manifest
   src-tauri/plugins/*.js    Renderer plugin ports (one file per plugin)

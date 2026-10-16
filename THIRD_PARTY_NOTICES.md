@@ -24,6 +24,8 @@ code and material included in this repository, with their license terms.
 | `app/src-tauri/plugins/exponential-volume.js` | `src/plugins/exponential-volume/` |
 | `app/src-tauri/plugins/playback-speed.js` | `src/plugins/playback-speed/` |
 | `app/src-tauri/plugins/skip-silences.js` | `src/plugins/skip-silences/` |
+| `app/src-tauri/plugins/equalizer.js` | `src/plugins/equalizer/` |
+| `app/src-tauri/plugins/precise-volume.js` | `src/plugins/precise-volume/` |
 
 Not ported (policy): `crossfade` (fades the next track by fetching its
 stream URL through InnerTube — stream extraction is excluded, ADR-0003) and

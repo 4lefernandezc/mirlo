@@ -248,26 +248,51 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     as the Phase A baseline, no regression. Graceful close, no orphan
     `msedgewebview2`. Settings label updated to "Ad-block (network-level;
     applies immediately)".
+- **Phase C — SMTC (media session) DONE (2026-10-16)**: Windows media
+  integration via `SystemMediaTransportControls` (`windows` crate; no new
+  dependencies — features added to the existing Windows-only dep).
+  - New module `app/src-tauri/src/media_controls.rs`: session created for the
+    main window HWND (`ISystemMediaTransportControlsInterop::GetForWindow` +
+    `factory::<SystemMediaTransportControls, _>()`) right after build;
+    play/pause/next/previous + position-change forwarded to the page through
+    `window.__mirlo.player` (`eval_in_player`); `report_player_state` drives
+    status/metadata/timeline. Thumbnail from the URL's `v=` id
+    (`i.ytimg.com/vi/<id>/mqdefault.jpg`); byline `"Artist • Album • Year"`
+    split into artist/album (unit-tested helpers).
+  - Bridge additions: `player.play()`, `player.pause()` (state-aware, unlike
+    the toggle) and `player.seek(seconds)` (`#movie_player.seekTo`).
+  - Verified live (2026-10-16) with a PowerShell WinRT probe
+    (`%TEMP%\opencode\smtc-probe.ps1`) reading the OS-side session
+    (`GlobalSystemMediaTransportControlsSessionManager`): status, title,
+    artist, album, position/end all correct; `TryTogglePlayPauseAsync`
+    (the same path hardware media keys use) paused/resumed the page;
+    `TryChangePlaybackPositionAsync(120 s)` moved `video.currentTime` to
+    ~123 s; no `smtc:` errors in the log. Memory 387.5 MB after a full
+    playback round trip (baseline 371.1 idle; within variance, < 450 MB).
 - Machine facts: Windows 11 x64; Rust 1.99.1 (MSVC) installed; VS 2019 Build
   Tools present; WebView2 runtime 155 present; Node 24 present; npm available.
 - Build artifacts must NOT go into OneDrive: always set
   `CARGO_TARGET_DIR=C:\Users\luigi\AppData\Local\Temp\opencode\ytm-target`
   (or any temp dir) before cargo commands.
 
-## Next step — Phase C
+## Next step — Phase C (remaining)
 
-Ad-block v1 is done; Phase B is complete. Next: **Phase C (native
-integrations)**:
+SMTC is done. Remaining Phase C items:
 
-1. **Media Session (SMTC)**: taskbar overlay + hardware media keys — the
-   shell already receives `player-state` events (play-or-paused,
-   video-src-changed, time-changed) via `report_player_state`; map them to a
-   Windows SMTC session (there is a Rust route via the `windows` crate —
-   `System::Media` — or a small crate; evaluate both for footprint).
-2. **Notifications** on track change (`video-src-changed`).
-3. **Scrobbler (Last.fm)** and **Discord rich presence** (upstream has
-   plugins for both; Discord needs an IPC client in the shell or a port that
-   talks to the local Discord socket).
+1. **Notifications** on track change (`video-src-changed`): Windows toast
+   with title/artist. Decide the mechanism first — `tauri-plugin-notification`
+   (adds a dep; handles unpackaged-app toast registration) vs. native
+   `windows` crate toasts (needs an AUMID/Start Menu shortcut for unpackaged
+   Win32; more code, no new dep). The app is unpackaged, so check what the
+   plugin does for AUMID before choosing.
+2. **Scrobbler (Last.fm)**: needs an API key + user auth flow (browser-based
+   token) — plan a settings-ui section; user credentials live in config.json
+   (never commit). Shell-side HTTPS (tauri plugin-http or reqwest) or page
+   fetch (CORS? Last.fm API allows CORS — verify).
+3. **Discord rich presence**: Discord IPC is a local named pipe
+   (`\\.\pipe\discord-ipc-0`); implement a minimal IPC client in the shell
+   (no dep needed) and map `video-src-changed`/`play-or-paused` to
+   SET_ACTIVITY payloads; OFF by default.
 
 Also still pending from Phase A/B leftovers: `windows_subsystem` switch +
 file logging (planned for Phase D).
@@ -285,9 +310,9 @@ Carry-over notes:
 
 ### Resume notes — Phase C (next session, 2026-10-16)
 
-State: **ad-block v1 is done and verified** (this session's commits: the
-adblock module + defaults from the previous session). Next: **Phase C** per
-"Next step" above (SMTC/media keys, notifications, scrobbler, Discord).
+State: **ad-block v1 and SMTC are done and verified**. Remaining Phase C:
+notifications on track change, Last.fm scrobbler, Discord rich presence (see
+"Next step" above — mechanism options are noted there).
 
 - The vendored `webview2-com 0.39.1` exposes
   `WebResourceRequestedEventHandler` and the full
@@ -299,6 +324,13 @@ adblock module + defaults from the previous session). Next: **Phase C** per
   filter registration itself conditional, keep in mind that `with_webview`
   is the only chance to grab the controller right after build, and reloads
   do NOT re-run it.
+- SMTC: the session object lives in a `OnceLock` in `media_controls.rs`;
+  it is `Send + Sync` (WinRT agile), so `report_player_state` (sync command,
+  main thread) can update it directly. The PowerShell probe in
+  `%TEMP%\opencode\smtc-probe.ps1` (WinRT + `AsTask` awaiter) reads the
+  OS-side session and can drive `TryTogglePlayPauseAsync` /
+  `TryChangePlaybackPositionAsync` — the same delivery path hardware media
+  keys use, ideal for end-to-end tests.
 
 Other carry-over notes:
 
@@ -422,6 +454,7 @@ app/                        Tauri 2 application (Phases A+B done; Phase C next)
   src-tauri/src/lib.rs      Shell: windows, commands, hotkeys, tray, single-instance
   src-tauri/src/config.rs   JSON settings store (schema v2: plugins map)
   src-tauri/src/adblock.rs  Ad-block v1: WebResourceRequested handler (Windows)
+  src-tauri/src/media_controls.rs  SMTC media session (Windows)
   src-tauri/src/bridge.js   Bridge + plugin host injected into the player page
   src-tauri/src/plugins.rs  Plugin source registry + settings manifest
   src-tauri/plugins/*.js    Renderer plugin ports (one file per plugin)

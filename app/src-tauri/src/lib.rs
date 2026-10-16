@@ -7,6 +7,7 @@
 
 mod adblock;
 mod config;
+mod media_controls;
 mod plugins;
 
 use std::path::Path;
@@ -63,7 +64,7 @@ fn toggle_main_window(app: &AppHandle) {
     }
 }
 
-fn eval_in_player(app: &AppHandle, js: &str) {
+pub(crate) fn eval_in_player(app: &AppHandle, js: &str) {
     if let Some(window) = main_window(app) {
         let _ = window.eval(js);
     }
@@ -285,6 +286,8 @@ fn create_main_window(
     // handler is always registered and gated by the live `config.adblock`
     // flag so the settings toggle applies without a reload (see adblock.rs).
     adblock::install(&window);
+    // Windows media session (taskbar flyout, lock screen, media keys).
+    media_controls::init(&window, app.handle().clone());
     Ok(())
 }
 
@@ -357,6 +360,7 @@ fn report_player_state(
         "time-changed" => {}
         other => println!("[mirlo] state: {other}"),
     }
+    media_controls::on_player_state(&kind, &data);
     if let Ok(mut last) = state.last_player_state.lock() {
         *last = Some(data.clone());
     }

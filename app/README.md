@@ -44,7 +44,17 @@ and reload the player window (or restart the app):
     "disable-autoplay": { "enabled": true, "applyOnce": false },
     "exponential-volume": { "enabled": true },
     "playback-speed": { "enabled": true },
-    "skip-silences": { "enabled": true, "onlySkipBeginning": false }
+    "skip-silences": { "enabled": true, "onlySkipBeginning": false },
+    "equalizer": { "enabled": true, "presets": { "bass-booster": true } },
+    "precise-volume": {
+      "enabled": true,
+      "steps": 2,
+      "arrowsShortcut": true,
+      "globalShortcuts": {
+        "volumeUp": "Ctrl+Alt+ArrowUp",
+        "volumeDown": "Ctrl+Alt+ArrowDown"
+      }
+    }
   }
 }
 ```
@@ -53,9 +63,13 @@ Options per plugin: `album-color-theme.ratio` (0–1), `video-toggle.mode`
 (`custom` | `native` | `disabled`, needs reload), `video-toggle.align`
 (`left` | `middle` | `right`), `video-toggle.forceHide`,
 `video-toggle.hideVideo` (persisted by the switch button),
-`disable-autoplay.applyOnce`, `skip-silences.onlySkipBeginning`. Defaults
-live in `app/src-tauri/plugins/*.js`. Audio plugins wire a Web Audio graph
-on demand (only while at least one `audio: true` plugin is enabled).
+`disable-autoplay.applyOnce`, `skip-silences.onlySkipBeginning`,
+`equalizer.filters` (array of `{type, frequency, Q, gain}`) and
+`equalizer.presets`, `precise-volume.steps` / `arrowsShortcut` /
+`globalShortcuts` (tauri accelerator strings, empty = disabled, restart to
+apply) / `savedVolume` (written by the plugin). Defaults live in
+`app/src-tauri/plugins/*.js`. Audio plugins wire a Web Audio graph on
+demand (only while at least one `audio: true` plugin is enabled).
 
 `crossfade` is not ported: upstream extracts the next track's stream through
 InnerTube, which ADR-0003 excludes.

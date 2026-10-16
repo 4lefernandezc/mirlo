@@ -125,6 +125,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     correct metadata/status/timeline; `TryTogglePlayPauseAsync` (the media
     key path) paused/resumed the page; a flyout seek to 120 s moved playback
     accordingly; 387.5 MB private after a full round trip (< 450 MB target).
+- Track-change notifications — native Windows toasts in `notifications.rs`
+  (no new dependencies; AUMID registered lazily in HKCU):
+  - New `notifications` config flag (default on; General checkbox) and a
+    focus check via `GetForegroundWindow` — tao's `is_focused()` is
+    unreliable under WebView2, so toasts are suppressed only when the player
+    window is truly in the foreground.
+  - Deduplicated per track (the bridge re-emits `video-src-changed` several
+    times per change); the first track after launch never toasts. Shows
+    title, artist and artwork from the video id.
+  - Verified: 0 toasts for startup/focused changes, exactly one toast per
+    unfocused change with the right title. Banner delivery could not be
+    observed on this machine because Windows notifications are disabled at
+    the user level (`ToastNotifier.Setting()` = `DisabledForUser`; `Show()`
+    succeeds and the OS drops the toast) — the module logs that state once
+    per run. Memory: 409 MB fresh idle, 427.9 MB after a long session.
 
 ### Changed
 

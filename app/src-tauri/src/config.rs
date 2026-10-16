@@ -25,6 +25,9 @@ pub struct Config {
     pub adblock: bool,
     /// Whether the global media hotkeys are registered.
     pub hotkeys_enabled: bool,
+    /// Track-change toast notifications (shown only while the player window
+    /// is not focused).
+    pub notifications: bool,
     /// Per-plugin settings: `{ "<plugin-id>": { "enabled": bool, ...options } }`.
     /// Plugin option schemas and defaults live in the bridge (`plugins/*.js`);
     /// the shell stores only what the user changed.
@@ -37,6 +40,7 @@ impl Default for Config {
             version: CONFIG_VERSION,
             adblock: false,
             hotkeys_enabled: true,
+            notifications: true,
             plugins: BTreeMap::new(),
         }
     }
@@ -113,6 +117,7 @@ mod tests {
         assert_eq!(config.version, CONFIG_VERSION);
         assert!(!config.adblock, "ad-block must ship off (ADR-0003)");
         assert!(config.hotkeys_enabled);
+        assert!(config.notifications);
     }
 
     #[test]

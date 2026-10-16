@@ -26,7 +26,7 @@ pub fn on_player_state(kind: &str, data: &serde_json::Value) {
 /// Splits the player bar byline (`"Artist • Album • Year"`) into artist and
 /// album. The tooltip has three segments when the track has an album; with
 /// two segments (`"Artist • Year"`) the second is not an album.
-fn split_byline(byline: &str) -> (String, Option<String>) {
+pub(crate) fn split_byline(byline: &str) -> (String, Option<String>) {
     let parts: Vec<&str> = byline.split(" • ").map(str::trim).collect();
     let artist = parts.first().copied().unwrap_or("").to_string();
     let album = if parts.len() >= 3 && !parts[1].is_empty() {
@@ -38,7 +38,7 @@ fn split_byline(byline: &str) -> (String, Option<String>) {
 }
 
 /// Extracts the `v=` video id from a YouTube Music URL.
-fn video_id(url: &str) -> Option<String> {
+pub(crate) fn video_id(url: &str) -> Option<String> {
     let query = url.split_once('?')?.1;
     query.split('&').find_map(|pair| {
         pair.strip_prefix("v=")

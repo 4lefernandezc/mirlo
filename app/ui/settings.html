@@ -186,6 +186,10 @@
             <input type="checkbox" id="hotkeys" />
             Global media hotkeys (applies after an app restart)
           </label>
+          <label class="field inline">
+            <input type="checkbox" id="notifications" />
+            Track-change notifications (only while the window is not focused)
+          </label>
         </div>
       </section>
 
@@ -232,8 +236,10 @@
         function renderGeneral() {
           const adblock = document.getElementById('adblock');
           const hotkeys = document.getElementById('hotkeys');
+          const notifications = document.getElementById('notifications');
           adblock.checked = !!fullConfig.adblock;
           hotkeys.checked = !!fullConfig.hotkeys_enabled;
+          notifications.checked = !!fullConfig.notifications;
 
           const save = async () => {
             try {
@@ -242,6 +248,7 @@
                   ...fullConfig,
                   adblock: adblock.checked,
                   hotkeys_enabled: hotkeys.checked,
+                  notifications: notifications.checked,
                 },
               });
               status('General settings saved.');
@@ -251,6 +258,7 @@
           };
           adblock.addEventListener('change', save);
           hotkeys.addEventListener('change', save);
+          notifications.addEventListener('change', save);
         }
 
         function renderOption(plugin, state, option) {

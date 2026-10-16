@@ -8,6 +8,7 @@
 mod adblock;
 mod config;
 mod media_controls;
+mod notifications;
 mod plugins;
 
 use std::path::Path;
@@ -67,6 +68,29 @@ fn toggle_main_window(app: &AppHandle) {
 pub(crate) fn eval_in_player(app: &AppHandle, js: &str) {
     if let Some(window) = main_window(app) {
         let _ = window.eval(js);
+    }
+}
+
+/// Whether the player window is the foreground window. tao's `is_focused()`
+/// tracks `WM_SETFOCUS` on the top-level window, but the WebView2 child never
+/// forwards that message, so the flag stays false; the Win32 check is the
+/// truth (GetForegroundWindow returns the top-level root).
+fn player_is_focused(app: &AppHandle) -> bool {
+    #[cfg(target_os = "windows")]
+    {
+        if let Some(window) = main_window(app) {
+            if let Ok(hwnd) = window.hwnd() {
+                return hwnd
+                    == unsafe { windows::Win32::UI::WindowsAndMessaging::GetForegroundWindow() };
+            }
+        }
+        false
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        main_window(app)
+            .and_then(|window| window.is_focused().ok())
+            .unwrap_or(false)
     }
 }
 
@@ -361,6 +385,20 @@ fn report_player_state(
         other => println!("[mirlo] state: {other}"),
     }
     media_controls::on_player_state(&kind, &data);
+
+    // Track-change toast, only while enabled and the player is in the
+    // background (the media flyout covers the focused case). The dedup
+    // bookkeeping in the notifications module runs regardless so focused
+    // changes still advance the "last track".
+    if kind == "video-src-changed" {
+        let enabled = state
+            .config
+            .lock()
+            .map(|c| c.notifications)
+            .unwrap_or(false);
+        notifications::on_track_change(&data, enabled && !player_is_focused(&app));
+    }
+
     if let Ok(mut last) = state.last_player_state.lock() {
         *last = Some(data.clone());
     }

@@ -117,6 +117,41 @@ Carry-over notes:
   `build.rs`'s `AppManifest::commands` + `capabilities/main.json` (`allow-*`),
   or the remote page gets `not allowed by ACL`.
 
+### Resume notes — Phase B batch 2 (session checkpoint, 2026-10-16)
+
+State: batch 1 committed (`103c18f` feature, `59ea3ef` docs). This session:
+audio infrastructure + start of batch 2. Scope chosen (batch 2a):
+
+- **Audio provider in the bridge** (replaces upstream renderer.ts wiring):
+  create `AudioContext` + `createMediaElementSource(video)` on demand —
+  only when at least one enabled plugin declares `audio: true` in its
+  registration — and dispatch `ytmd:audio-can-play` on `document` with
+  `{audioContext, audioSource}` (once per page load; upstream also re-fires
+  per video `canplaythrough`). Default-off plugins therefore never reroute
+  audio (safe by default; upstream always wires it — deviation noted).
+  Expose `host.audio()`/`host.onAudioReady(cb)` for plugins that start after
+  the event (equalizer etc.).
+- Batch 2 ports proposed for this session, in this order:
+  1. exponential-volume (small; gain curve via `audioSource`)
+  2. playback-speed (player API `setPlaybackRate` + player-bar UI)
+  3. crossfade (needs song info; check upstream for dependencies)
+  4. skip-silences (analyser-based silence detection)
+  Leftovers (next session): equalizer (large UI + filters), precise-volume
+  (needs shell volume hotkeys), then settings UI before enabling batch 2
+  defaults discussion.
+- Upstream sources to port (extracted tree):
+  `%TEMP%\opencode\ytm311\src\pear-desktop-3.11.0\src\plugins\` +
+  `src\utils\` helpers. Attribution table in THIRD_PARTY_NOTICES.md must be
+  extended per port.
+- Verification recipe (worked well in batch 1): build to
+  `%TEMP%\opencode\ytm-target`, launch with `MIRLO_DEBUG_PORT=9222`,
+  probe with `node %TEMP%\opencode\cdp-eval.mjs`; enable plugins by editing
+  config `plugins` map then page reload; capture window evidence with
+  `%TEMP%\opencode\capture-window.ps1`. Beware: CDP + YT `debugger;` =
+  frozen renderer (recover with app restart); `CloseMainWindow()` graceful.
+- Memory/pattern: with plugins on, idle stays ~368 MB; measurements row in
+  `docs/research/measurements.md` (add batch 2 row when done).
+
 ## Traps and dev notes
 
 - Tauri 2 **remote IPC needs explicit ACL**: a capability with `remote.urls`

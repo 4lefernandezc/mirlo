@@ -28,6 +28,11 @@ pub struct Config {
     /// Track-change toast notifications (shown only while the player window
     /// is not focused).
     pub notifications: bool,
+    /// Discord Rich Presence (OFF until a client id is configured).
+    pub discord_rpc: bool,
+    /// Discord application client id (created by the user in the Discord
+    /// Developer Portal; empty disables the integration).
+    pub discord_client_id: String,
     /// Per-plugin settings: `{ "<plugin-id>": { "enabled": bool, ...options } }`.
     /// Plugin option schemas and defaults live in the bridge (`plugins/*.js`);
     /// the shell stores only what the user changed.
@@ -41,6 +46,8 @@ impl Default for Config {
             adblock: false,
             hotkeys_enabled: true,
             notifications: true,
+            discord_rpc: false,
+            discord_client_id: String::new(),
             plugins: BTreeMap::new(),
         }
     }
@@ -118,6 +125,8 @@ mod tests {
         assert!(!config.adblock, "ad-block must ship off (ADR-0003)");
         assert!(config.hotkeys_enabled);
         assert!(config.notifications);
+        assert!(!config.discord_rpc);
+        assert!(config.discord_client_id.is_empty());
     }
 
     #[test]

@@ -71,6 +71,10 @@ Notes/traps discovered so far:
 
 ## Critical facts and guardrails
 
+- Remote: `https://github.com/4lefernandezc/mirlo` — **private until the first
+  release**; the owner will make it public then. Never change repository
+  visibility without explicit owner approval. Push uses the owner's stored git
+  credentials (no gh CLI installed).
 - Reference app: pear-desktop v3.11.0 (ex th-ch/youtube-music), MIT. We MAY
   reuse its plugin code with attribution (add notices to
   `THIRD_PARTY_NOTICES.md` when porting). The user's local copy of the built

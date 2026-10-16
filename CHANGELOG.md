@@ -87,6 +87,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     in-page pickers.
 - Phase B batch 3b — album-actions (default OFF): bulk like/dislike buttons
   with a fill-percentage mask on album and playlist pages.
+- Phase B batch 3c — synced-lyrics (default OFF, reduced port): lyrics
+  overlay panel with synced highlighting and click-to-seek, LRCLib provider
+  fetched from the page (`Lrclib-Client` header, 503 retries), upstream LRC
+  parser and a minimal Jaro-Winkler matcher; plain-text fallback and
+  `showLyricsEvenIfInexact` option.
+  - Fix: plugin buttons no longer reuse YouTube's `yt-icon-button` custom
+    element bare (it renders unstyled at 300×300); quality-changer,
+    captions-selector and synced-lyrics build plain buttons with a shared
+    `.mirlo-icon-button` style block.
 
 ### Changed
 

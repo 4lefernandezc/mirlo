@@ -184,32 +184,55 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     Page-level UI (buttons injected into an album's action row) not
     exercised in the automated pass — needs a real album/playlist visit.
   - Remaining Phase B: synced-lyrics only.
+- **Phase B batch 3c — DONE (2026-10-16)**: synced-lyrics (reduced port).
+  - LRCLib provider + upstream LRC parser + minimal Jaro-Winkler, fetched
+    **from the page** (`lrclib.net` sends permissive CORS headers; requires
+    the `Lrclib-Client` header; under load it answers 503
+    `ServerOverloaded` — the port retries 3× and re-attempts once after
+    15 s). UI: a subject-icon button in `#right-content` toggles a lyrics
+    overlay panel with synced highlighting, click-to-seek and a plain-text
+    fallback; `showLyricsEvenIfInexact` option.
+  - Deviations recorded: single provider (no MusixMatch/Genius/Megalobiz/
+    YTMusic variants), overlay panel instead of the upstream sidebar.
+  - Trap found: a bare `yt-icon-button` custom element renders as a
+    **300×300 unstyled block** in YT Music — quality-changer,
+    captions-selector and synced-lyrics now build plain `<button>`s with a
+    shared `.mirlo-icon-button` style block.
+  - Verified (CDP): `state=ready` with 39 synced lines for the current
+    track; panel toggle; active line highlighted at the playback position;
+    clicking a line seeks exactly (`lines[5]` → 51.0 s); buttons 40×40 in
+    the nav bar/player; no plugin console errors (only expected LRCLib
+    503s during retries and SponsorBlock 404s). Screenshot:
+    `docs/research/images/phase-b-lyrics.png` (CDP capture; prefer
+    `cdp-screenshot.mjs` over PrintWindow for WebView2 evidence).
+- **Phase B — COMPLETE (all batches ported)**: 18 plugins shipped, all
+  default OFF, plus the plugin host, audio provider and settings UI.
+  crossfade excluded (ADR-0003). Leftovers for Phase B polish (next
+  session): flip stable plugins' defaults on (documented in CHANGELOG),
+  re-open ad-block v1 (network-level `WebResourceRequested`).
 - Machine facts: Windows 11 x64; Rust 1.99.1 (MSVC) installed; VS 2019 Build
   Tools present; WebView2 runtime 155 present; Node 24 present; npm available.
 - Build artifacts must NOT go into OneDrive: always set
   `CARGO_TARGET_DIR=C:\Users\luigi\AppData\Local\Temp\opencode\ytm-target`
   (or any temp dir) before cargo commands.
 
-## Next step — Phase B (synced-lyrics, the last plugin)
+## Next step — Phase B polish, then Phase C
 
-Goal: port **synced-lyrics** (upstream 86 KB, 24 files). Decisions to make
-first:
+Phase B is complete (18 plugins + host + audio provider + settings UI).
+Next, in order:
 
-1. **Transport**: upstream fetches lyrics through Electron `net` (no CORS
-   in the main process). Options: (a) page `fetch` — test per provider
-   (upstream providers include youtubemusic, musixmatch, lrclib; lrclib and
-   musixmatch usually send permissive CORS headers, the SponsorBlock
-   precedent shows third-party fetches work), or (b) a shell proxy command
-   (`fetch_lyrics` via `reqwest`) added to the ACL checklist. Prefer (a)
-   with a small provider set (e.g. lrclib + youtubemusic metadata) and keep
-   attribution; add more providers later.
-2. **UI**: upstream renders a lyrics panel in the player page (search,
-   provider picker, karaoke-ish sync). Port a reduced but usable subset:
-   synced display + search + provider choice through
-   `__MIRLO_PLUGINS__.showChoiceMenu`.
-
-After synced-lyrics: consider flipping stable plugins' defaults on
-(documented in CHANGELOG) and re-open the ad-block v1 (network-level) item.
+1. **Flip stable plugins' defaults on** — pick the batch-1/batch-2 set that
+   has been exercised (e.g. compact-sidebar, video-toggle, disable-autoplay,
+   exponential-volume, precise-volume, skip-disliked-songs, navigation,
+   captions-selector, quality-changer, sponsorblock) and set their
+   `defaults.enabled = true` in the plugin files, documenting the change in
+   CHANGELOG. Keep risky/opinionated ones OFF (album-color-theme,
+   unobtrusive-player, equalizer, skip-silences, synced-lyrics,
+   album-actions, blur-nav-bar — verify against upstream defaults first).
+2. **Ad-block v1** — network-level blocking via WebResourceRequested on the
+   WebView2 controller (`with_webview` + `ICoreWebView2`), replacing the
+   injection-based v0; keep it OFF by default (ADR-0003).
+3. Then Phase C (SMTC/media keys, notifications, scrobbler, Discord).
 
 Carry-over notes:
 
@@ -224,10 +247,11 @@ Carry-over notes:
 
 ### Resume notes — Phase B (next session, 2026-10-16)
 
-State: batches 1, 2a, 2b, the settings UI and batch 3a are committed
-(`103c18f`/`59ea3ef`, `40f6c73`/`a87f5d2`, `5ff899f`/`ecae580`,
-`e41100d`/`e5323d6`, `a66db7d`/`a633383`, and album-actions in this
-session). **Only synced-lyrics remains** — see "Next step" above.
+State: Phase B is **complete** — batches 1/2a/2b/3a/3b/3c, the settings UI
+and synced-lyrics are committed (`103c18f`/`59ea3ef`, `40f6c73`/`a87f5d2`,
+`5ff899f`/`ecae580`, `e41100d`/`e5323d6`, `a66db7d`/`a633383`,
+`06c6b15`/`9a236ba`, and this session's pair). Next: the polish list in
+"Next step" above (defaults on, ad-block v1), then Phase C.
 
 - Every new plugin needs: a `plugins/*.js` file registering itself (default
   `enabled: false`), an entry in `plugins.rs::PLUGINS` **and**
@@ -235,10 +259,11 @@ session). **Only synced-lyrics remains** — see "Next step" above.
   THIRD_PARTY_NOTICES.md row, then the verification pass.
 - Interactive UI (menus/pickers) should use `__MIRLO_PLUGINS__.showChoiceMenu`
   instead of Electron dialogs; build DOM with APIs, never string HTML
-  (Trusted Types).
-- SponsorBlock precedent: a third-party `fetch` from the page works
-  (CORS allowed, CSP not blocking) — check the same for lyrics providers
-  before deciding on the shell proxy.
+  (Trusted Types). Never use bare `yt-icon-button` (300×300 trap) — plain
+  `<button>` + `.mirlo-icon-button` styles (see synced-lyrics.js).
+- Third-party fetches from the page work when the API allows CORS
+  (sponsor.ajay.app, lrclib.net) — check per provider before building a
+  shell proxy.
 - CDP freeze trap: after some interactions the YT bundle can hit
   `debugger;` with the inspector attached; recover by restarting the app
   (not a Mirlo bug).
@@ -271,6 +296,11 @@ for probes — pass a URL substring as 4th arg to target the settings window;
 - Global plugin hotkeys (`precise-volume.globalShortcuts`) are registered by
   the shell at startup from `config.json` (tauri accelerator strings, e.g.
   "Ctrl+Alt+ArrowUp"); changes need an app restart.
+- Never reuse YouTube's custom elements bare (`yt-icon-button` renders
+  300×300 unstyled); build plain buttons with plugin styles
+  (`.mirlo-icon-button`).
+- LRCLib requires a descriptive `Lrclib-Client` header and answers 503
+  `ServerOverloaded` under load; retry briefly (see synced-lyrics.js).
 - Extra windows must share the WebView2 environment with the player (same
   `data_directory` and browser args) or WebView2 spawns a separate browser
   process — that also splits the CDP endpoint (the settings window was

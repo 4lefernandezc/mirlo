@@ -30,6 +30,7 @@ code and material included in this repository, with their license terms.
 | `app/src-tauri/plugins/navigation.js` | `src/plugins/navigation/` |
 | `app/src-tauri/plugins/sponsorblock.js` | `src/plugins/sponsorblock/` |
 | `app/src-tauri/plugins/album-actions.js` | `src/plugins/album-actions/` |
+| `app/src-tauri/plugins/synced-lyrics.js` | `src/plugins/synced-lyrics/` (reduced: LRCLib provider + LRC parser + minimal panel) |
 
 Each file carries an attribution header with its upstream paths and the
 deviations made for the Mirlo plugin host (no Electron/SolidJS; the host

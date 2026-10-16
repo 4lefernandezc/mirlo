@@ -54,6 +54,7 @@ Phases are ordered. Each phase ends with an updated `AGENTS.md`, a
 - [x] Plugin settings UI in the shell (local window from the tray or
       `mirlo.exe --settings`: per-plugin toggles + typed option fields,
       General switches, "Reload player" button).
+- [x] Stable additive plugins enabled by default (documented in CHANGELOG).
 
 ## Phase C — Native integrations
 

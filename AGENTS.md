@@ -213,47 +213,64 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
   captions-selector, quality-changer, compact-sidebar — each marked with a
   comment in its `defaults`); behavioral/opinionated ones stay OFF. User
   overrides in `config.json` always win.
+- **Ad-block v1 — DONE (2026-10-16)**: network-level blocking on the WebView2
+  controller; the Phase A leftover is closed.
+  - New module `app/src-tauri/src/adblock.rs`: a
+    `WebResourceRequested` handler (+ `AddWebResourceRequestedFilter("*",
+    ALL)`) registered from `create_main_window` via
+    `window.with_webview(...)` right after build. No cancel API exists in
+    WebView2, so blocked requests are *answered*: `ICoreWebView2_2::
+    Environment().CreateWebResourceResponse(empty IStream, 403, "Blocked",
+    null)` + `args.SetResponse(...)` (the approach from the official
+    samples); empty stream from
+    `windows::Win32::UI::Shell::SHCreateMemStream(None)`.
+  - Same conservative pattern set as v0 (doubleclick.net, googlesyndication,
+    googleadservices, /pagead/, /api/stats/ads, activeview); unit-tested
+    (`is_blocked`). v0 injection wrappers stay in `bridge.js` as the
+    non-Windows/fallback path.
+  - Gating **deviation from the original plan**: the handler is registered
+    unconditionally and consults a live `AtomicBool` that mirrors
+    `config.adblock` (updated in `setup` and `set_config`), so the settings
+    toggle applies immediately — no page reload, no window recreation. Still
+    OFF by default (ADR-0003). Bounded logging of blocked requests
+    (first 10, then every 500).
+  - Deps (Windows-only target section): `webview2-com = "0.39"` (must match
+    tauri 2.12's, so COM types unify — resolves to 0.39.1) and
+    `windows = "0.62"` with `Win32_System_Com` + `Win32_UI_Shell`.
+  - Verified live (CDP, app already logged in): on page load the handler
+    blocked real doubleclick requests (`ad.doubleclick.net/ccm/s/collect`,
+    `static.doubleclick.net/instream/ad_status.js`); a main-frame navigation
+    to `pagead2.googlesyndication.com/robots.txt` returned **HTTP ERROR 403**
+    while adblock was on and the **real robots.txt content** with it off
+    (toggled through the same `set_config` path the settings UI uses, no
+    reload); playback kept working with the filter active (track advanced
+    0.4 s → 7.3 s); 18 plugins still start; **371.1 MB idle private** — same
+    as the Phase A baseline, no regression. Graceful close, no orphan
+    `msedgewebview2`. Settings label updated to "Ad-block (network-level;
+    applies immediately)".
 - Machine facts: Windows 11 x64; Rust 1.99.1 (MSVC) installed; VS 2019 Build
   Tools present; WebView2 runtime 155 present; Node 24 present; npm available.
 - Build artifacts must NOT go into OneDrive: always set
   `CARGO_TARGET_DIR=C:\Users\luigi\AppData\Local\Temp\opencode\ytm-target`
   (or any temp dir) before cargo commands.
 
-## Next step — Ad-block v1, then Phase C
+## Next step — Phase C
 
-Phase B is complete and the stable defaults are on. Next: **ad-block v1**
-(network-level blocking on the WebView2 controller), a Phase A leftover.
-Implementation-ready notes (APIs verified present in the vendored crates):
+Ad-block v1 is done; Phase B is complete. Next: **Phase C (native
+integrations)**:
 
-1. **Deps**: add `webview2-com = "0.39"` (exact version tauri 2.12 uses, so
-   COM types match) and `windows = { version = "0.62", features =
-   ["Win32_System_Com", "Win32_UI_Shell"] }` to `app/src-tauri/Cargo.toml`.
-2. **Wiring** (Windows-only module, call from `create_main_window` after
-   build): `window.with_webview(|platform| { let controller =
-   platform.controller(); let core = controller.CoreWebView2()?;
-   core.AddWebResourceRequestedFilter("*",
-   COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL)?;
-   core.add_WebResourceRequested(&WebResourceRequestedEventHandler::create(
-   Box::new(move |_sender, args| { ... })), &mut token) })` — handler helper
-   is `webview2_com::WebResourceRequestedEventHandler`; get the URI via
-   `args.Request()?.Uri()`.
-3. **Blocking a request**: no cancel API — build a response:
-   `ICoreWebView2_2::Environment()` →
-   `CreateWebResourceResponse(stream, 403, "Blocked", headers)` with an
-   empty `IStream` from `SHCreateMemStream(None, 0)`
-   (`windows::Win32::UI::Shell`), then `args.SetResponse(response)`.
-4. **Patterns**: reuse the v0 host regex (doubleclick.net,
-   googlesyndication, googleadservices, /pagead/, /api/stats/ads) plus a
-   small host allowlist-free blocklist; keep it simple and conservative.
-5. **Config**: apply at window creation when `config.adblock` is true
-   (reload applies, like v0); keep OFF by default (ADR-0003). Log a bounded
-   count of blocked requests for debugging.
-6. **Verify**: enable adblock + relaunch with CDP; probe
-   `performance.getEntriesByType('resource')` or fetch a known ad host from
-   the page and expect a blocked/403 result; confirm the player still plays
-   a track; measure memory unchanged; restore config.
+1. **Media Session (SMTC)**: taskbar overlay + hardware media keys — the
+   shell already receives `player-state` events (play-or-paused,
+   video-src-changed, time-changed) via `report_player_state`; map them to a
+   Windows SMTC session (there is a Rust route via the `windows` crate —
+   `System::Media` — or a small crate; evaluate both for footprint).
+2. **Notifications** on track change (`video-src-changed`).
+3. **Scrobbler (Last.fm)** and **Discord rich presence** (upstream has
+   plugins for both; Discord needs an IPC client in the shell or a port that
+   talks to the local Discord socket).
 
-Then Phase C (SMTC/media keys, notifications, scrobbler, Discord).
+Also still pending from Phase A/B leftovers: `windows_subsystem` switch +
+file logging (planned for Phase D).
 
 Carry-over notes:
 
@@ -266,15 +283,11 @@ Carry-over notes:
   `build.rs`'s `AppManifest::commands` + `capabilities/main.json` (`allow-*`),
   or the remote page gets `not allowed by ACL`.
 
-### Resume notes — Phase B (next session, 2026-10-16)
+### Resume notes — Phase C (next session, 2026-10-16)
 
-State: Phase B is **complete** (18 plugins + host + audio provider +
-settings UI) and the stable plugin defaults are on. All committed:
-`103c18f`/`59ea3ef`, `40f6c73`/`a87f5d2`, `5ff899f`/`ecae580`,
-`e41100d`/`e5323d6`, `a66db7d`/`a633383`, `06c6b15`/`9a236ba`,
-`1e0432e`/`d86daaa`, and this session's defaults commit. Next: **ad-block
-v1** per "Next step" above (the notes there are implementation-ready:
-deps, API names and the verified absence of a cancel API).
+State: **ad-block v1 is done and verified** (this session's commits: the
+adblock module + defaults from the previous session). Next: **Phase C** per
+"Next step" above (SMTC/media keys, notifications, scrobbler, Discord).
 
 - The vendored `webview2-com 0.39.1` exposes
   `WebResourceRequestedEventHandler` and the full
@@ -282,6 +295,10 @@ deps, API names and the verified absence of a cancel API).
   returns `ICoreWebView2Controller` (see tauri `webview/mod.rs:184`).
 - Keep the v0 injection blockers as the non-Windows/fallback path; v1 is
   Windows-only for now (the shell is Windows-first until Phase E).
+- Ad-block v1 gating is a live `AtomicBool`; if a future change wants the
+  filter registration itself conditional, keep in mind that `with_webview`
+  is the only chance to grab the controller right after build, and reloads
+  do NOT re-run it.
 
 Other carry-over notes:
 
@@ -354,6 +371,19 @@ for probes — pass a URL substring as 4th arg to target the settings window;
 - `MIRLO_DEBUG_PORT=9222` (env) enables CDP on the WebView2 for inspection
   (REA tools or any CDP client); off by default. Example probe:
   `Runtime.evaluate` on the page target.
+- Ad-block v1 wiring traps: `with_webview` is a fire-and-forget main-thread
+  message that runs once the event loop starts — it is the only chance to
+  grab the controller right after build (reloads do not re-run it); the
+  `WebResourceRequested` handler must answer synchronously;
+  `ICoreWebView2WebResourceRequest::Uri` is generated as an **out-param**
+  (`Uri(&mut PWSTR)`) — free the buffer with `webview2_com::take_pwstr`.
+- CDP ad-block A/B probes: a blocked main-frame navigation renders Chromium's
+  "HTTP ERROR 403" page (`chrome-error://chromewebdata/`, empty body), while
+  the same URL with ad-block off returns the real content; navigating to a
+  JS content-type URL triggers Edge's "Descargar varios archivos" permission
+  prompt, which is a **separate CDP target**
+  (`edge://permission-request-dialog/`) — deny it by clicking its
+  `fluent-button` with text "Bloquear".
 - Force-killing the host leaves WebView2 trees shutting down slowly; verify
   with a process-tree walk (`Get-CimInstance Win32_Process` filtered by
   command line) and prefer graceful close (`CloseMainWindow()`).
@@ -386,11 +416,12 @@ for probes — pass a URL substring as 4th arg to target the settings window;
 ## Repository layout
 
 ```
-app/                        Tauri 2 application (Phases A+B, in progress)
+app/                        Tauri 2 application (Phases A+B done; Phase C next)
   ui/index.html             Static fallback page (frontendDist, no build step)
   ui/settings.html          Local settings window (plugins UI, no build step)
   src-tauri/src/lib.rs      Shell: windows, commands, hotkeys, tray, single-instance
   src-tauri/src/config.rs   JSON settings store (schema v2: plugins map)
+  src-tauri/src/adblock.rs  Ad-block v1: WebResourceRequested handler (Windows)
   src-tauri/src/bridge.js   Bridge + plugin host injected into the player page
   src-tauri/src/plugins.rs  Plugin source registry + settings manifest
   src-tauri/plugins/*.js    Renderer plugin ports (one file per plugin)

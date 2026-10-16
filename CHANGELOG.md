@@ -99,6 +99,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stable additive plugins now ship **enabled by default** (navigation,
   video-toggle, precise-volume, captions-selector, quality-changer,
   compact-sidebar); behavioral/opinionated plugins stay opt-in.
+- Ad-block v1 — network-level request blocking on the WebView2 controller
+  (Windows): a `WebResourceRequested` handler on the player webview answers
+  matching requests with a synthesized `403 Blocked` response (WebView2 has
+  no cancel API; the approach from the official samples), replacing the
+  injected v0 wrappers as the primary layer (v0 stays as the fallback /
+  non-Windows path). Same conservative v0 pattern set. Gated by a live flag
+  mirroring `config.adblock`, so the settings toggle applies immediately
+  (no reload); ad-block still ships OFF by default (ADR-0003). Verified
+  live via CDP: real doubleclick requests blocked on page load; a
+  `pagead2.googlesyndication.com` main-frame navigation returns HTTP 403
+  while the same URL returns the real 200 content with the toggle off;
+  playback unaffected (track played through the active filter); 371.1 MB
+  idle private (no regression vs the Phase A baseline).
 
 ### Changed
 

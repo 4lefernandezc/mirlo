@@ -23,6 +23,7 @@ process so the app could be closed gracefully afterwards.
 
 | Build | Processes | Private (sum) | Working set (sum) |
 |---|---|---|---|
+| Mirlo ad-block v1 registered (18 plugins, post-navigation settles) | 9 | **371.1 MB** | 720.6 MB |
 | Mirlo Phase B (eleven renderer plugins on) | 9 | **300.3 MB** | 701.6 MB |
 | Mirlo Phase B (nine renderer plugins on) | 10 | **331.8 MB** | 781.0 MB |
 | Mirlo Phase B (six renderer plugins on) | 10 | **368.4 MB** | 816.3 MB |
@@ -35,7 +36,11 @@ margin. The Phase B runs (batch 1, then plus batch 2a audio plugins, then
 plus batch 2b equalizer/precise-volume) show no measurable idle overhead
 versus the plugins-off baseline; run-to-run page variance is roughly ±5%
 (and one fewer WebView2 child process in the eleven-plugin run), so treat
-the small differences as noise. Largest components in the Phase A run:
+the small differences as noise. The ad-block v1 run (wildcard
+`WebResourceRequested` filter registered, 18 plugins enabled, page
+re-navigated several times) measured 371.1 MB — identical to the Phase A
+baseline, so the network filter adds no measurable idle footprint. Largest
+components in the Phase A run:
 renderer 165.8 MB, GPU 121.0 MB, browser 31.2 MB (private working set).
 
 Evidence: `images/phase-a-idle.png` is a window capture of the idle shell

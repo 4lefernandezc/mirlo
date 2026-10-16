@@ -5,6 +5,7 @@
 //! behavior and the tray icon. See `docs/architecture.md` and
 //! `docs/research/ipc-contract.md` for the design context.
 
+mod adblock;
 mod config;
 mod plugins;
 
@@ -279,7 +280,11 @@ fn create_main_window(
     #[cfg(not(target_os = "windows"))]
     let _ = profile_dir;
 
-    builder.build()?;
+    let window = builder.build()?;
+    // Network-level ad-block v1 on the WebView2 controller (Windows). The
+    // handler is always registered and gated by the live `config.adblock`
+    // flag so the settings toggle applies without a reload (see adblock.rs).
+    adblock::install(&window);
     Ok(())
 }
 
@@ -306,6 +311,7 @@ fn set_config(
     config: Config,
 ) -> Result<Config, String> {
     config::save(&app, &config)?;
+    adblock::set_enabled(config.adblock);
     let mut current = state
         .config
         .lock()
@@ -391,6 +397,7 @@ pub fn run() {
         .setup(move |app| {
             let handle = app.handle().clone();
             let config = config::load(&handle);
+            adblock::set_enabled(config.adblock);
 
             std::fs::create_dir_all(config::profile_dir(&handle))?;
             if let Err(err) = config::ensure_stored(&handle, &config) {

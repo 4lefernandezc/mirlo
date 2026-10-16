@@ -69,6 +69,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     (tauri accelerator strings, restart to apply).
   - YouTube Music's Trusted Types enforcement and the audio-provider timing
     are handled (DOM-built UI, `audio()` accessor).
+- Phase B settings UI:
+  - Local settings window (tray → "Settings…", or `mirlo.exe --settings`)
+    with General switches (ad-block, hotkeys) and one card per plugin:
+    enable toggle plus typed option fields backed by a new
+    `get_plugin_manifest` command; changes persist immediately and a
+    "Reload player" button applies them without an app restart.
+  - New local-only `settings-capability`; the settings window shares the
+    WebView2 environment with the player, and closing it no longer exits
+    the app.
 
 ### Changed
 

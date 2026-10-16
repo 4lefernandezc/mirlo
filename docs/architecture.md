@@ -57,6 +57,14 @@ plugins) is next. See [roadmap.md](roadmap.md).
 - **Settings**: one JSON file (`config.json`) written atomically; defaults
   are persisted on first run. `adblock` ships `false` (ADR-0003) and is
   applied by the bridge only at document start.
+- **Settings UI**: a second local window (label `settings`, page
+  `ui/settings.html`) opened from the tray or `mirlo.exe --settings`. It
+  reads `get_plugin_manifest` (UI metadata in `plugins.rs::manifest()`) plus
+  `get_config`, and writes through `set_plugin_config`/`set_config`; a
+  "Reload player" button applies plugin changes without restarting the app.
+  It shares the WebView2 environment with the player (same `data_directory`
+  and browser args, as WebView2 requires) and has its own local-only
+  capability.
 - **Debugging**: `MIRLO_DEBUG_PORT=9222` enables the WebView2 CDP endpoint
   for local inspection (env-gated, off by default).
 - The console stays attached in Phase A for development visibility; packaging

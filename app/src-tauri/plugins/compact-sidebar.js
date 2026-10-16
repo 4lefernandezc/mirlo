@@ -7,7 +7,8 @@
  * YouTube Music renders its app shell, so the guide button is awaited.
  */
 __MIRLO_PLUGINS__.register('compact-sidebar', {
-  defaults: { enabled: false },
+  // Mirlo default: enabled (compact layout; can be toggled in settings).
+  defaults: { enabled: true },
 
   getCompactSidebar() {
     return document.querySelector('#mini-guide');

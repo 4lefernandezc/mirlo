@@ -96,6 +96,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     element bare (it renders unstyled at 300×300); quality-changer,
     captions-selector and synced-lyrics build plain buttons with a shared
     `.mirlo-icon-button` style block.
+- Stable additive plugins now ship **enabled by default** (navigation,
+  video-toggle, precise-volume, captions-selector, quality-changer,
+  compact-sidebar); behavioral/opinionated plugins stay opt-in.
 
 ### Changed
 

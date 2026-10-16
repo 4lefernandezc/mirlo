@@ -26,12 +26,20 @@ First run creates `%LOCALAPPDATA%\Mirlo\` with `config.json` and the
 persistent WebView2 profile (`webview2-profile/`); the Google session survives
 restarts, exactly like the Phase 0 PoC.
 
-## Plugins (Phase B, batch 1)
+## Plugins (Phase B)
 
 Renderer plugins are ported from pear-desktop (MIT; see
-`THIRD_PARTY_NOTICES.md`) and **ship OFF by default** until the settings UI
-exists. Enable them in `%LOCALAPPDATA%\Mirlo\config.json` under `plugins`
-and reload the player window (or restart the app):
+`THIRD_PARTY_NOTICES.md`). Stable **additive** plugins ship enabled by
+default (navigation, video-toggle, precise-volume, captions-selector,
+quality-changer, compact-sidebar); everything else — behavioral or
+opinionated changes (disable-autoplay, skip-disliked-songs, sponsorblock,
+exponential-volume, equalizer, skip-silences, album-color-theme,
+unobtrusive-player, synced-lyrics, album-actions, blur-nav-bar) — ships
+OFF. Toggle anything in the settings window (or in
+`%LOCALAPPDATA%\Mirlo\config.json` under `plugins`); plugin changes apply
+on player reload without restarting the app.
+
+Example of a config where everything is enabled:
 
 ```json
 {

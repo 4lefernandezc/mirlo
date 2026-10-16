@@ -9,8 +9,9 @@
  * from the bridge's compatibility layer.
  */
 __MIRLO_PLUGINS__.register('captions-selector', {
+  // Mirlo default: enabled (the button only appears when captions exist).
   defaults: {
-    enabled: false,
+    enabled: true,
     disableCaptions: false,
     autoload: false,
     lastCaptionsCode: '',

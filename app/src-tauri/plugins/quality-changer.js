@@ -9,7 +9,8 @@
  * Types, so string HTML is not allowed).
  */
 __MIRLO_PLUGINS__.register('quality-changer', {
-  defaults: { enabled: false },
+  // Mirlo default: enabled (additive player button, no behavior change).
+  defaults: { enabled: true },
   styles: [
     `
 .mirlo-icon-button {

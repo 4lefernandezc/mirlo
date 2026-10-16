@@ -12,8 +12,9 @@
  *     `restartNeeded` too).
  */
 __MIRLO_PLUGINS__.register('video-toggle', {
+  // Mirlo default: enabled (additive song/video switch button).
   defaults: {
-    enabled: false,
+    enabled: true,
     hideVideo: false,
     mode: 'custom',
     forceHide: false,

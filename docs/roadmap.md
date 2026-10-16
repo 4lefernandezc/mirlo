@@ -60,7 +60,9 @@ Phases are ordered. Each phase ends with an updated `AGENTS.md`, a
 
 ## Phase C — Native integrations
 
-- [ ] Media Session (SMTC): taskbar overlay + hardware media keys.
+- [x] Media Session (SMTC): taskbar flyout + hardware media keys, session
+      metadata (title/artist/album/thumbnail), timeline position and
+      flyout-seek; verified live through the OS session manager.
 - [ ] Notifications (track change).
 - [ ] Scrobbler (Last.fm).
 - [ ] Discord rich presence.

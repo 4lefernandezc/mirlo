@@ -112,6 +112,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   while the same URL returns the real 200 content with the toggle off;
   playback unaffected (track played through the active filter); 371.1 MB
   idle private (no regression vs the Phase A baseline).
+- Media session (SMTC) — native Windows integration in `media_controls.rs`
+  (no new dependencies: the `windows` crate features were extended):
+  - Session created for the player window so the taskbar media flyout, lock
+    screen and hardware media keys control playback: play/pause/next/previous
+    and flyout seek are forwarded to the page through `window.__mirlo.player`.
+  - Player state reports drive the session: playback status, metadata
+    (title/artist/album split from the player byline, artwork from the
+    videoId) and timeline position/duration.
+  - Bridge additions: `player.play()`, `player.pause()`, `player.seek(s)`.
+  - Verified live through the OS session manager (PowerShell WinRT probe):
+    correct metadata/status/timeline; `TryTogglePlayPauseAsync` (the media
+    key path) paused/resumed the page; a flyout seek to 120 s moved playback
+    accordingly; 387.5 MB private after a full round trip (< 450 MB target).
 
 ### Changed
 

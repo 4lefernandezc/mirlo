@@ -9,8 +9,9 @@
  *                        volume-changed, seeked, video-src-changed, navigation,
  *                        player-api-loaded, bridge-ready)
  *   - lifecycle:         reload / restart through shell commands
- *   - player control:    window.__mirlo.player.{playPause,next,previous}
- *                        (used by global hotkeys through `eval`)
+ *   - player control:    window.__mirlo.player.{play, pause, playPause, next,
+ *                        previous, seek} (used by global hotkeys and the
+ *                        SMTC media session through `eval`)
  *   - ad-block v0:       fetch/XHR wrappers, only when enabled in the config
  *                        (ships OFF by default, ADR-0003)
  *
@@ -83,6 +84,16 @@
       }
       return false;
     },
+    play() {
+      const v = q('video');
+      if (v && v.paused) this.playPause();
+      return true;
+    },
+    pause() {
+      const v = q('video');
+      if (v && !v.paused) this.playPause();
+      return true;
+    },
     next() {
       const b = q('.next-button');
       if (b) {
@@ -95,6 +106,14 @@
       const b = q('.previous-button');
       if (b) {
         b.click();
+        return true;
+      }
+      return false;
+    },
+    seek(seconds) {
+      const p = q('#movie_player');
+      if (p && typeof p.seekTo === 'function') {
+        p.seekTo(seconds, true);
         return true;
       }
       return false;

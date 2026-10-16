@@ -22,6 +22,7 @@ use tauri_plugin_global_shortcut::{
 };
 
 const MAIN_WINDOW: &str = "main";
+const SETTINGS_WINDOW: &str = "settings";
 const PLAYER_URL: &str = "https://music.youtube.com/";
 const BRIDGE_JS: &str = include_str!("bridge.js");
 
@@ -167,15 +168,17 @@ fn plugin_hotkey_table() -> &'static Mutex<Vec<(Shortcut, String)>> {
 }
 
 fn create_tray(app: &tauri::App) -> tauri::Result<()> {
+    let settings = MenuItem::with_id(app, "settings", "Settings…", true, None::<&str>)?;
     let toggle = MenuItem::with_id(app, "toggle", "Show / Hide", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&toggle, &quit])?;
+    let menu = Menu::with_items(app, &[&settings, &toggle, &quit])?;
 
     let mut builder = TrayIconBuilder::with_id("main-tray")
         .tooltip("Mirlo")
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id().as_ref() {
+            "settings" => open_settings_window(app),
             "toggle" => toggle_main_window(app),
             "quit" => app.exit(0),
             _ => {}
@@ -196,6 +199,45 @@ fn create_tray(app: &tauri::App) -> tauri::Result<()> {
     }
     builder.build(app)?;
     Ok(())
+}
+
+fn debug_browser_args() -> Option<String> {
+    std::env::var("MIRLO_DEBUG_PORT")
+        .ok()
+        .filter(|port| port.parse::<u16>().is_ok())
+        .map(|port| format!("--remote-debugging-port={port}"))
+}
+
+/// Opens (or focuses) the local settings window served from `ui/`.
+/// It shares the WebView2 environment with the player window (same
+/// `data_directory` + browser args), which WebView2 requires for webviews
+/// with identical environment options.
+fn open_settings_window(app: &AppHandle) {
+    if let Some(window) = app.get_webview_window(SETTINGS_WINDOW) {
+        let _ = window.show();
+        let _ = window.set_focus();
+        return;
+    }
+    let mut builder = WebviewWindowBuilder::new(
+        app,
+        SETTINGS_WINDOW,
+        WebviewUrl::App("settings.html".into()),
+    )
+    .title("Mirlo - Settings")
+    .inner_size(960.0, 700.0)
+    .min_inner_size(640.0, 480.0);
+
+    #[cfg(target_os = "windows")]
+    {
+        builder = builder.data_directory(config::profile_dir(app));
+    }
+    if let Some(args) = debug_browser_args() {
+        builder = builder.additional_browser_args(&args);
+    }
+
+    if let Err(err) = builder.build() {
+        eprintln!("[mirlo] could not open the settings window: {err}");
+    }
 }
 
 fn create_main_window(
@@ -224,10 +266,8 @@ fn create_main_window(
 
     // Optional CDP endpoint for local debugging/inspection:
     //   $env:MIRLO_DEBUG_PORT = "9222"
-    if let Ok(port) = std::env::var("MIRLO_DEBUG_PORT") {
-        if port.parse::<u16>().is_ok() {
-            builder = builder.additional_browser_args(&format!("--remote-debugging-port={port}"));
-        }
+    if let Some(args) = debug_browser_args() {
+        builder = builder.additional_browser_args(&args);
     }
 
     // Persistent WebView2 user-data folder: keeps the Google session across
@@ -244,6 +284,11 @@ fn create_main_window(
 }
 
 // --- Commands exposed to the injected bridge (renderer -> shell) ---
+
+#[tauri::command]
+fn get_plugin_manifest() -> Value {
+    plugins::manifest()
+}
 
 #[tauri::command]
 fn get_config(state: tauri::State<'_, AppState>) -> Result<Config, String> {
@@ -364,6 +409,12 @@ pub fn run() {
             register_plugin_hotkeys(&handle, &config);
             create_tray(app)?;
 
+            // `mirlo.exe --settings` opens the settings window directly
+            // (handy for testing and for shortcuts).
+            if std::env::args().any(|arg| arg == "--settings") {
+                open_settings_window(&handle);
+            }
+
             println!(
                 "[mirlo] ready: profile={} config={}",
                 config::profile_dir(&handle).display(),
@@ -376,15 +427,19 @@ pub fn run() {
             set_config,
             set_plugin_config,
             get_path,
+            get_plugin_manifest,
             report_player_state,
             reload_player,
             restart_app
         ])
         .on_window_event(|window, event| {
-            // Graceful shutdown on window close (Phase 0 note: WebView2 trees
-            // tear down slowly after force kills).
+            // Graceful shutdown when the *player* window closes (Phase 0
+            // note: WebView2 trees tear down slowly after force kills). The
+            // settings window just closes/destroys itself.
             if let tauri::WindowEvent::CloseRequested { .. } = event {
-                window.app_handle().exit(0);
+                if window.label() == MAIN_WINDOW {
+                    window.app_handle().exit(0);
+                }
             }
         })
         .run(tauri::generate_context!())

@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mirlo - Settings</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0f1115;
+        --card: #16191f;
+        --card-border: #262b33;
+        --text: #e8e8e8;
+        --muted: #9aa0a6;
+        --accent: #f5a524;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: 13px/1.5 "Segoe UI", system-ui, sans-serif;
+      }
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 20px;
+        background: rgba(15, 17, 21, 0.92);
+        border-bottom: 1px solid var(--card-border);
+        backdrop-filter: blur(6px);
+      }
+      header h1 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 600;
+      }
+      header .spacer {
+        flex: 1;
+      }
+      footer#status {
+        position: sticky;
+        bottom: 0;
+        z-index: 2;
+        padding: 8px 20px;
+        background: rgba(15, 17, 21, 0.92);
+        border-top: 1px solid var(--card-border);
+        color: var(--muted);
+        font-size: 12px;
+        min-height: 18px;
+      }
+      main {
+        max-width: 860px;
+        margin: 0 auto;
+        padding: 16px 20px 32px;
+      }
+      h2 {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        margin: 22px 0 10px;
+      }
+      card,
+      article.plugin,
+      section.general {
+        display: block;
+        background: var(--card);
+        border: 1px solid var(--card-border);
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin: 0 0 12px;
+      }
+      .head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .head strong {
+        font-weight: 600;
+      }
+      .head code {
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .badge {
+        margin-left: auto;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--accent);
+        border: 1px solid rgba(245, 165, 36, 0.4);
+        border-radius: 999px;
+        padding: 1px 8px;
+      }
+      p.desc {
+        color: var(--muted);
+        margin: 6px 0 0;
+      }
+      .options {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 10px 18px;
+        margin-top: 12px;
+      }
+      .options:empty {
+        display: none;
+      }
+      label.field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      label.field.inline {
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+        color: var(--text);
+      }
+      input[type="text"],
+      input[type="number"],
+      select {
+        background: #0d0f13;
+        border: 1px solid var(--card-border);
+        border-radius: 6px;
+        color: var(--text);
+        font: inherit;
+        padding: 6px 8px;
+      }
+      input[type="text"] {
+        font-family: Consolas, monospace;
+      }
+      input[type="checkbox"] {
+        accent-color: var(--accent);
+        width: 15px;
+        height: 15px;
+      }
+      button {
+        background: #22262e;
+        color: var(--text);
+        border: 1px solid var(--card-border);
+        border-radius: 6px;
+        font: inherit;
+        padding: 6px 12px;
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: var(--accent);
+      }
+      button.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #1a1408;
+        font-weight: 600;
+      }
+      .general .row {
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Mirlo — Settings</h1>
+      <div class="spacer"></div>
+      <button id="reload" class="primary" title="Reloads the player page so plugin changes apply">Reload player</button>
+    </header>
+
+    <main>
+      <h2>General</h2>
+      <section class="general">
+        <div class="row">
+          <label class="field inline">
+            <input type="checkbox" id="adblock" />
+            Ad-block v0 (injection; applies after a player reload)
+          </label>
+          <label class="field inline">
+            <input type="checkbox" id="hotkeys" />
+            Global media hotkeys (applies after an app restart)
+          </label>
+        </div>
+      </section>
+
+      <h2>Plugins</h2>
+      <div id="plugins"></div>
+    </main>
+
+    <footer id="status"></footer>
+
+    <script>
+      (() => {
+        'use strict';
+        const invoke = (cmd, args) => window.__TAURI_INTERNALS__.invoke(cmd, args);
+        const status = (text) => {
+          document.getElementById('status').textContent = text;
+        };
+
+        // --- dotted-path helpers ------------------------------------------
+        const getPath = (object, path) =>
+          path.reduce((value, key) => (value == null ? undefined : value[key]), object);
+        const setPath = (object, path, value) => {
+          let target = object;
+          for (const key of path.slice(0, -1)) {
+            if (typeof target[key] !== 'object' || target[key] === null) target[key] = {};
+            target = target[key];
+          }
+          target[path[path.length - 1]] = value;
+        };
+
+        let fullConfig = null;
+
+        async function savePlugin(pluginId, pluginConfig) {
+          try {
+            fullConfig = await invoke('set_plugin_config', {
+              pluginId,
+              config: pluginConfig,
+            });
+            status(`Saved "${pluginId}". Reload the player to apply changes.`);
+          } catch (err) {
+            status(`Could not save "${pluginId}": ${err}`);
+          }
+        }
+
+        function renderGeneral() {
+          const adblock = document.getElementById('adblock');
+          const hotkeys = document.getElementById('hotkeys');
+          adblock.checked = !!fullConfig.adblock;
+          hotkeys.checked = !!fullConfig.hotkeys_enabled;
+
+          const save = async () => {
+            try {
+              fullConfig = await invoke('set_config', {
+                config: {
+                  ...fullConfig,
+                  adblock: adblock.checked,
+                  hotkeys_enabled: hotkeys.checked,
+                },
+              });
+              status('General settings saved.');
+            } catch (err) {
+              status(`Could not save general settings: ${err}`);
+            }
+          };
+          adblock.addEventListener('change', save);
+          hotkeys.addEventListener('change', save);
+        }
+
+        function renderOption(plugin, state, option) {
+          const current = getPath(state, option.path);
+          const value = current !== undefined ? current : option.default;
+
+          const apply = (newValue) => {
+            const next = JSON.parse(JSON.stringify(state));
+            setPath(next, option.path, newValue);
+            return savePlugin(plugin.id, next).then(() => {
+              state = next;
+            });
+          };
+
+          if (option.type === 'boolean') {
+            const label = document.createElement('label');
+            label.className = 'field inline';
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.checked = !!value;
+            input.addEventListener('change', () => apply(input.checked));
+            label.appendChild(input);
+            label.appendChild(document.createTextNode(option.label));
+            return label;
+          }
+
+          const label = document.createElement('label');
+          label.className = 'field';
+          label.appendChild(document.createTextNode(option.label));
+
+          if (option.type === 'select') {
+            const select = document.createElement('select');
+            for (const choice of option.choices) {
+              const opt = document.createElement('option');
+              opt.value = choice;
+              opt.textContent = choice;
+              if (choice === value) opt.selected = true;
+              select.appendChild(opt);
+            }
+            select.addEventListener('change', () => apply(select.value));
+            label.appendChild(select);
+            return label;
+          }
+
+          const input = document.createElement('input');
+          if (option.type === 'number') {
+            input.type = 'number';
+            if (option.min !== undefined) input.min = option.min;
+            if (option.max !== undefined) input.max = option.max;
+            if (option.step !== undefined) input.step = option.step;
+            input.value = value;
+            input.addEventListener('change', () => {
+              const parsed = Number(input.value);
+              apply(Number.isFinite(parsed) ? parsed : option.default);
+            });
+          } else {
+            input.type = 'text';
+            input.value = value ?? '';
+            input.addEventListener('change', () => apply(input.value));
+          }
+          label.appendChild(input);
+          return label;
+        }
+
+        function renderPlugin(plugin) {
+          const article = document.createElement('article');
+          article.className = 'plugin';
+
+          const head = document.createElement('div');
+          head.className = 'head';
+
+          const toggle = document.createElement('input');
+          toggle.type = 'checkbox';
+          toggle.title = 'Enable plugin';
+
+          const name = document.createElement('strong');
+          name.textContent = plugin.name;
+
+          const id = document.createElement('code');
+          id.textContent = plugin.id;
+
+          head.appendChild(toggle);
+          head.appendChild(name);
+          head.appendChild(id);
+          if (plugin.reloadNeeded) {
+            const badge = document.createElement('span');
+            badge.className = 'badge';
+            badge.textContent = 'reload needed';
+            head.appendChild(badge);
+          }
+          article.appendChild(head);
+
+          if (plugin.description) {
+            const desc = document.createElement('p');
+            desc.className = 'desc';
+            desc.textContent = plugin.description;
+            article.appendChild(desc);
+          }
+
+          const options = document.createElement('div');
+          options.className = 'options';
+          article.appendChild(options);
+
+          let state = Object.assign({}, fullConfig.plugins[plugin.id] || {});
+          toggle.checked = !!state.enabled;
+          toggle.addEventListener('change', () => {
+            const next = JSON.parse(JSON.stringify(state));
+            next.enabled = toggle.checked;
+            savePlugin(plugin.id, next).then(() => {
+              state = next;
+            });
+          });
+
+          for (const option of plugin.options || []) {
+            options.appendChild(renderOption(plugin, state, option));
+          }
+
+          return article;
+        }
+
+        async function init() {
+          try {
+            const [manifest, config] = await Promise.all([
+              invoke('get_plugin_manifest'),
+              invoke('get_config'),
+            ]);
+            fullConfig = config;
+            if (!fullConfig.plugins) fullConfig.plugins = {};
+
+            renderGeneral();
+            const container = document.getElementById('plugins');
+            for (const plugin of manifest) {
+              container.appendChild(renderPlugin(plugin));
+            }
+            status('');
+          } catch (err) {
+            status(`Could not load configuration: ${err}`);
+          }
+        }
+
+        document.getElementById('reload').addEventListener('click', async () => {
+          try {
+            await invoke('reload_player');
+            status('Player reloaded.');
+          } catch (err) {
+            status(`Could not reload the player: ${err}`);
+          }
+        });
+
+        init();
+      })();
+    </script>
+  </body>
+</html>

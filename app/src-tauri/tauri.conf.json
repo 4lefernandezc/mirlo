@@ -11,7 +11,7 @@
     "windows": [],
     "security": {
       "csp": null,
-      "capabilities": ["main-capability"]
+      "capabilities": ["main-capability", "settings-capability"]
     }
   },
   "bundle": {

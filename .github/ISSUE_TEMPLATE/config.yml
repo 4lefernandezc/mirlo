@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security report
+    url: https://github.com/4lefernandezc/mirlo/security/policy
+    about: Please report vulnerabilities privately, never as public issues.
+  - name: pear-desktop (upstream reference)
+    url: https://github.com/pear-devs/pear-desktop
+    about: The MIT project whose plugin model Mirlo ports from.

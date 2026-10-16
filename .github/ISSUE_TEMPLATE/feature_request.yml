@@ -1,0 +1,33 @@
+name: Feature request
+description: Suggest an idea for Mirlo
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before requesting, note the project policy
+        ([ADR-0003](../blob/main/docs/adr/0003-tos-posture-and-defaults.md)):
+        no stream extraction, no media downloading, no DRM bypass. Requests in
+        that direction will be closed without further review.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem are you trying to solve?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: How would you like Mirlo to behave?
+    validations:
+      required: false
+  - type: textarea
+    id: upstream
+    attributes:
+      label: Upstream reference (optional)
+      description: Does pear-desktop have a similar plugin? Link it here.
+    validations:
+      required: false

@@ -19,6 +19,9 @@ code and material included in this repository, with their license terms.
 | `app/src-tauri/plugins/video-toggle.js` | `src/plugins/video-toggle/` |
 | `app/src-tauri/plugins/unobtrusive-player.js` | `src/plugins/unobtrusive-player/` |
 | `app/src-tauri/plugins/disable-autoplay.js` | `src/plugins/disable-autoplay/` |
+| `app/src-tauri/plugins/exponential-volume.js` | `src/plugins/exponential-volume/` |
+| `app/src-tauri/plugins/playback-speed.js` | `src/plugins/playback-speed/` |
+| `app/src-tauri/plugins/skip-silences.js` | `src/plugins/skip-silences/` |
 
 Each file carries an attribution header with its upstream paths and the
 deviations made for the Mirlo plugin host (no Electron/SolidJS; the host

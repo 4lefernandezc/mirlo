@@ -38,6 +38,18 @@ pub const PLUGINS: &[PluginSource] = &[
         id: "disable-autoplay",
         source: include_str!("../plugins/disable-autoplay.js"),
     },
+    PluginSource {
+        id: "exponential-volume",
+        source: include_str!("../plugins/exponential-volume.js"),
+    },
+    PluginSource {
+        id: "playback-speed",
+        source: include_str!("../plugins/playback-speed.js"),
+    },
+    PluginSource {
+        id: "skip-silences",
+        source: include_str!("../plugins/skip-silences.js"),
+    },
 ];
 
 /// All plugin sources concatenated in registration order, each with a

@@ -85,6 +85,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     while enabled).
   - New host helper `showChoiceMenu` replaces the Electron dialogs for
     in-page pickers.
+- Phase B batch 3b — album-actions (default OFF): bulk like/dislike buttons
+  with a fill-percentage mask on album and playlist pages.
 
 ### Changed
 

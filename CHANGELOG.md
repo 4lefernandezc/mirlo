@@ -78,6 +78,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - New local-only `settings-capability`; the settings window shares the
     WebView2 environment with the player, and closing it no longer exits
     the app.
+- Phase B batch 3a — content plugins (all default OFF):
+  - skip-disliked-songs, captions-selector (track picker + autoload),
+    quality-changer (quality picker), navigation (back/forward buttons) and
+    sponsorblock (segments fetched from the page; third-party calls only
+    while enabled).
+  - New host helper `showChoiceMenu` replaces the Electron dialogs for
+    in-page pickers.
 
 ### Changed
 

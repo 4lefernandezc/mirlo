@@ -152,19 +152,48 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     clips composited WebView2 surfaces at some window sizes — trust the CDP
     layout numbers).
   - Remaining Phase B: port batch 3 (content).
+- **Phase B batch 3a — DONE (2026-10-16)**: five content plugins + UI helper.
+  - Ports (all default OFF): skip-disliked-songs (observer on the like
+    button), captions-selector (subtitles button + caption track picker +
+    autoload/disable options), quality-changer (gear button + quality
+    picker via `getAvailableQualityLevels`), navigation (back/forward
+    buttons in `#right-content`), sponsorblock (segments fetched **from the
+    page** — the SponsorBlock API allows CORS and YT Music's CSP does not
+    block it; `apiURL` configurable; third-party calls happen only while
+    enabled).
+  - New host helper `showChoiceMenu(anchor, items, onPick)` replaces the
+    Electron dialogs upstream used (quality/captions pickers).
+  - Verified (CDP + console): 16 plugins start with no plugin errors (the
+    only console noise is SponsorBlock's expected 404 when a video has no
+    segments); nav buttons ×2, quality/captions buttons present, dislike
+    observer attached, sponsorblock api wired + page fetch to
+    sponsor.ajay.app returned HTTP 404 (reachable); settings window renders
+    16 cards / 24 toggles / 15 option fields without overflow. Screenshot:
+    `docs/research/images/phase-b-batch3.png`.
+  - Remaining Phase B: album-actions (medium, upstream 22 KB) and
+    synced-lyrics (large, 86 KB, upstream uses Electron `net` — decide
+    renderer fetch vs shell proxy before porting).
 - Machine facts: Windows 11 x64; Rust 1.99.1 (MSVC) installed; VS 2019 Build
   Tools present; WebView2 runtime 155 present; Node 24 present; npm available.
 - Build artifacts must NOT go into OneDrive: always set
   `CARGO_TARGET_DIR=C:\Users\luigi\AppData\Local\Temp\opencode\ytm-target`
   (or any temp dir) before cargo commands.
 
-## Next step — Phase B (port batch 3, content)
+## Next step — Phase B (finish batch 3)
 
-Goal: port batch 3 (content): sponsorblock, synced-lyrics,
-skip-disliked-songs, quality-changer, album-actions, captions-selector,
-navigation. The settings UI already exists, so new ports get option fields
-by adding entries to `plugins.rs::manifest()` (a unit test enforces the id
-list stays in sync with PLUGINS).
+Goal: finish the content batch — two plugins remain:
+
+1. **album-actions** (upstream 22 KB, 6 files): add-to-playlist / album
+   actions UI. Check its templates for Trusted Types-safe construction.
+2. **synced-lyrics** (upstream 86 KB, 24 files): the big one. Upstream
+   fetches lyrics through Electron `net` (no CORS in main process); decide:
+   page `fetch` (works only if the provider sends CORS headers — test per
+   provider; upstream providers: youtubemusic, musixmatch, lrclib...), or a
+   shell proxy command (`fetch_lyrics` via reqwest) exposed to the bridge.
+   Port a reduced provider set first if needed; keep attribution.
+
+After that: consider flipping stable plugins' defaults on (documented in
+CHANGELOG) and re-open the ad-block v1 (network-level) item.
 
 Carry-over notes:
 
@@ -179,20 +208,25 @@ Carry-over notes:
 
 ### Resume notes — Phase B (next session, 2026-10-16)
 
-State: batches 1, 2a, 2b and the settings UI are committed (`103c18f`/
-`59ea3ef`, `40f6c73`/`a87f5d2`, `5ff899f`/`ecae580`, and this session's
-pair). Next: port batch 3 (content) per "Next step" above. Notes:
+State: batches 1, 2a, 2b, the settings UI and batch 3a (skip-disliked-songs,
+captions-selector, quality-changer, navigation, sponsorblock) are committed
+(`103c18f`/`59ea3ef`, `40f6c73`/`a87f5d2`, `5ff899f`/`ecae580`,
+`e41100d`/`e5323d6`, and this session's pair). Next: the two remaining
+batch-3 plugins per "Next step" above (album-actions, then synced-lyrics).
 
-- Read the upstream sources in `%TEMP%\opencode\ytm311\src\pear-desktop-3.11.0\src\plugins\`
-  and keep attribution headers; add rows to THIRD_PARTY_NOTICES.md.
 - Every new plugin needs: a `plugins/*.js` file registering itself (default
   `enabled: false`), an entry in `plugins.rs::PLUGINS` **and**
-  `plugins.rs::manifest()` (the unit test enforces id sync), then the full
-  verification pass (CDP console capture for zero-error starts + behavior
-  probes; run the settings UI once to confirm the new card renders).
-- sponsorblock/synced-lyrics make network calls (fetch to their APIs); they
-  are renderer-only in upstream v3.11.0 except synced-lyrics' `net` usage —
-  check before porting.
+  `plugins.rs::manifest()` (unit test enforces the id list/order), a
+  THIRD_PARTY_NOTICES.md row, then the verification pass.
+- Interactive UI (menus/pickers) should use `__MIRLO_PLUGINS__.showChoiceMenu`
+  instead of Electron dialogs; build DOM with APIs, never string HTML
+  (Trusted Types).
+- SponsorBlock precedent: a third-party `fetch` from the page works
+  (CORS allowed, CSP not blocking) — check the same for lyrics providers
+  before deciding on the shell proxy.
+- CDP freeze trap: after some interactions the YT bundle can hit
+  `debugger;` with the inspector attached; recover by restarting the app
+  (not a Mirlo bug).
 
 Verification recipe and traps: see the sections below (CDP + console capture
 via `%TEMP%\opencode\cdp-console.mjs` shows plugin starts/errors; `cdp-eval.mjs`

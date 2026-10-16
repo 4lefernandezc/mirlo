@@ -106,29 +106,49 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     forced playbackRate returns to 1; slider DOM built + menu observer
     armed (menu-open injection left to real interaction); 331.8 MB idle
     private with nine plugins on (run-to-run page variance ±5%).
-  - Left for next session: equalizer (large UI + filters), precise-volume
-    (needs shell volume hotkeys), then the settings UI.
+- **Phase B batch 2b — DONE (2026-10-16)**: equalizer + precise-volume.
+  - equalizer: config-driven `filters` + `bass-booster` preset applied as
+    parallel BiquadFilters through the host audio accessor (upstream v3.11.0
+    has no sliders UI; the once-event race was replaced by
+    `await __MIRLO_PLUGINS__.audio()`).
+  - precise-volume: HUD + wheel/arrow shortcuts + tooltip/slider sync +
+    `savedVolume` persistence (debounced `setConfig`), plus the shell side:
+    `register_plugin_hotkeys` reads
+    `config.plugins["precise-volume"].globalShortcuts` (tauri accelerator
+    strings, e.g. "Ctrl+Alt+ArrowUp") and evals
+    `changeVolume(...)` in the page (restart to apply, like upstream).
+  - Two real traps found and fixed (also for future ports):
+    **YouTube Music enforces Trusted Types** — `insertAdjacentHTML`/string
+    HTML throws, build nodes with DOM APIs; and **the audio graph may be
+    wired before a plugin starts** — use the `audio()` accessor instead of
+    the one-shot `ytmd:audio-can-play` event.
+  - Verified (CDP + console capture): 11 plugins start with zero errors;
+    EQ preset applied (`appliedFilters: 1`); HUD injected with correct
+    parent; local ArrowUp 40%→42% with HUD text; shell hotkey
+    Ctrl+Alt+ArrowUp 42%→44%; `savedVolume` persisted; **300.3 MB idle
+    private with 11 plugins on**.
+  - Remaining Phase B: settings UI, then port batch 3 (content).
 - Machine facts: Windows 11 x64; Rust 1.99.1 (MSVC) installed; VS 2019 Build
   Tools present; WebView2 runtime 155 present; Node 24 present; npm available.
 - Build artifacts must NOT go into OneDrive: always set
   `CARGO_TARGET_DIR=C:\Users\luigi\AppData\Local\Temp\opencode\ytm-target`
   (or any temp dir) before cargo commands.
 
-## Next step — Phase B (renderer plugins)
+## Next step — Phase B (settings UI, then batch 3)
 
-Goal: continue Phase B — plugin host and batch 1 are done (see "Current
-state"); next, in this order:
+Goal: the plugin settings UI (batch 2 is complete; batch 3 waits until the
+UI exists so new ports ship with a way to enable them). Plan:
 
-1. Port batch 2 (audio): equalizer, precise-volume, crossfade,
-   playback-speed, exponential-volume, skip-silences. These use the Web Audio
-   context; the host may need an `audioContext` provider (upstream wires
-   `audioSource`/`audioContext` in its renderer core and dispatches
-   `ytmd:audio-can-play`; see `src/renderer.ts` in the extracted sources).
-2. Port batch 3 (content): sponsorblock, synced-lyrics, skip-disliked-songs,
-   quality-changer, album-actions, captions-selector, navigation.
-3. Plugin settings UI in the shell (small settings window listing plugins
-   with enable toggles + options, backed by `set_plugin_config` and
-   `get_config`).
+1. **Settings UI**: small Tauri window opened from the tray, served from
+   `app/ui/` (local page, no build step). Lists `host.ids()`-style plugin
+   metadata via the shell (id/description/defaults come from the JS; expose
+   a `get_plugin_manifest` command that returns the parsed plugin headers,
+   or hardcode a small Rust-side manifest kept in sync). Toggles + option
+   fields write through `set_plugin_config`; a "reload player" button calls
+   `reload_player` (plugin enable/disable applies on page reload).
+2. Then port batch 3 (content): sponsorblock, synced-lyrics,
+   skip-disliked-songs, quality-changer, album-actions, captions-selector,
+   navigation.
 
 Carry-over notes:
 
@@ -143,20 +163,19 @@ Carry-over notes:
 
 ### Resume notes — Phase B (next session, 2026-10-16)
 
-State: batch 1 committed (`103c18f`/`59ea3ef`), batch 2a committed after this
-checkpoint (audio provider + exponential-volume, playback-speed,
-skip-silences; crossfade excluded). Next, in this order:
+State: batches 1, 2a and 2b are committed (`103c18f`/`59ea3ef`, `40f6c73`/
+`a87f5d2`, and this session's pair). All eleven ports + the plugin host and
+audio provider are done; the settings UI is the next milestone (see "Next
+step" above). Notes for it:
 
-1. **equalizer** (upstream `src/plugins/equalizer/`): large UI (in bar) +
-   BiquadFilters via `host.audio()`; the host graph lets the plugin
-   `disconnect()` the source and re-route through filters (like upstream).
-2. **precise-volume** (upstream `src/plugins/precise-volume/renderer.ts`):
-   renderer HUD + slider uses the audio graph/player; the volume *hotkeys*
-   live in the shell (Rust): extend `register_hotkeys` with volume steps
-   or a `set_volume_by` command that evals into the page.
-3. **Settings UI**: small Tauri window (local page in `ui/`) listing
-   `host.ids()` with enable toggles + options, backed by `get_config`/
-   `set_plugin_config`; then decide flipping defaults-on for stable plugins.
+- New commands/config access must follow the ACL checklist (build.rs
+  `AppManifest::commands` + `capabilities/main.json`).
+- The settings window should load a local page (`tauri://localhost`); the
+  existing `main-capability` already covers window label filtering — add a
+  capability entry for the settings window (or reuse a label wildcard).
+- Plugin metadata for the UI: either expose `get_plugin_manifest` returning
+  id/description/current config from Rust, or read defaults from the
+  injected script at runtime; keep one source of truth (the JS headers).
 
 Verification recipe and traps: see the sections below (CDP + console capture
 via `%TEMP%\opencode\cdp-console.mjs` shows plugin starts/errors; `cdp-eval.mjs`
@@ -174,6 +193,17 @@ for probes; `capture-window.ps1` for screenshots).
   (its config is loaded by then), and `#player` can be re-created during
   YouTube Music's boot — plugins that inject UI into it must re-attach
   (see video-toggle's observer).
+- **Trusted Types**: YouTube Music enforces
+  `require-trusted-types-for 'script'`, so `insertAdjacentHTML` / string
+  HTML throws (`This document requires 'TrustedHTML' assignment`). Build
+  nodes with DOM APIs (or a Trusted Types policy).
+- **Audio graph timing**: the host may wire the audio graph before a plugin
+  starts, so the one-shot `ytmd:audio-can-play` event is not a reliable
+  handoff — inside plugins use `await __MIRLO_PLUGINS__.audio()` (the event
+  is kept for upstream-shaped code).
+- Global plugin hotkeys (`precise-volume.globalShortcuts`) are registered by
+  the shell at startup from `config.json` (tauri accelerator strings, e.g.
+  "Ctrl+Alt+ArrowUp"); changes need an app restart.
 - The boot config (`window.__MIRLO_BOOT__`) is templated per window creation;
   the host refreshes through `get_config` at plugin init, so config edits +
   page reload apply without restarting the app.

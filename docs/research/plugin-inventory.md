@@ -70,6 +70,9 @@ extracted by static scan of every plugin directory (imports of `electron`).
   an on-demand Web Audio provider in the bridge (`audio: true` plugins get
   `ytmd:audio-can-play`); crossfade was excluded for the InnerTube reason
   above.
+- Batch 2b (equalizer, precise-volume) landed 2026-10-16; precise-volume's
+  global volume hotkeys are registered by the shell from
+  `plugins["precise-volume"].globalShortcuts`.
 - Two channels of the app run outside plugins too (the application core):
   window management, tray, and the `ytmd:*` bridge itself — see
   `ipc-contract.md`.

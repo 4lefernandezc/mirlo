@@ -23,18 +23,20 @@ process so the app could be closed gracefully afterwards.
 
 | Build | Processes | Private (sum) | Working set (sum) |
 |---|---|---|---|
+| Mirlo Phase B (eleven renderer plugins on) | 9 | **300.3 MB** | 701.6 MB |
 | Mirlo Phase B (nine renderer plugins on) | 10 | **331.8 MB** | 781.0 MB |
 | Mirlo Phase B (six renderer plugins on) | 10 | **368.4 MB** | 816.3 MB |
 | Mirlo Phase A (Tauri 2.12 shell) | 10 | **371.1 MB** | 821.4 MB |
 | Mirlo Phase 0 PoC (WebView2 + wry) | 10 | 399.1 MB | 829.3 MB |
 | pear-desktop v3.11.0 (Electron) | 6 | 1178.7 MB | 1559.6 MB |
 
-Phase A acceptance criterion (< 450 MB idle private) is met. The Phase B
-runs (batch-1 plugins, and batch 1 + batch 2a audio plugins enabled) show no
-measurable idle overhead versus the plugins-off baseline; run-to-run page
-variance is roughly ±5%, so treat the small differences as noise. Largest
-components in the Phase A run: renderer 165.8 MB, GPU 121.0 MB, browser
-31.2 MB (private working set).
+Phase A acceptance criterion (< 450 MB idle private) is met with a wide
+margin. The Phase B runs (batch 1, then plus batch 2a audio plugins, then
+plus batch 2b equalizer/precise-volume) show no measurable idle overhead
+versus the plugins-off baseline; run-to-run page variance is roughly ±5%
+(and one fewer WebView2 child process in the eleven-plugin run), so treat
+the small differences as noise. Largest components in the Phase A run:
+renderer 165.8 MB, GPU 121.0 MB, browser 31.2 MB (private working set).
 
 Evidence: `images/phase-a-idle.png` is a window capture of the idle shell
 (official player loaded with the seeded session). The image shows a private

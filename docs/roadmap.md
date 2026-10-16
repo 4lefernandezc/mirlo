@@ -41,8 +41,9 @@ Phases are ordered. Each phase ends with an updated `AGENTS.md`, a
       `ytmd:audio-can-play` event.
 - [x] Port batch 2a (audio, all default OFF): exponential-volume,
       playback-speed, skip-silences.
-- [ ] Port batch 2b: equalizer, precise-volume (volume hotkeys need shell
-      work).
+- [x] Port batch 2b (audio): equalizer (filters + `bass-booster` preset),
+      precise-volume (HUD, wheel/arrow shortcuts, `savedVolume` persistence,
+      shell-registered global volume hotkeys).
 - [~] crossfade — **excluded**: upstream fades the next track by extracting
       its stream URL via InnerTube, which ADR-0003 forbids.
 - [ ] Port batch 3 (content): sponsorblock, synced-lyrics,

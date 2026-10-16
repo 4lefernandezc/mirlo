@@ -58,6 +58,26 @@ pub const PLUGINS: &[PluginSource] = &[
         id: "precise-volume",
         source: include_str!("../plugins/precise-volume.js"),
     },
+    PluginSource {
+        id: "skip-disliked-songs",
+        source: include_str!("../plugins/skip-disliked-songs.js"),
+    },
+    PluginSource {
+        id: "captions-selector",
+        source: include_str!("../plugins/captions-selector.js"),
+    },
+    PluginSource {
+        id: "quality-changer",
+        source: include_str!("../plugins/quality-changer.js"),
+    },
+    PluginSource {
+        id: "navigation",
+        source: include_str!("../plugins/navigation.js"),
+    },
+    PluginSource {
+        id: "sponsorblock",
+        source: include_str!("../plugins/sponsorblock.js"),
+    },
 ];
 
 /// All plugin sources concatenated in registration order, each with a
@@ -159,6 +179,38 @@ pub fn manifest() -> serde_json::Value {
                 { "path": ["arrowsShortcut"], "type": "boolean", "label": "ArrowUp/ArrowDown shortcuts", "default": true },
                 { "path": ["globalShortcuts", "volumeUp"], "type": "string", "label": "Global volume up (accelerator, empty = off)", "default": "" },
                 { "path": ["globalShortcuts", "volumeDown"], "type": "string", "label": "Global volume down (accelerator, empty = off)", "default": "" },
+            ],
+        },
+        {
+            "id": "skip-disliked-songs",
+            "name": "Skip disliked songs",
+            "description": "Skips to the next track when the current one is disliked.",
+        },
+        {
+            "id": "captions-selector",
+            "name": "Captions selector",
+            "description": "Subtitles button to pick a caption track, with optional autoload of the last language.",
+            "options": [
+                { "path": ["disableCaptions"], "type": "boolean", "label": "Disable captions entirely", "default": false },
+                { "path": ["autoload"], "type": "boolean", "label": "Autoload the last used language", "default": false },
+            ],
+        },
+        {
+            "id": "quality-changer",
+            "name": "Quality changer",
+            "description": "Gear button in the player to pick the streaming quality.",
+        },
+        {
+            "id": "navigation",
+            "name": "Navigation buttons",
+            "description": "Back/forward buttons in the top bar.",
+        },
+        {
+            "id": "sponsorblock",
+            "name": "SponsorBlock",
+            "description": "Skips sponsor segments using the SponsorBlock API (third-party network calls only while enabled).",
+            "options": [
+                { "path": ["apiURL"], "type": "string", "label": "API base URL", "default": "https://sponsor.ajay.app" },
             ],
         },
     ])

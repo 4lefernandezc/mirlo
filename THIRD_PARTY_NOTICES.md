@@ -26,6 +26,11 @@ code and material included in this repository, with their license terms.
 | `app/src-tauri/plugins/skip-silences.js` | `src/plugins/skip-silences/` |
 | `app/src-tauri/plugins/equalizer.js` | `src/plugins/equalizer/` |
 | `app/src-tauri/plugins/precise-volume.js` | `src/plugins/precise-volume/` |
+| `app/src-tauri/plugins/skip-disliked-songs.js` | `src/plugins/skip-disliked-songs/` |
+| `app/src-tauri/plugins/captions-selector.js` | `src/plugins/captions-selector/` |
+| `app/src-tauri/plugins/quality-changer.js` | `src/plugins/quality-changer/` |
+| `app/src-tauri/plugins/navigation.js` | `src/plugins/navigation/` |
+| `app/src-tauri/plugins/sponsorblock.js` | `src/plugins/sponsorblock/` |
 
 Not ported (policy): `crossfade` (fades the next track by fetching its
 stream URL through InnerTube — stream extraction is excluded, ADR-0003) and

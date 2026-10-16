@@ -67,7 +67,10 @@ Options per plugin: `album-color-theme.ratio` (0–1), `video-toggle.mode`
 `equalizer.filters` (array of `{type, frequency, Q, gain}`) and
 `equalizer.presets`, `precise-volume.steps` / `arrowsShortcut` /
 `globalShortcuts` (tauri accelerator strings, empty = disabled, restart to
-apply) / `savedVolume` (written by the plugin). Defaults live in
+apply) / `savedVolume` (written by the plugin), `captions-selector`
+(`disableCaptions`, `autoload`, `lastCaptionsCode`) and `sponsorblock`
+(`apiURL`; segments are fetched from the page only while the plugin is
+enabled). The settings window renders every option above. Defaults live in
 `app/src-tauri/plugins/*.js`. Audio plugins wire a Web Audio graph on
 demand (only while at least one `audio: true` plugin is enabled).
 

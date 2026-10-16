@@ -9,6 +9,7 @@ fn main() {
             "set_config",
             "set_plugin_config",
             "get_path",
+            "get_plugin_manifest",
             "report_player_state",
             "reload_player",
             "restart_app",

@@ -74,6 +74,15 @@ demand (only while at least one `audio: true` plugin is enabled).
 `crossfade` is not ported: upstream extracts the next track's stream through
 InnerTube, which ADR-0003 excludes.
 
+## Settings window
+
+A local settings window (no remote content) is available from the tray
+("Settings…") or by launching `mirlo.exe --settings`. It lists general
+switches and every plugin with an enable toggle and typed option fields;
+changes are written to `config.json` immediately. Some plugins apply live,
+others need the window's **Reload player** button (the card shows a
+"reload needed" badge), and global hotkeys need an app restart.
+
 ## Behavior notes (Phase A)
 
 - Ad-block v0 is ported from the PoC but **ships OFF** (ADR-0003). Toggle

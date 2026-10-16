@@ -49,8 +49,8 @@ Phases are ordered. Each phase ends with an updated `AGENTS.md`, a
 - [x] Port batch 3a (content): skip-disliked-songs, captions-selector,
       quality-changer, navigation, sponsorblock.
 - [x] Port batch 3b (content, partial): album-actions.
-- [ ] Port batch 3c (content): synced-lyrics (provider transport decision
-      documented in AGENTS.md).
+- [x] Port batch 3c (content): synced-lyrics (reduced: LRCLib provider,
+      LRC parser, overlay panel with synced highlighting + click-to-seek).
 - [x] Plugin settings UI in the shell (local window from the tray or
       `mirlo.exe --settings`: per-plugin toggles + typed option fields,
       General switches, "Reload player" button).

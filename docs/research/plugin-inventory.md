@@ -79,6 +79,10 @@ extracted by static scan of every plugin directory (imports of `electron`).
   segments from the page (CORS allowed by the SponsorBlock API).
 - Batch 3b: album-actions landed 2026-10-16 (bulk like/dislike buttons with
   a fill-percentage mask, built with DOM/SVG APIs).
+- Batch 3c: synced-lyrics landed 2026-10-16 as a reduced port (LRCLib
+  provider fetched from the page, LRC parser + minimal Jaro-Winkler, lyrics
+  overlay panel with synced highlighting and click-to-seek; other upstream
+  providers not ported).
 - Two channels of the app run outside plugins too (the application core):
   window management, tray, and the `ytmd:*` bridge itself — see
   `ipc-contract.md`.

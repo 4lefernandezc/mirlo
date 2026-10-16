@@ -128,27 +128,43 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     Ctrl+Alt+ArrowUp 42%→44%; `savedVolume` persisted; **300.3 MB idle
     private with 11 plugins on**.
   - Remaining Phase B: settings UI, then port batch 3 (content).
+- **Phase B settings UI — DONE (2026-10-16)**: local settings window.
+  - New window label `settings`, served from `app/ui/settings.html`
+    (embedded static page, no build step), opened from the tray
+    ("Settings…") or with `mirlo.exe --settings`; it shares the WebView2
+    environment with the player (same `data_directory` + browser args, which
+    WebView2 requires and keeps CDP debugging unified).
+  - Page lists General (adblock, hotkeys_enabled) + one card per plugin with
+    enable toggle and typed option fields (boolean/number/select/string,
+    dotted `path` support), backed by `get_plugin_manifest` (new command;
+    UI metadata in `plugins.rs::manifest()`, runtime defaults remain the
+    plugin JS), `set_plugin_config`/`set_config` and a "Reload player"
+    button (`reload_player`). Changes save on interaction; reload applies
+    them without restarting the app.
+  - New capability `settings-capability` (local-only, windows:["settings"]);
+    closing the settings window only destroys it — `main` still owns app
+    exit.
+  - Verified (CDP on both targets): 11 cards / 17 toggles / 12 option fields
+    rendered; toggling blur-nav-bar off + "Reload player" removed the blur
+    from the player (styles 6→5, `backdropFilter: none`) and re-enabling
+    restored it; no horizontal overflow. Screenshot:
+    `docs/research/images/phase-b-settings.png` (capture artifact: PrintWindow
+    clips composited WebView2 surfaces at some window sizes — trust the CDP
+    layout numbers).
+  - Remaining Phase B: port batch 3 (content).
 - Machine facts: Windows 11 x64; Rust 1.99.1 (MSVC) installed; VS 2019 Build
   Tools present; WebView2 runtime 155 present; Node 24 present; npm available.
 - Build artifacts must NOT go into OneDrive: always set
   `CARGO_TARGET_DIR=C:\Users\luigi\AppData\Local\Temp\opencode\ytm-target`
   (or any temp dir) before cargo commands.
 
-## Next step — Phase B (settings UI, then batch 3)
+## Next step — Phase B (port batch 3, content)
 
-Goal: the plugin settings UI (batch 2 is complete; batch 3 waits until the
-UI exists so new ports ship with a way to enable them). Plan:
-
-1. **Settings UI**: small Tauri window opened from the tray, served from
-   `app/ui/` (local page, no build step). Lists `host.ids()`-style plugin
-   metadata via the shell (id/description/defaults come from the JS; expose
-   a `get_plugin_manifest` command that returns the parsed plugin headers,
-   or hardcode a small Rust-side manifest kept in sync). Toggles + option
-   fields write through `set_plugin_config`; a "reload player" button calls
-   `reload_player` (plugin enable/disable applies on page reload).
-2. Then port batch 3 (content): sponsorblock, synced-lyrics,
-   skip-disliked-songs, quality-changer, album-actions, captions-selector,
-   navigation.
+Goal: port batch 3 (content): sponsorblock, synced-lyrics,
+skip-disliked-songs, quality-changer, album-actions, captions-selector,
+navigation. The settings UI already exists, so new ports get option fields
+by adding entries to `plugins.rs::manifest()` (a unit test enforces the id
+list stays in sync with PLUGINS).
 
 Carry-over notes:
 
@@ -163,23 +179,25 @@ Carry-over notes:
 
 ### Resume notes — Phase B (next session, 2026-10-16)
 
-State: batches 1, 2a and 2b are committed (`103c18f`/`59ea3ef`, `40f6c73`/
-`a87f5d2`, and this session's pair). All eleven ports + the plugin host and
-audio provider are done; the settings UI is the next milestone (see "Next
-step" above). Notes for it:
+State: batches 1, 2a, 2b and the settings UI are committed (`103c18f`/
+`59ea3ef`, `40f6c73`/`a87f5d2`, `5ff899f`/`ecae580`, and this session's
+pair). Next: port batch 3 (content) per "Next step" above. Notes:
 
-- New commands/config access must follow the ACL checklist (build.rs
-  `AppManifest::commands` + `capabilities/main.json`).
-- The settings window should load a local page (`tauri://localhost`); the
-  existing `main-capability` already covers window label filtering — add a
-  capability entry for the settings window (or reuse a label wildcard).
-- Plugin metadata for the UI: either expose `get_plugin_manifest` returning
-  id/description/current config from Rust, or read defaults from the
-  injected script at runtime; keep one source of truth (the JS headers).
+- Read the upstream sources in `%TEMP%\opencode\ytm311\src\pear-desktop-3.11.0\src\plugins\`
+  and keep attribution headers; add rows to THIRD_PARTY_NOTICES.md.
+- Every new plugin needs: a `plugins/*.js` file registering itself (default
+  `enabled: false`), an entry in `plugins.rs::PLUGINS` **and**
+  `plugins.rs::manifest()` (the unit test enforces id sync), then the full
+  verification pass (CDP console capture for zero-error starts + behavior
+  probes; run the settings UI once to confirm the new card renders).
+- sponsorblock/synced-lyrics make network calls (fetch to their APIs); they
+  are renderer-only in upstream v3.11.0 except synced-lyrics' `net` usage —
+  check before porting.
 
 Verification recipe and traps: see the sections below (CDP + console capture
 via `%TEMP%\opencode\cdp-console.mjs` shows plugin starts/errors; `cdp-eval.mjs`
-for probes; `capture-window.ps1` for screenshots).
+for probes — pass a URL substring as 4th arg to target the settings window;
+`capture-window.ps1` for screenshots, `-WindowTitle` + `-MoveX/-MoveY/-MoveW/-MoveH`).
 
 ## Traps and dev notes
 
@@ -204,6 +222,15 @@ for probes; `capture-window.ps1` for screenshots).
 - Global plugin hotkeys (`precise-volume.globalShortcuts`) are registered by
   the shell at startup from `config.json` (tauri accelerator strings, e.g.
   "Ctrl+Alt+ArrowUp"); changes need an app restart.
+- Extra windows must share the WebView2 environment with the player (same
+  `data_directory` and browser args) or WebView2 spawns a separate browser
+  process — that also splits the CDP endpoint (the settings window was
+  invisible to debugging until it matched; see `open_settings_window`).
+- Frontend assets under `app/ui/` are embedded at compile time: HTML/CSS
+  changes need a rebuild, not just an app restart.
+- `PrintWindow` captures of WebView2 (composited surfaces) may clip content
+  at some window sizes/positions; use CDP layout numbers (scrollWidth vs
+  innerWidth) as the source of truth for layout checks.
 - The boot config (`window.__MIRLO_BOOT__`) is templated per window creation;
   the host refreshes through `get_config` at plugin init, so config edits +
   page reload apply without restarting the app.
@@ -250,12 +277,13 @@ for probes; `capture-window.ps1` for screenshots).
 ```
 app/                        Tauri 2 application (Phases A+B, in progress)
   ui/index.html             Static fallback page (frontendDist, no build step)
-  src-tauri/src/lib.rs      Shell: window, commands, hotkeys, tray, single-instance
+  ui/settings.html          Local settings window (plugins UI, no build step)
+  src-tauri/src/lib.rs      Shell: windows, commands, hotkeys, tray, single-instance
   src-tauri/src/config.rs   JSON settings store (schema v2: plugins map)
   src-tauri/src/bridge.js   Bridge + plugin host injected into the player page
-  src-tauri/src/plugins.rs  Plugin source registry (include_str!)
+  src-tauri/src/plugins.rs  Plugin source registry + settings manifest
   src-tauri/plugins/*.js    Renderer plugin ports (one file per plugin)
-  src-tauri/capabilities/   Remote-URL capability (ACL) for the bridge
+  src-tauri/capabilities/   Remote-URL + settings-window capabilities (ACL)
 docs/
   architecture.md           Target architecture
   roadmap.md                Phases and status

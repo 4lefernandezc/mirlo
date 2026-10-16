@@ -49,7 +49,9 @@ Phases are ordered. Each phase ends with an updated `AGENTS.md`, a
 - [ ] Port batch 3 (content): sponsorblock, synced-lyrics,
       skip-disliked-songs, quality-changer, album-actions, captions-selector,
       navigation.
-- [ ] Plugin settings UI in the shell.
+- [x] Plugin settings UI in the shell (local window from the tray or
+      `mirlo.exe --settings`: per-plugin toggles + typed option fields,
+      General switches, "Reload player" button).
 
 ## Phase C — Native integrations
 

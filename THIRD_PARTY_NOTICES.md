@@ -29,6 +29,7 @@ code and material included in this repository, with their license terms.
 | `app/src-tauri/plugins/quality-changer.js` | `src/plugins/quality-changer/` |
 | `app/src-tauri/plugins/navigation.js` | `src/plugins/navigation/` |
 | `app/src-tauri/plugins/sponsorblock.js` | `src/plugins/sponsorblock/` |
+| `app/src-tauri/plugins/album-actions.js` | `src/plugins/album-actions/` |
 
 Each file carries an attribution header with its upstream paths and the
 deviations made for the Mirlo plugin host (no Electron/SolidJS; the host

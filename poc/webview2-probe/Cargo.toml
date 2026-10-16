@@ -1,0 +1,10 @@
+[package]
+name = "ytm-poc"
+version = "0.1.0"
+edition = "2021"
+description = "PoC: YouTube Music en WebView2 - validacion de riesgos para cliente nativo ligero"
+
+[dependencies]
+wry = "0.53"
+tao = "0.34"
+global-hotkey = "0.7"

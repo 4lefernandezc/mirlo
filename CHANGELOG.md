@@ -59,6 +59,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     forced `playbackRate`), skip-silences (analyser-based).
   - `crossfade` is **excluded** (ADR-0003 addendum): upstream extracts the
     next track's stream URL through InnerTube to fade it.
+- Phase B batch 2b — equalizer and precise-volume:
+  - equalizer: config-driven BiquadFilters plus the `bass-booster` preset,
+    applied through the host audio graph (v3.11.0 upstream has no sliders
+    UI).
+  - precise-volume: volume HUD, wheel and ArrowUp/ArrowDown shortcuts,
+    tooltip/slider synchronization and `savedVolume` persistence; global
+    volume hotkeys are registered by the shell from the plugin config
+    (tauri accelerator strings, restart to apply).
+  - YouTube Music's Trusted Types enforcement and the audio-provider timing
+    are handled (DOM-built UI, `audio()` accessor).
 
 ### Changed
 

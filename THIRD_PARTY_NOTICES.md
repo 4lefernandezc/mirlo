@@ -24,6 +24,11 @@ code and material included in this repository, with their license terms.
 | `app/src-tauri/plugins/skip-silences.js` | `src/plugins/skip-silences/` |
 | `app/src-tauri/plugins/equalizer.js` | `src/plugins/equalizer/` |
 | `app/src-tauri/plugins/precise-volume.js` | `src/plugins/precise-volume/` |
+| `app/src-tauri/plugins/skip-disliked-songs.js` | `src/plugins/skip-disliked-songs/` |
+| `app/src-tauri/plugins/captions-selector.js` | `src/plugins/captions-selector/` |
+| `app/src-tauri/plugins/quality-changer.js` | `src/plugins/quality-changer/` |
+| `app/src-tauri/plugins/navigation.js` | `src/plugins/navigation/` |
+| `app/src-tauri/plugins/sponsorblock.js` | `src/plugins/sponsorblock/` |
 
 Each file carries an attribution header with its upstream paths and the
 deviations made for the Mirlo plugin host (no Electron/SolidJS; the host

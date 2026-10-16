@@ -14,8 +14,9 @@
  *   - `stop()` removes listeners/HUD (upstream has no unload path).
  */
 __MIRLO_PLUGINS__.register('precise-volume', {
+  // Mirlo default: enabled (additive HUD + shortcuts).
   defaults: {
-    enabled: false,
+    enabled: true,
     steps: 1,
     arrowsShortcut: true,
     globalShortcuts: {

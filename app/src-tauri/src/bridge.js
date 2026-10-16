@@ -262,6 +262,53 @@
     return new Promise((resolve) => audioWaiters.push(resolve));
   }
 
+  // Simple choice popup used by plugins that need a picker (replaces the
+  // Electron dialogs upstream uses). `items`: { label, value, selected }.
+  function showChoiceMenu(anchor, items, onPick) {
+    const existing = document.querySelector('#mirlo-choice-menu');
+    if (existing) existing.remove();
+
+    const menu = document.createElement('div');
+    menu.id = 'mirlo-choice-menu';
+    menu.style.cssText =
+      'position:fixed;z-index:10000;background:#212121;color:#fff;border-radius:8px;' +
+      'padding:6px;min-width:200px;max-height:50vh;overflow-y:auto;' +
+      'box-shadow:0 4px 18px rgba(0,0,0,.55);font-size:14px;';
+    const rect = anchor.getBoundingClientRect();
+    menu.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - 220))}px`;
+    menu.style.top = `${Math.max(8, Math.min(rect.top + 8, window.innerHeight - 40))}px`;
+
+    const close = () => {
+      menu.remove();
+      document.removeEventListener('click', onDocumentClick, true);
+    };
+    const onDocumentClick = (event) => {
+      if (!menu.contains(event.target)) close();
+    };
+
+    for (const item of items) {
+      const row = document.createElement('div');
+      row.textContent = item.label;
+      row.style.cssText = `padding:8px 12px;border-radius:6px;cursor:pointer;${
+        item.selected ? 'color:#f5a524;' : ''
+      }`;
+      row.addEventListener('mouseenter', () => {
+        row.style.background = '#333';
+      });
+      row.addEventListener('mouseleave', () => {
+        row.style.background = 'transparent';
+      });
+      row.addEventListener('click', () => {
+        close();
+        onPick(item.value);
+      });
+      menu.appendChild(row);
+    }
+
+    document.body.appendChild(menu);
+    setTimeout(() => document.addEventListener('click', onDocumentClick, true), 0);
+  }
+
   function domReady() {
     return new Promise((resolve) => {
       if (document.readyState === 'loading') {
@@ -391,6 +438,7 @@
     enable: (id) => startPlugin(id),
     disable: (id) => stopPlugin(id),
     waitForElement,
+    showChoiceMenu,
     audio,
     onAudioReady: (cb) => {
       audio().then(cb);

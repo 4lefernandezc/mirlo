@@ -140,6 +140,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     the user level (`ToastNotifier.Setting()` = `DisabledForUser`; `Show()`
     succeeds and the OS drops the toast) — the module logs that state once
     per run. Memory: 409 MB fresh idle, 427.9 MB after a long session.
+- Discord Rich Presence — minimal IPC client in `discord.rs` (no new
+  dependencies): frame codec, worker/reader threads over
+  `\\.\pipe\discord-ipc-0..9`, handshake, READY/ERROR handling, PING/PONG and
+  reconnect pacing; SET_ACTIVITY (type Listening) fires only when the
+  track/state actually changes. Settings → General gains a toggle and a
+  client-id field; it ships OFF until the user creates a Discord
+  application and pastes its id. Verified live against the running Discord
+  client with a dummy id (handshake accepted and parsed; Discord replies
+  `Invalid Client ID` — the real round trip; a real id yields READY).
 
 ### Changed
 

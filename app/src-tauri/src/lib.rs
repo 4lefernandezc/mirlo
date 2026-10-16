@@ -7,6 +7,7 @@
 
 mod adblock;
 mod config;
+mod discord;
 mod media_controls;
 mod notifications;
 mod plugins;
@@ -339,6 +340,7 @@ fn set_config(
 ) -> Result<Config, String> {
     config::save(&app, &config)?;
     adblock::set_enabled(config.adblock);
+    discord::set_config(config.discord_rpc, config.discord_client_id.clone());
     let mut current = state
         .config
         .lock()
@@ -385,6 +387,7 @@ fn report_player_state(
         other => println!("[mirlo] state: {other}"),
     }
     media_controls::on_player_state(&kind, &data);
+    discord::on_player_state(&kind, &data);
 
     // Track-change toast, only while enabled and the player is in the
     // background (the media flyout covers the focused case). The dedup
@@ -440,6 +443,7 @@ pub fn run() {
             let handle = app.handle().clone();
             let config = config::load(&handle);
             adblock::set_enabled(config.adblock);
+            discord::set_config(config.discord_rpc, config.discord_client_id.clone());
 
             std::fs::create_dir_all(config::profile_dir(&handle))?;
             if let Err(err) = config::ensure_stored(&handle, &config) {

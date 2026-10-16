@@ -26,6 +26,32 @@ First run creates `%LOCALAPPDATA%\Mirlo\` with `config.json` and the
 persistent WebView2 profile (`webview2-profile/`); the Google session survives
 restarts, exactly like the Phase 0 PoC.
 
+## Plugins (Phase B, batch 1)
+
+Renderer plugins are ported from pear-desktop (MIT; see
+`THIRD_PARTY_NOTICES.md`) and **ship OFF by default** until the settings UI
+exists. Enable them in `%LOCALAPPDATA%\Mirlo\config.json` under `plugins`
+and reload the player window (or restart the app):
+
+```json
+{
+  "plugins": {
+    "blur-nav-bar": { "enabled": true },
+    "compact-sidebar": { "enabled": true },
+    "album-color-theme": { "enabled": true, "ratio": 0.5 },
+    "video-toggle": { "enabled": true, "mode": "custom", "align": "left" },
+    "unobtrusive-player": { "enabled": true },
+    "disable-autoplay": { "enabled": true, "applyOnce": false }
+  }
+}
+```
+
+Options per plugin: `album-color-theme.ratio` (0–1), `video-toggle.mode`
+(`custom` | `native` | `disabled`, needs reload), `video-toggle.align`
+(`left` | `middle` | `right`), `video-toggle.forceHide`,
+`video-toggle.hideVideo` (persisted by the switch button),
+`disable-autoplay.applyOnce`. Defaults live in `app/src-tauri/plugins/*.js`.
+
 ## Behavior notes (Phase A)
 
 - Ad-block v0 is ported from the PoC but **ships OFF** (ADR-0003). Toggle

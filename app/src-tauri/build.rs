@@ -7,6 +7,7 @@ fn main() {
         tauri_build::AppManifest::new().commands(&[
             "get_config",
             "set_config",
+            "set_plugin_config",
             "get_path",
             "report_player_state",
             "reload_player",

@@ -25,7 +25,7 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 - If context runs out mid-task: commit WIP with a clear message and add a
   "Resume notes" bullet here before finishing.
 
-## Current state (2026-10-16)
+## Current state (2026-10-17)
 
 - **Phase 0 — DONE**: research + validated PoC.
   - `poc/webview2-probe/` builds and runs (Rust + wry + WebView2).
@@ -346,15 +346,64 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     exactly; maximize + close keeps the normal geometry with
     `maximized: true`; reopen maximized and un-maximize returns to the
     saved bounds.
+- **Phase D — DONE (2026-10-17)**: packaging, release pipeline and auto-update.
+  - Installers via Tauri CLI (`npx @tauri-apps/cli@^2 build`): NSIS per-user
+    (`currentUser`, no admin) + WiX MSI, embedded WebView2 bootstrapper,
+    English/Spanish NSIS language selector, MIT license page. An NSIS install
+    hook (`app/src-tauri/installer-hooks.nsh`) relocates the default install
+    dir from `%LOCALAPPDATA%\Mirlo` (which is the app-data dir!) to
+    `%LOCALAPPDATA%\Programs\Mirlo`; user-chosen dirs are respected. Locally
+    verified: silent install → `Programs\Mirlo` (only mirlo.exe +
+    uninstall.exe), app runs with **subsystem GUI (2)** (no console), writes
+    `%LOCALAPPDATA%\Mirlo\logs\mirlo.log`, graceful close, silent uninstall
+    removes the program, data dir preserved. Installer sizes: NSIS 3.78 MiB,
+    MSI 4.95 MiB.
+  - Auto-update: `tauri-plugin-updater` 2.14 + `createUpdaterArtifacts`
+    (both bundles get `.sig`). Public key in `tauri.conf.json`
+    (`plugins.updater.pubkey`); endpoint
+    `https://github.com/4lefernandezc/mirlo/releases/latest/download/latest.json`;
+    NSIS `installMode: passive`. UX: silent check 30 s after startup
+    (config flag `update_check`, General toggle), tray item "Check for
+    updates…" (always reports), MessageBox confirm → download+install →
+    restart. Verified: the check fired live on the installed build and
+    logged `update check failed: Could not fetch a valid release JSON`
+    (repo has no release yet) — error path works; full update E2E pending a
+    real release. **Signing key: `%USERPROFILE%\.tauri\mirlo.key` (no
+    password), never commit; public key already embedded.**
+  - `windows_subsystem = "windows"` in release (debug keeps console) +
+    `logging.rs` (dependency-free file logger, 1 MB rotation, `mirlo.log.old`,
+    timestamps via `GetLocalTime`; macros `log_info!`/`log_error!` replace all
+    println! call sites) + `dialog.rs` (MessageBoxW helpers; panic hook and
+    fatal startup errors show a native box).
+  - Release workflow `.github/workflows/release.yml`: on `v*` tag →
+    tauri-action builds/signs, creates a **draft** release (installers, sigs,
+    `latest.json`, `SHA256SUMS.txt` via `gh release upload`). Requires GitHub
+    secrets `TAURI_SIGNING_PRIVATE_KEY` (+ password optional/unset) and a
+    public repo for the updater endpoint.
+  - Docs: `docs/user/{install,faq,terms}.md`, `docs/release.md` (mantainer
+    checklist: secrets, version bump, tag, verify draft, publish; key
+    rotation caveat: old installs only trust the old pubkey).
+  - `docs/research/images/phase-a-idle.png` redacted (avatar + "4LE" label
+    painted over) in place; note added in measurements.md. **No other
+    screenshot should be published without a privacy pass.**
+  - Owner actions remaining before the first public release: make repo
+    public, add the signing key to GitHub Actions secrets, tag `v0.1.0`,
+    verify the draft, publish (then re-verify auto-update from 0.1.0→next).
 - Machine facts: Windows 11 x64; Rust 1.99.1 (MSVC) installed; VS 2019 Build
   Tools present; WebView2 runtime 155 present; Node 24 present; npm available.
 - Build artifacts must NOT go into OneDrive: always set
   `CARGO_TARGET_DIR=C:\Users\luigi\AppData\Local\Temp\opencode\ytm-target`
   (or any temp dir) before cargo commands.
 
-## Next step — Phase C (remaining)
+## Next step — publish v0.1.0 (owner actions) / Phase C leftover
 
-SMTC, ad-block v1, notifications and Discord rich presence are done.
+**Phase D is done; the codebase is release-ready.** What remains is the
+owner's publishing sequence (see `docs/release.md`): make the repository
+public, add `TAURI_SIGNING_PRIVATE_KEY` (+ password if set) to GitHub Actions
+secrets, tag `v0.1.0`, push the tag, verify the draft release and publish it;
+then verify auto-update from the installed build. Register
+`%USERPROFILE%\.tauri\mirlo.key` somewhere safe (password manager).
+
 Remaining Phase C item (currently **parked by the owner's decision**,
 2026-10-16 — do not start it until the user asks):
 
@@ -369,8 +418,9 @@ Remaining Phase C item (currently **parked by the owner's decision**,
    signature needs the api_secret, which must NOT go into the page — so
    shell-side is the right call, with the secret in config.json).
 
-Also still pending from Phase A/B leftovers: `windows_subsystem` switch +
-file logging (planned for Phase D).
+After that, Phase E candidates (not committed): MIC optimizations
+(audio-only mode, GPU flags), cross-platform evaluation, native playback
+(gated on a fresh ToS/risk review).
 
 Carry-over notes:
 
@@ -546,8 +596,30 @@ for probes — pass a URL substring as 4th arg to target the settings window;
 - Force-killing the host leaves WebView2 trees shutting down slowly; verify
   with a process-tree walk (`Get-CimInstance Win32_Process` filtered by
   command line) and prefer graceful close (`CloseMainWindow()`).
-- The app console stays attached (no `windows_subsystem` yet) — useful for
-  smoke tests, to be replaced by file logging in Phase D.
+- Release builds run without a console (`windows_subsystem = "windows"`);
+  debug builds keep it. All shell diagnostics go through
+  `logging::log_info!`/`log_error!` (file + console in debug) — never
+  `println!`/`eprintln!` in new code.
+- The updater endpoint is `releases/latest/download/latest.json` on the
+  (currently private) repo: until the repo is public, checks 404 and log
+  `update check failed` (harmless, silent).
+- Bundling with `createUpdaterArtifacts: true` requires
+  `TAURI_SIGNING_PRIVATE_KEY` in the environment (`tauri build` signs the
+  updater artifacts). The key is `%USERPROFILE%\.tauri\mirlo.key` (empty
+  password; `npx @tauri-apps/cli@^2 signer generate --ci` regenerates one).
+  The embedded public key must always match the key used to sign releases,
+  or updates are rejected as invalid signatures.
+- NSIS trap: the default per-user install dir is `$LOCALAPPDATA\<productName>`
+  — identical to the app-data dir `%LOCALAPPDATA%\Mirlo`. The `installerHooks`
+  file (`installer-hooks.nsh`, PREINSTALL macro) relocates it to
+  `%LOCALAPPDATA%\Programs\Mirlo` when the user kept the default; if the
+  product name or data dir ever changes, revisit this hook.
+- PowerShell 5.1 cannot read PE headers via `PEReader`; read the subsystem
+  from the raw bytes (`e_lfanew` at 0x3C, subsystem u16 at +24+68; 2 = GUI).
+- Interactive scripted proofs: the updater prompt/install comes from
+  `dialog.rs` (MessageBoxW); the tray item "Check for updates…" is the
+  interactive path. `update_check` (config, default true) gates only the
+  startup check.
 - `cargo test --lib` runs the config unit tests without needing a window or
   WebView2 runtime.
 
@@ -580,6 +652,9 @@ app/                        Tauri 2 application (Phases A+B done; Phase C next)
   ui/settings.html          Local settings window (plugins UI, no build step)
   src-tauri/src/lib.rs      Shell: windows, commands, hotkeys, tray, single-instance
   src-tauri/src/config.rs   JSON settings store (schema v2: plugins map)
+  src-tauri/src/logging.rs  File logger (%LOCALAPPDATA%\Mirlo\logs, rotation)
+  src-tauri/src/dialog.rs   Native MessageBoxW helpers (updater prompts, fatal errors)
+  src-tauri/src/updates.rs  Auto-update: startup check + tray item (tauri-plugin-updater)
   src-tauri/src/adblock.rs  Ad-block v1: WebResourceRequested handler (Windows)
   src-tauri/src/media_controls.rs  SMTC media session (Windows)
   src-tauri/src/notifications.rs  Track-change toasts (Windows)
@@ -587,14 +662,20 @@ app/                        Tauri 2 application (Phases A+B done; Phase C next)
   src-tauri/src/window_state.rs  Window geometry persistence (window-state.json)
   src-tauri/src/bridge.js   Bridge + plugin host injected into the player page
   src-tauri/src/plugins.rs  Plugin source registry + settings manifest
+  src-tauri/installer-hooks.nsh  NSIS hook: install dir move + (future) tweaks
   src-tauri/plugins/*.js    Renderer plugin ports (one file per plugin)
   src-tauri/capabilities/   Remote-URL + settings-window capabilities (ACL)
 docs/
   architecture.md           Target architecture
   roadmap.md                Phases and status
+  release.md                Maintainer release checklist (secrets, tag, verify)
+  user/                     User docs: install, FAQ, terms and scope
   adr/                      Architecture decision records
   research/                 Evidence (plugin inventory, IPC contract, measurements,
                             PoC validation, idle screenshot)
+.github/workflows/
+  ci.yml                    fmt/clippy/test/build on push and PR
+  release.yml               Signed draft release on v* tags (+ SHA256SUMS.txt)
 poc/webview2-probe/         Validated Rust + wry spike (seed for Phase A)
 tools/measure-memory.ps1    RAM measurement helper (process tree, private WS)
 tools/gen-icons.ps1         Regenerates app icons (placeholder mark)

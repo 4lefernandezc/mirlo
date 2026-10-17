@@ -68,6 +68,7 @@ mod platform {
     use std::sync::atomic::{AtomicU64, Ordering};
     use std::sync::OnceLock;
 
+    use crate::logging::{log_error, log_info};
     use serde_json::Value;
     use tauri::AppHandle;
     use windows::core::{factory, HSTRING};
@@ -89,7 +90,6 @@ mod platform {
     const LOG_FIRST: u64 = 10;
     const LOG_EVERY: u64 = 500;
     static ERRORS: AtomicU64 = AtomicU64::new(0);
-
     struct Session {
         controls: SystemMediaTransportControls,
         updater: SystemMediaTransportControlsDisplayUpdater,
@@ -102,12 +102,12 @@ mod platform {
         let hwnd = match window.hwnd() {
             Ok(hwnd) => hwnd,
             Err(err) => {
-                eprintln!("[mirlo] smtc: no window handle: {err}");
+                log_error!("smtc: no window handle: {err}");
                 return;
             }
         };
         if let Err(err) = create(hwnd, app) {
-            eprintln!("[mirlo] smtc: could not create the media session: {err}");
+            log_error!("smtc: could not create the media session: {err}");
         }
     }
 
@@ -183,7 +183,7 @@ mod platform {
             updater,
             timeline,
         });
-        println!("[mirlo] smtc: media session created");
+        log_info!("smtc: media session created");
         Ok(())
     }
 
@@ -194,7 +194,7 @@ mod platform {
         if let Err(err) = update(session, kind, data) {
             let count = ERRORS.fetch_add(1, Ordering::Relaxed) + 1;
             if count <= LOG_FIRST || count % LOG_EVERY == 0 {
-                eprintln!("[mirlo] smtc: update failed: {err} (n={count})");
+                log_error!("smtc: update failed: {err} (n={count})");
             }
         }
     }

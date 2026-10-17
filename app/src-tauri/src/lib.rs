@@ -7,10 +7,14 @@
 
 mod adblock;
 mod config;
+#[cfg(target_os = "windows")]
+mod dialog;
 mod discord;
+mod logging;
 mod media_controls;
 mod notifications;
 mod plugins;
+mod updates;
 mod window_state;
 
 use std::path::Path;
@@ -18,6 +22,7 @@ use std::str::FromStr;
 use std::sync::{Mutex, OnceLock};
 
 use config::Config;
+use logging::{log_error, log_info};
 use serde_json::Value;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
@@ -111,7 +116,7 @@ fn hotkey_handler(app: &AppHandle, shortcut: &Shortcut, event: ShortcutEvent) {
         None
     };
     if let Some(action) = action {
-        println!("[mirlo] hotkey: {action}");
+        log_info!("hotkey: {action}");
         eval_in_player(
             app,
             &format!("window.__mirlo && window.__mirlo.player.{action}()"),
@@ -127,7 +132,7 @@ fn hotkey_handler(app: &AppHandle, shortcut: &Shortcut, event: ShortcutEvent) {
             .map(|(_, js)| js.clone())
     });
     if let Some(js) = plugin_js {
-        println!("[mirlo] hotkey: plugin ({js})");
+        log_info!("hotkey: plugin ({js})");
         eval_in_player(app, &js);
     }
 }
@@ -140,7 +145,7 @@ fn register_hotkeys(app: &AppHandle) {
         ("previous", previous),
     ] {
         if let Err(err) = app.global_shortcut().register(shortcut) {
-            eprintln!("[mirlo] could not register hotkey {name}: {err}");
+            log_error!("could not register hotkey {name}: {err}");
         }
     }
 }
@@ -178,13 +183,11 @@ fn register_plugin_hotkeys(app: &AppHandle, config: &Config) {
                     table.push((shortcut, js));
                 }
                 if let Err(err) = app.global_shortcut().register(shortcut) {
-                    eprintln!(
-                        "[mirlo] could not register plugin hotkey {key} ({accelerator}): {err}"
-                    );
+                    log_error!("could not register plugin hotkey {key} ({accelerator}): {err}");
                 }
             }
             Err(err) => {
-                eprintln!("[mirlo] invalid accelerator for {key}: {accelerator} ({err})");
+                log_error!("invalid accelerator for {key}: {accelerator} ({err})");
             }
         }
     }
@@ -197,9 +200,16 @@ fn plugin_hotkey_table() -> &'static Mutex<Vec<(Shortcut, String)>> {
 
 fn create_tray(app: &tauri::App) -> tauri::Result<()> {
     let settings = MenuItem::with_id(app, "settings", "Settings…", true, None::<&str>)?;
+    let check_updates = MenuItem::with_id(
+        app,
+        "check-updates",
+        "Check for updates…",
+        true,
+        None::<&str>,
+    )?;
     let toggle = MenuItem::with_id(app, "toggle", "Show / Hide", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&settings, &toggle, &quit])?;
+    let menu = Menu::with_items(app, &[&settings, &check_updates, &toggle, &quit])?;
 
     let mut builder = TrayIconBuilder::with_id("main-tray")
         .tooltip("Mirlo")
@@ -207,6 +217,7 @@ fn create_tray(app: &tauri::App) -> tauri::Result<()> {
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id().as_ref() {
             "settings" => open_settings_window(app),
+            "check-updates" => updates::check_now(app),
             "toggle" => toggle_main_window(app),
             "quit" => {
                 window_state::persist(app);
@@ -267,7 +278,7 @@ fn open_settings_window(app: &AppHandle) {
     }
 
     if let Err(err) = builder.build() {
-        eprintln!("[mirlo] could not open the settings window: {err}");
+        log_error!("could not open the settings window: {err}");
     }
 }
 
@@ -409,7 +420,7 @@ fn report_player_state(
 ) {
     match kind.as_str() {
         "time-changed" => {}
-        other => println!("[mirlo] state: {other}"),
+        other => log_info!("state: {other}"),
     }
     media_controls::on_player_state(&kind, &data);
     discord::on_player_state(&kind, &data);
@@ -452,7 +463,22 @@ fn restart_app(app: AppHandle) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    logging::init();
+    // Under `windows_subsystem = "windows"` a panic would close the app
+    // without any trace: write it to the log and surface a native box.
+    let default_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        logging::emergency(&format!("panic: {info}"));
+        #[cfg(target_os = "windows")]
+        crate::dialog::fatal(&format!(
+            "Mirlo hit an unexpected error and has to close.\n\n{info}\n\nDetails: %LOCALAPPDATA%\\Mirlo\\logs\\mirlo.log"
+        ));
+        if cfg!(debug_assertions) {
+            default_hook(info);
+        }
+    }));
+
+    let result = tauri::Builder::default()
         // The single-instance plugin must be registered first: a second
         // launch focuses the existing window and exits.
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
@@ -465,6 +491,7 @@ pub fn run() {
                 })
                 .build(),
         )
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(move |app| {
             let handle = app.handle().clone();
             let config = config::load(&handle);
@@ -473,7 +500,7 @@ pub fn run() {
 
             std::fs::create_dir_all(config::profile_dir(&handle))?;
             if let Err(err) = config::ensure_stored(&handle, &config) {
-                eprintln!("[mirlo] could not write initial config: {err}");
+                log_error!("could not write initial config: {err}");
             }
             app.manage(AppState {
                 config: Mutex::new(config.clone()),
@@ -494,8 +521,14 @@ pub fn run() {
                 open_settings_window(&handle);
             }
 
-            println!(
-                "[mirlo] ready: profile={} config={}",
+            // Signed-release auto-update: silent check, prompts only when a
+            // new version exists.
+            if config.update_check {
+                updates::check_on_startup(&handle);
+            }
+
+            log_info!(
+                "ready: profile={} config={}",
                 config::profile_dir(&handle).display(),
                 config::config_path(&handle).display()
             );
@@ -532,6 +565,14 @@ pub fn run() {
                 }
             }
         })
-        .run(tauri::generate_context!())
-        .expect("error while running Mirlo");
+        .run(tauri::generate_context!());
+
+    if let Err(err) = result {
+        log_error!("fatal: {err}");
+        #[cfg(target_os = "windows")]
+        crate::dialog::fatal(&format!(
+            "Mirlo could not start.\n\n{err}\n\nDetails: %LOCALAPPDATA%\\Mirlo\\logs\\mirlo.log"
+        ));
+        std::process::exit(1);
+    }
 }

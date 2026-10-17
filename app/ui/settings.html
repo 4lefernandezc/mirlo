@@ -195,6 +195,10 @@
             Discord Rich Presence (needs a client id below)
           </label>
           <label class="field inline">
+            <input type="checkbox" id="update-check" />
+            Check for updates on startup (updates install only after you confirm)
+          </label>
+          <label class="field inline">
             <input type="text" id="discord-client-id" placeholder="Discord application client id" size="24" />
           </label>
         </div>
@@ -246,11 +250,13 @@
           const notifications = document.getElementById('notifications');
           const discordRpc = document.getElementById('discord-rpc');
           const discordClientId = document.getElementById('discord-client-id');
+          const updateCheck = document.getElementById('update-check');
           adblock.checked = !!fullConfig.adblock;
           hotkeys.checked = !!fullConfig.hotkeys_enabled;
           notifications.checked = !!fullConfig.notifications;
           discordRpc.checked = !!fullConfig.discord_rpc;
           discordClientId.value = fullConfig.discord_client_id || '';
+          updateCheck.checked = fullConfig.update_check !== false;
 
           const save = async () => {
             try {
@@ -262,6 +268,7 @@
                   notifications: notifications.checked,
                   discord_rpc: discordRpc.checked,
                   discord_client_id: discordClientId.value.trim(),
+                  update_check: updateCheck.checked,
                 },
               });
               status('General settings saved.');
@@ -274,6 +281,7 @@
           notifications.addEventListener('change', save);
           discordRpc.addEventListener('change', save);
           discordClientId.addEventListener('change', save);
+          updateCheck.addEventListener('change', save);
         }
 
         function renderOption(plugin, state, option) {

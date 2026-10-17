@@ -99,6 +99,7 @@ mod platform {
     use windows::Win32::System::Pipes::PeekNamedPipe;
 
     use super::{activity_args, encode_frame};
+    use crate::logging::log_info;
 
     const OP_HANDSHAKE: u32 = 0;
     const OP_FRAME: u32 = 1;
@@ -468,13 +469,13 @@ mod platform {
     fn log_bounded(message: &str) {
         let count = LOGS.fetch_add(1, Ordering::Relaxed) + 1;
         if count < LOG_FIRST || count % LOG_EVERY == 0 {
-            println!("[mirlo] discord: {message}");
+            log_info!("discord: {message}");
         }
     }
 
     /// Lifecycle/error logging (rare, always visible).
     fn log_event(message: &str) {
-        println!("[mirlo] discord: {message}");
+        log_info!("discord: {message}");
     }
 }
 

@@ -150,6 +150,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   client with a dummy id (handshake accepted and parsed; Discord replies
   `Invalid Client ID` — the real round trip; a real id yields READY).
 
+### Fixed
+
+- Discord Rich Presence sticking on the first track and never updating:
+  a pending blocking pipe read serialized writes on the connection (the
+  second `SET_ACTIVITY` blocked forever). The reader is now peek-gated
+  (`PeekNamedPipe`), sends run with a 3 s deadline (timeout → reconnect),
+  and the reader resets on partial/oversized frames.
+- Discord/tray artwork: the player state now carries the current `videoId`
+  from the YouTube player API (the SPA keeps the address bar at the home
+  URL, so the URL fallback rarely matched); Discord, the toasts and the
+  SMTC thumbnail now always get the cover. The Discord activity uses it as
+  an external asset URL (Discord resolves it to `mp:external/...`).
+- Discord timestamps are now milliseconds (the IPC unit) with `start` and
+  `end` while playing, so the client shows the track progress.
+
 ### Changed
 
 - CI: added a Windows job that formats, lints, tests and builds `app/`.

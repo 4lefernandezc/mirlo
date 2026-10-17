@@ -658,6 +658,14 @@ for probes — pass a URL substring as 4th arg to target the settings window;
 - Never reuse YouTube's custom elements bare (`yt-icon-button` renders
   300×300 unstyled); build plain buttons with plugin styles
   (`.mirlo-icon-button`).
+- **Abrupt track transitions in the owner's install are a plugin symptom,
+  not a shell bug** (2026-10-17): verification sessions left every plugin
+  enabled in the owner's `config.json`. `skip-silences` fast-forwards
+  absolute silence (`currentTime += 0.2` every 2 ms below −100 dB), which
+  erases the natural gap between tracks — it is meant for speech content.
+  `sponsorblock` with `intro`/`outro` categories cuts the start/end of
+  music videos. Both ship OFF by default in Mirlo; disable them again if
+  the owner reports "brusco" transitions after plugin testing.
 - LRCLib requires a descriptive `Lrclib-Client` header and answers 503
   `ServerOverloaded` under load; retry briefly (see synced-lyrics.js).
 - Extra windows must share the WebView2 environment with the player (same

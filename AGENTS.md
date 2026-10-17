@@ -250,6 +250,26 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     as the Phase A baseline, no regression. Graceful close, no orphan
     `msedgewebview2`. Settings label updated to "Ad-block (network-level;
     applies immediately)".
+- **Ad-block v2 — DONE (2026-10-17)**: the owner reported audio ads between
+  tracks with v1 active. Root cause: YouTube Music *announces* audio ads
+  inside the `/youtubei/v1/player` response (`playerAds`, `adPlacements`,
+  `adSlots`) and serves their audio as regular streams — URL blocking alone
+  cannot stop them. v2 prunes those keys from the player response in the
+  bridge (same technique as uBlock Origin's `json-prune` filters on YouTube;
+  implemented independently — see ADR-0003 Addendum 2). The fetch wrapper is
+  always installed and consults the live `config.adblock` flag (refreshed at
+  most every 5 s so Settings changes apply roughly live); `__mirlo.adblockStats`
+  exposes `{blocked, pruned}` counters for debugging. Verified live: with
+  adblock on, the player response holds no ad keys (`getPlayerResponse()`)
+  while playback continues; with it off the keys are present.
+  - **Also (same day): `beforeunload` dialog neutralized** in the bridge at
+    document start (drops `beforeunload` listeners + no-ops
+    `window.onbeforeunload`). YouTube Music arms it, so navigating away with
+    user activation popped Chromium's "Los cambios no se guardarán" dialog,
+    which blocks renderer JS while pending (looked like a CDP freeze — see
+    traps). **WebView2's `ScriptDialogOpening` event does NOT fire for
+    `beforeunload`** (verified live with an instrumented handler: never
+    invoked; the controller-level auto-accept approach was removed).
 - **Phase C — SMTC (media session) DONE (2026-10-16)**: Windows media
   integration via `SystemMediaTransportControls` (`windows` crate; no new
   dependencies — features added to the existing Windows-only dep).
@@ -573,6 +593,19 @@ Other carry-over notes:
 - CDP freeze trap: after some interactions the YT bundle can hit
   `debugger;` with the inspector attached; recover by restarting the app
   (not a Mirlo bug).
+- **`beforeunload` dialogs are the other "freeze" source** (2026-10-17):
+  YouTube Music arms a beforeunload handler, so navigating the player away
+  pops Chromium's "Los cambios no se guardarán" dialog; while pending it
+  blocks renderer JS — every CDP `Runtime.evaluate` times out and
+  navigations hang. Two nuances verified live: Chromium only shows the
+  dialog when the document has **sticky user activation** (CDP-loaded pages
+  without a real click skip it — use `Input.dispatchMouseEvent` to grant
+  activation when testing), and WebView2's `ScriptDialogOpening` event is
+  **not raised for beforeunload** (an instrumented handler was never
+  invoked), so the controller-level auto-accept route does not work. The
+  bridge now neutralizes the arming at document start instead. If a dialog
+  is pending anyway, `Page.handleJavaScriptDialog {accept:false}` from CDP
+  dismisses it (cancel keeps the current page).
 
 Verification recipe and traps: see the sections below (CDP + console capture
 via `%TEMP%\opencode\cdp-console.mjs` shows plugin starts/errors; `cdp-eval.mjs`
@@ -722,7 +755,8 @@ app/                        Tauri 2 application (Phases A+B done; Phase C next)
   src-tauri/src/notifications.rs  Track-change toasts (Windows)
   src-tauri/src/discord.rs  Discord Rich Presence IPC client (thin, no deps)
   src-tauri/src/window_state.rs  Window geometry persistence (window-state.json)
-  src-tauri/src/bridge.js   Bridge + plugin host injected into the player page
+  src-tauri/src/bridge.js   Bridge + plugin host + ad-block v2 (prune) +
+                            beforeunload neutralizer injected into the page
   src-tauri/src/plugins.rs  Plugin source registry + settings manifest
   src-tauri/installer-hooks.nsh  NSIS hook: install dir move + (future) tweaks
   src-tauri/plugins/*.js    Renderer plugin ports (one file per plugin)

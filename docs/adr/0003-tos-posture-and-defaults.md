@@ -39,3 +39,19 @@ wants to minimize legal exposure and follow a standard open-source posture.
   Howler. That is stream extraction under decision 1, so Mirlo does not port
   it (same category as `downloader`). See `THIRD_PARTY_NOTICES.md` and
   `research/plugin-inventory.md`.
+
+## Addendum 2 (2026-10-17): ad-block v2 — response pruning
+
+- The network-level ad-block (v1) answers ad-endpoint requests with a
+  synthesized 403, but YouTube Music *announces* audio ads inside the
+  `/youtubei/v1/player` response (`playerAds`, `adPlacements`, `adSlots`)
+  and serves their audio as regular streams — URL blocking alone cannot
+  stop them (the owner heard audio ads between tracks with v1 active).
+- Ad-block v2 therefore also **prunes those keys from the player response**
+  in the bridge (the same technique as uBlock Origin's `json-prune` filters
+  on YouTube; implemented independently, no code copied). This modifies
+  what the official player receives, not how playback works: no stream
+  extraction, no InnerTube playback, no DRM handling — the same policy
+  category as request blocking.
+- The setting remains **OFF by default** (decision 3 unchanged); the prune
+  is gated by the same live `config.adblock` flag as v1.

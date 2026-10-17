@@ -135,6 +135,30 @@ fn maximized_now(window: &Window) -> Option<bool> {
     window.is_maximized().ok()
 }
 
+/// Whether the window is minimized right now. Same `GetWindowPlacement`
+/// approach as `maximized_now` (tao's `is_minimized()` can lag during the
+/// transition). Used by the minimize-to-tray behavior in the shell.
+#[cfg(target_os = "windows")]
+pub fn minimized_now(window: &Window) -> Option<bool> {
+    use windows::Win32::UI::WindowsAndMessaging::{
+        GetWindowPlacement, SW_SHOWMINIMIZED, WINDOWPLACEMENT,
+    };
+    let hwnd = window.hwnd().ok()?;
+    let mut placement = WINDOWPLACEMENT {
+        length: std::mem::size_of::<WINDOWPLACEMENT>() as u32,
+        ..Default::default()
+    };
+    unsafe {
+        GetWindowPlacement(hwnd, &mut placement).ok()?;
+    }
+    Some(placement.showCmd == SW_SHOWMINIMIZED.0 as u32)
+}
+
+#[cfg(not(target_os = "windows"))]
+pub fn minimized_now(window: &Window) -> Option<bool> {
+    window.is_minimized().ok()
+}
+
 /// Records the current geometry (call from `Moved`/`Resized` events of the
 /// main window). Minimized transitions are ignored; only the normal-state
 /// geometry is stored, so restore always reopens a sane window.

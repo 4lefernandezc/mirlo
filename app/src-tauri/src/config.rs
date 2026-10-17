@@ -37,6 +37,10 @@ pub struct Config {
     pub discord_client_id: String,
     /// Silent update check on startup (the tray always offers a manual one).
     pub update_check: bool,
+    /// Hide the player window to the tray when the user minimizes it
+    /// (the tray "Show / Hide" item and the single-instance handler bring
+    /// it back).
+    pub minimize_to_tray: bool,
     /// Per-plugin settings: `{ "<plugin-id>": { "enabled": bool, ...options } }`.
     /// Plugin option schemas and defaults live in the bridge (`plugins/*.js`);
     /// the shell stores only what the user changed.
@@ -53,6 +57,7 @@ impl Default for Config {
             discord_rpc: false,
             discord_client_id: String::new(),
             update_check: true,
+            minimize_to_tray: true,
             plugins: BTreeMap::new(),
         }
     }

@@ -355,7 +355,8 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 ## Next step — Phase C (remaining)
 
 SMTC, ad-block v1, notifications and Discord rich presence are done.
-Remaining Phase C item:
+Remaining Phase C item (currently **parked by the owner's decision**,
+2026-10-16 — do not start it until the user asks):
 
 1. **Scrobbler (Last.fm)**: needs an api_key + api_secret (the user creates
    the API account at last.fm/api — Mirlo cannot ship credentials) — plan a

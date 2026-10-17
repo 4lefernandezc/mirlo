@@ -199,6 +199,10 @@
             Check for updates on startup (updates install only after you confirm)
           </label>
           <label class="field inline">
+            <input type="checkbox" id="minimize-to-tray" />
+            Hide to the tray when the window is minimized
+          </label>
+          <label class="field inline">
             <input type="text" id="discord-client-id" placeholder="Discord application client id" size="24" />
           </label>
         </div>
@@ -251,12 +255,14 @@
           const discordRpc = document.getElementById('discord-rpc');
           const discordClientId = document.getElementById('discord-client-id');
           const updateCheck = document.getElementById('update-check');
+          const minimizeToTray = document.getElementById('minimize-to-tray');
           adblock.checked = !!fullConfig.adblock;
           hotkeys.checked = !!fullConfig.hotkeys_enabled;
           notifications.checked = !!fullConfig.notifications;
           discordRpc.checked = !!fullConfig.discord_rpc;
           discordClientId.value = fullConfig.discord_client_id || '';
           updateCheck.checked = fullConfig.update_check !== false;
+          minimizeToTray.checked = fullConfig.minimize_to_tray !== false;
 
           const save = async () => {
             try {
@@ -269,6 +275,7 @@
                   discord_rpc: discordRpc.checked,
                   discord_client_id: discordClientId.value.trim(),
                   update_check: updateCheck.checked,
+                  minimize_to_tray: minimizeToTray.checked,
                 },
               });
               status('General settings saved.');
@@ -282,6 +289,7 @@
           discordRpc.addEventListener('change', save);
           discordClientId.addEventListener('change', save);
           updateCheck.addEventListener('change', save);
+          minimizeToTray.addEventListener('change', save);
         }
 
         function renderOption(plugin, state, option) {

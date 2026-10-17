@@ -5,7 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.2] - 2026-10-17
+
+### Added
+
+- "Hide to the tray when the window is minimized" option (General settings,
+  **on by default**): minimizing the player hides it from the taskbar; the
+  tray "Show / Hide" item and launching Mirlo again restore it un-minimized
+  and focused. Turn it off to keep the classic minimize behavior.
+
+### Fixed
+
+- Audio ads between tracks (ad-block v2): YouTube Music announces them
+  inside the `/youtubei/v1/player` response (`playerAds`, `adPlacements`,
+  `adSlots`) and serves their audio as regular streams, so URL blocking
+  alone could not stop them. The bridge now prunes those keys from the
+  player response (the same technique as uBlock Origin's `json-prune`
+  filters; implemented independently — ADR-0003 Addendum 2). The fetch
+  wrapper consults the live `config.adblock` flag (refreshed at most every
+  5 s); `__mirlo.adblockStats` exposes `{blocked, pruned}` counters.
+  Verified live: with ad-block on the player response holds no ad keys
+  while playback continues; with it off the keys are present.
+- "Los cambios no se guardarán" dialog: YouTube Music arms a
+  `beforeunload` handler, so navigating the player away popped Chromium's
+  leave-site dialog — while pending it blocks renderer JS (looks like a
+  freeze and breaks automation). The bridge now drops `beforeunload`
+  listeners and no-ops `window.onbeforeunload` at document start.
+  WebView2's `ScriptDialogOpening` event does not fire for beforeunload
+  (verified with an instrumented handler), so the controller-level route
+  was discarded.
 
 ## [0.1.1] - 2026-10-17
 
@@ -141,24 +169,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   while the same URL returns the real 200 content with the toggle off;
   playback unaffected (track played through the active filter); 371.1 MB
   idle private (no regression vs the Phase A baseline).
-- Ad-block v2 — audio ads between tracks could not be stopped by URL
-  blocking alone: YouTube Music announces them inside the
-  `/youtubei/v1/player` response (`playerAds`, `adPlacements`, `adSlots`)
-  and serves their audio as regular streams. The bridge now prunes those
-  keys from the player response (the same technique as uBlock Origin's
-  `json-prune` filters; implemented independently — ADR-0003 Addendum 2).
-  The fetch wrapper is always installed and consults the live
-  `config.adblock` flag (refreshed at most every 5 s); `__mirlo.adblockStats`
-  exposes `{blocked, pruned}` counters. Verified live: with ad-block on the
-  player response holds no ad keys while playback continues; with it off the
-  keys are present.
-- `beforeunload` dialog neutralized: YouTube Music arms a beforeunload
-  handler, so navigating the player away popped Chromium's "Los cambios no
-  se guardarán" dialog — while pending it blocks renderer JS (looks like a
-  freeze and breaks automation). The bridge drops `beforeunload` listeners
-  and no-ops `window.onbeforeunload` at document start. WebView2's
-  `ScriptDialogOpening` event does not fire for beforeunload (verified with
-  an instrumented handler), so the controller-level route was discarded.
 - Media session (SMTC) — native Windows integration in `media_controls.rs`
   (no new dependencies: the `windows` crate features were extended):
   - Session created for the player window so the taskbar media flyout, lock

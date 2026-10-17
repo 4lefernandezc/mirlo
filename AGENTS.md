@@ -458,6 +458,20 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     arrive, matching the documented seed() trap), so `window-state.json` is
     only written once the window is actually moved/resized — pre-existing
     behavior, not a regression; fresh installs re-maximize by default.
+- **Minimize-to-tray option — DONE (2026-10-17)**: minimizing the player
+  hides it from the taskbar (like the tray "Show / Hide"); new config field
+  `minimize_to_tray` (**default true**) with a General checkbox in Settings.
+  - `window_state::minimized_now` (GetWindowPlacement `showCmd`, same
+    approach as the maximized check — tao's `is_minimized()` can lag during
+    the transition); the `Resized` handler in `lib.rs` hides the window
+    when the flag is on; `focus_main_window` already un-minimizes before
+    showing, so the tray/single-instance paths restore it cleanly.
+  - Verified live: minimize → `IsWindowVisible=False` (hidden, out of the
+    taskbar); launching Mirlo again restored it un-minimized + focused;
+    with the toggle off the window minimizes normally (visible + iconic).
+    Note: `Process.MainWindowHandle` (PowerShell) switches to another
+    top-level window once the main one is hidden — keep the original HWND
+    when testing visibility.
 - Machine facts: Windows 11 x64; Rust 1.99.1 (MSVC) installed; VS 2019 Build
   Tools present; WebView2 runtime 155 present; Node 24 present; npm available.
 - Build artifacts must NOT go into OneDrive: always set

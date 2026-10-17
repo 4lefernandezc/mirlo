@@ -548,10 +548,25 @@ pub fn run() {
             match event {
                 // Track the player window's geometry so the next launch can
                 // reopen with the same size/position/maximized state.
-                tauri::WindowEvent::Moved(_) | tauri::WindowEvent::Resized(_)
-                    if window.label() == MAIN_WINDOW =>
-                {
+                tauri::WindowEvent::Moved(_) if window.label() == MAIN_WINDOW => {
                     window_state::track(window);
+                }
+                tauri::WindowEvent::Resized(_) if window.label() == MAIN_WINDOW => {
+                    window_state::track(window);
+                    // Minimize-to-tray: hide the window instead of leaving
+                    // it in the taskbar (`focus_main_window` restores it
+                    // from the tray / single-instance paths).
+                    if window_state::minimized_now(window).unwrap_or(false)
+                        && window
+                            .app_handle()
+                            .state::<AppState>()
+                            .config
+                            .lock()
+                            .map(|config| config.minimize_to_tray)
+                            .unwrap_or(false)
+                    {
+                        let _ = window.hide();
+                    }
                 }
                 _ => {}
             }

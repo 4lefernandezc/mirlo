@@ -1,9 +1,11 @@
 //! File logging for the packaged application.
 //!
 //! Release builds run under `windows_subsystem = "windows"` (no console), so
-//! diagnostics go to `%LOCALAPPDATA%\Mirlo\logs\mirlo.log` with a simple
-//! size-based rotation (a single previous file). Debug builds also echo to
-//! the console. Deliberately dependency-free: the surface is tiny.
+//! diagnostics go to `<data_root>\logs\mirlo.log` (`%LOCALAPPDATA%\Mirlo` for
+//! installed copies, `<exe_dir>\data` for portable ones; see `data_root.rs`)
+//! with a simple size-based rotation (a single previous file). Debug builds
+//! also echo to the console. Deliberately dependency-free: the surface is
+//! tiny.
 
 use std::fs::{File, OpenOptions};
 use std::io::Write;
@@ -18,7 +20,7 @@ static LOG_FILE: OnceLock<Mutex<Option<File>>> = OnceLock::new();
 /// Opens (rotating when oversized) the log file. Call once at startup;
 /// logging calls made before `init` are dropped.
 pub fn init() {
-    let Some(path) = log_path() else { return };
+    let path = log_path();
     if let Some(dir) = path.parent() {
         let _ = std::fs::create_dir_all(dir);
     }
@@ -35,14 +37,8 @@ pub fn init() {
     );
 }
 
-fn log_path() -> Option<PathBuf> {
-    let base = std::env::var_os("LOCALAPPDATA")?;
-    Some(
-        PathBuf::from(base)
-            .join("Mirlo")
-            .join("logs")
-            .join("mirlo.log"),
-    )
+fn log_path() -> PathBuf {
+    crate::data_root::root().join("logs").join("mirlo.log")
 }
 
 fn rotate(path: &Path) {
@@ -76,10 +72,9 @@ pub fn line(level: &str, message: &str) {
 /// Best-effort write for the panic hook: opens the file directly instead of
 /// taking the shared mutex (the panicking thread may hold it).
 pub fn emergency(message: &str) {
-    if let Some(path) = log_path() {
-        if let Ok(mut file) = OpenOptions::new().create(true).append(true).open(&path) {
-            let _ = writeln!(file, "[{}] [PANIC] {message}", timestamp());
-        }
+    let path = log_path();
+    if let Ok(mut file) = OpenOptions::new().create(true).append(true).open(&path) {
+        let _ = writeln!(file, "[{}] [PANIC] {message}", timestamp());
     }
     if cfg!(debug_assertions) {
         eprintln!("{message}");

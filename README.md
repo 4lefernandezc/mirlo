@@ -8,10 +8,23 @@ bundling an entire browser like Electron-based alternatives. Measurements:
 **371 MB vs 1179 MB** private memory (Tauri shell vs the Electron v3.11.0
 build of pear-desktop, idle, same machine).
 
-> **Status: early development.** The application shell is implemented in
-> `app/` (Tauri 2) and verified end to end (player, bridge, hotkeys, tray,
-> session persistence); the renderer plugin system is next. See
+> **Status: pre-release.** The application is feature-complete for the first
+> release (player, 18 plugins, media session, notifications, Discord
+> presence, ad-block, auto-update) and is being packaged (Phase D). See
 > [docs/roadmap.md](docs/roadmap.md) for the current phase.
+
+## Download
+
+Installers are attached to
+[GitHub Releases](https://github.com/4lefernandezc/mirlo/releases):
+`Mirlo_<version>_x64-setup.exe` (recommended, per-user, no admin rights) or
+`.msi` for managed deployments. Requirements and first-run notes:
+[docs/user/install.md](docs/user/install.md). Common questions:
+[docs/user/faq.md](docs/user/faq.md). Scope and ToS notes:
+[docs/user/terms.md](docs/user/terms.md).
+
+Mirlo updates itself from these releases (signed installers, verified against
+a public key compiled into the app; opt-out in Settings).
 
 ## Why Mirlo
 
@@ -47,12 +60,21 @@ cargo run --manifest-path app/src-tauri/Cargo.toml --release
 ```
 
 The first run creates `%LOCALAPPDATA%\Mirlo\` with `config.json` and the
-persistent WebView2 profile (the Google session survives restarts). Checks:
+persistent WebView2 profile (the Google session survives restarts). Release
+built (no console) writes diagnostics to `%LOCALAPPDATA%\Mirlo\logs\mirlo.log`. Checks:
 
 ```powershell
 cargo fmt --manifest-path app/src-tauri/Cargo.toml
 cargo clippy --manifest-path app/src-tauri/Cargo.toml --all-targets -- -D warnings
 cargo test --manifest-path app/src-tauri/Cargo.toml --lib
+```
+
+Installers (NSIS + MSI, with updater signatures) are produced with the Tauri
+CLI; see [docs/release.md](docs/release.md) for the signing key setup:
+
+```powershell
+$env:TAURI_SIGNING_PRIVATE_KEY = "$env:USERPROFILE\.tauri\mirlo.key"
+npx @tauri-apps/cli@^2 build
 ```
 
 The original validated spike stays available at `poc/webview2-probe/`

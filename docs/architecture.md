@@ -67,8 +67,13 @@ plugins) is next. See [roadmap.md](roadmap.md).
   capability.
 - **Debugging**: `MIRLO_DEBUG_PORT=9222` enables the WebView2 CDP endpoint
   for local inspection (env-gated, off by default).
-- The console stays attached in Phase A for development visibility; packaging
-  (Phase D) will switch to `windows_subsystem = "windows"` plus a log file.
+- **Packaging**: release builds run without a console
+  (`windows_subsystem = "windows"`, Phase D) and write diagnostics to
+  `%LOCALAPPDATA%\Mirlo\logs\mirlo.log` (rotated; `logging.rs`). The NSIS
+  installer is per-user and installs to `%LOCALAPPDATA%\Programs\Mirlo`, away
+  from the app-data directory; the WiX MSI targets managed deployments.
+  Updates are signed bundles served from GitHub Releases and verified against
+  the public key in `tauri.conf.json` (`updates.rs`).
 
 ## Plugin model
 

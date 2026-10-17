@@ -76,10 +76,30 @@ Phases are ordered. Each phase ends with an updated `AGENTS.md`, a
 
 ## Phase D — Packaging and release
 
-- [ ] Installer (NSIS/MSI), per-user, WebView2 bootstrapper.
-- [ ] Auto-update (Tauri updater, signed releases).
-- [ ] CI release pipeline + checksums.
-- [ ] User documentation (install, FAQ, ToS notes).
+- [x] Installer (NSIS/MSI), per-user, WebView2 bootstrapper.
+      NSIS `currentUser` install (no admin) into
+      `%LOCALAPPDATA%\Programs\Mirlo` (a conditional NSIS hook keeps the
+      install directory out of the app-data directory), embedded WebView2
+      bootstrapper, English/Spanish, MIT license page; WiX MSI for managed
+      deployments.
+- [x] Auto-update (Tauri updater, signed releases). Signed updater artifacts
+      (`createUpdaterArtifacts`), public key in `tauri.conf.json`, silent
+      startup check (configurable) + tray item, native confirm prompt,
+      passive NSIS install and restart. Verified: install location, GUI
+      subsystem, file logging, graceful shutdown, silent install/uninstall
+      with data preserved; the check itself fails gracefully with a 404 while
+      no public release exists.
+- [x] CI release pipeline + checksums: `.github/workflows/release.yml`
+      (tag `v*` → draft release with NSIS/MSI + `.sig` + `latest.json` +
+      `SHA256SUMS.txt`).
+- [x] User documentation (`docs/user/`: install, FAQ, terms and scope) and the
+      maintainer release guide (`docs/release.md`).
+- [x] Phase A/B leftover: `windows_subsystem = "windows"` in release builds +
+      file logging with rotation (`%LOCALAPPDATA%\Mirlo\logs\mirlo.log`),
+      native error box on fatal errors.
+- [ ] Owner actions to publish the first release: make the repository public,
+      add the signing key to GitHub Actions secrets, tag `v0.1.0`, verify and
+      publish the draft (see `docs/release.md`).
 
 ## Phase E — Future (evaluated, not committed)
 

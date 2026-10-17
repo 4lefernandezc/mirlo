@@ -213,8 +213,17 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     clicking a line seeks exactly (`lines[5]` → 51.0 s); buttons 40×40 in
     the nav bar/player; no plugin console errors (only expected LRCLib
     503s during retries and SponsorBlock 404s).
-- **Phase B — COMPLETE (all batches ported)**: 18 plugins shipped, plus the
-  plugin host, audio provider and settings UI. crossfade excluded
+  - **Native-tab animation (2026-10-17)**: the player's own "Letra" tab
+    renders the song as one plain-text blob; when timed lyrics exist the
+    plugin replaces it with its line-by-line rendering (active line
+    highlighted + smooth auto-scroll + click-to-seek) inside the native
+    view. Traps: the shelf keeps a **hidden non-expandable copy** of the
+    description — pick the wrapper whose description is visible or the
+    lyrics area renders empty; style-only tab toggles emit no childList
+    mutations, so a 2 s `timeupdate` poll re-runs `enhanceNativeShelf()`
+    (it early-returns when nothing changed).
+  - **Phase B — COMPLETE (all batches ported)**: 18 plugins shipped, plus the
+    plugin host, audio provider and settings UI. crossfade excluded
   (ADR-0003).
 - **Phase B polish (defaults) — DONE (2026-10-16)**: stable additive plugins
   now ship enabled by default (navigation, video-toggle, precise-volume,

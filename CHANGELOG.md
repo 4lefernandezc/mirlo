@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Synced lyrics with animation in the native player "Letra"/"Lyrics" tab:
+  when the synced-lyrics plugin has timed lyrics for the current track, the
+  tab's plain-text blob is replaced with line-by-line lyrics — active line
+  highlighted and smoothly auto-scrolled inside the native view, click a
+  line to seek. Without timed lyrics the native plain text is kept.
+
 ## [0.1.2] - 2026-10-17
 
 ### Added

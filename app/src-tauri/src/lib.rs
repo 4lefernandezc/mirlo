@@ -11,6 +11,7 @@ mod discord;
 mod media_controls;
 mod notifications;
 mod plugins;
+mod window_state;
 
 use std::path::Path;
 use std::str::FromStr;
@@ -207,7 +208,10 @@ fn create_tray(app: &tauri::App) -> tauri::Result<()> {
         .on_menu_event(|app, event| match event.id().as_ref() {
             "settings" => open_settings_window(app),
             "toggle" => toggle_main_window(app),
-            "quit" => app.exit(0),
+            "quit" => {
+                window_state::persist(app);
+                app.exit(0)
+            }
             _ => {}
         })
         .on_tray_icon_event(|tray, event| {
@@ -285,11 +289,20 @@ fn create_main_window(
     );
     let url = WebviewUrl::External(PLAYER_URL.parse()?);
 
+    // Restore the geometry of the last session (fresh installs maximize).
+    let saved = window_state::load(app.handle());
+    window_state::seed(saved.clone());
     let mut builder = WebviewWindowBuilder::new(app, MAIN_WINDOW, url)
         .title("Mirlo")
         .inner_size(1280.0, 800.0)
         .min_inner_size(900.0, 600.0)
         .initialization_script(script);
+    if let Some(saved) = &saved {
+        builder = builder.inner_size(saved.width.max(900.0), saved.height.max(600.0));
+        if let (Some(x), Some(y)) = (saved.x, saved.y) {
+            builder = builder.position(x, y);
+        }
+    }
 
     // Optional CDP endpoint for local debugging/inspection:
     //   $env:MIRLO_DEBUG_PORT = "9222"
@@ -307,6 +320,18 @@ fn create_main_window(
     let _ = profile_dir;
 
     let window = builder.build()?;
+    // Window state: maximize (the saved/default state) or keep the restored
+    // placement when it still lands on a monitor.
+    match &saved {
+        Some(geometry) if !geometry.maximized => {
+            if !window_state::position_is_visible(&window) {
+                let _ = window.center();
+            }
+        }
+        _ => {
+            let _ = window.maximize();
+        }
+    }
     // Network-level ad-block v1 on the WebView2 controller (Windows). The
     // handler is always registered and gated by the live `config.adblock`
     // flag so the settings toggle applies without a reload (see adblock.rs).
@@ -421,6 +446,7 @@ fn reload_player(app: AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 fn restart_app(app: AppHandle) {
+    window_state::persist(&app);
     app.restart();
 }
 
@@ -486,11 +512,22 @@ pub fn run() {
             restart_app
         ])
         .on_window_event(|window, event| {
+            match event {
+                // Track the player window's geometry so the next launch can
+                // reopen with the same size/position/maximized state.
+                tauri::WindowEvent::Moved(_) | tauri::WindowEvent::Resized(_)
+                    if window.label() == MAIN_WINDOW =>
+                {
+                    window_state::track(window.app_handle(), window);
+                }
+                _ => {}
+            }
             // Graceful shutdown when the *player* window closes (Phase 0
             // note: WebView2 trees tear down slowly after force kills). The
             // settings window just closes/destroys itself.
             if let tauri::WindowEvent::CloseRequested { .. } = event {
                 if window.label() == MAIN_WINDOW {
+                    window_state::persist(window.app_handle());
                     window.app_handle().exit(0);
                 }
             }

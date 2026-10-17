@@ -7,9 +7,9 @@ There are no released versions yet.
 
 ## Reporting a vulnerability
 
-Please **do not open a public issue** for security problems. Report privately to:
-
-**luigiferca@gmail.com**
+Please **do not open a public issue** for security problems. Use GitHub's
+private vulnerability reporting instead (repository → **Security** tab →
+*Report a vulnerability*); only the maintainer can read it.
 
 Include:
 

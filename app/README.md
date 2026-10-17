@@ -18,7 +18,7 @@ app/
 ## Build and run
 
 ```powershell
-$env:CARGO_TARGET_DIR = "C:\Users\luigi\AppData\Local\Temp\opencode\ytm-target"
+$env:CARGO_TARGET_DIR = "$env:TEMP\mirlo-target"
 cargo run --manifest-path app/src-tauri/Cargo.toml --release
 ```
 

@@ -55,7 +55,7 @@ Requirements: Windows 10/11, Rust stable (MSVC toolchain), WebView2 runtime
 Build and run the application (no Node.js or frontend build step):
 
 ```powershell
-$env:CARGO_TARGET_DIR = "C:\Users\luigi\AppData\Local\Temp\opencode\ytm-target"
+$env:CARGO_TARGET_DIR = "$env:TEMP\mirlo-target"
 cargo run --manifest-path app/src-tauri/Cargo.toml --release
 ```
 

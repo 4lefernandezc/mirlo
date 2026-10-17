@@ -19,6 +19,10 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
   2. Spending money or creating accounts/services.
   3. Destructive changes outside the repository.
   4. Legal/marketing/name/license decisions.
+- **Identity/privacy**: repository content must never contain the owner's real
+  name, personal email or local filesystem paths — use `$env:TEMP` or `<user>`
+  placeholders. The GitHub account name in functional URLs is expected. Commits
+  must use the repo-local noreply identity (already configured).
 - Keep long work product in the repo (this file + `docs/`), so context limits
   never lose state. At the end of every milestone: update "Current state" here,
   update `CHANGELOG.md`, and commit.
@@ -384,7 +388,7 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 - Machine facts: Windows 11 x64; Rust 1.99.1 (MSVC) installed; VS 2019 Build
   Tools present; WebView2 runtime 155 present; Node 24 present; npm available.
 - Build artifacts must NOT go into OneDrive: always set
-  `CARGO_TARGET_DIR=C:\Users\luigi\AppData\Local\Temp\opencode\ytm-target`
+  `CARGO_TARGET_DIR=$env:TEMP\mirlo-target`
   (or any temp dir) before cargo commands.
 
 ## Next step — publish v0.1.0 (owner actions) / Phase C leftover
@@ -619,14 +623,15 @@ for probes — pass a URL substring as 4th arg to target the settings window;
 
 - Remote: `https://github.com/4lefernandezc/mirlo` — **private until the first
   release**; the owner will make it public then. Never change repository
-  visibility without explicit owner approval. Push uses the owner's stored git
-  credentials (no gh CLI installed).
+  visibility without explicit owner approval. gh CLI is installed and
+  authenticated (account `4lefernandezc`); use it for releases, secrets and
+  workflow inspection.
 - Reference app: pear-desktop v3.11.0 (ex th-ch/youtube-music), MIT. We MAY
   reuse its plugin code with attribution (add notices to
-  `THIRD_PARTY_NOTICES.md` when porting). The user's local copy of the built
-  exe lives at
-  `C:\Users\luigi\OneDrive\Documentos\yt music nativo\example project\YouTube Music.exe`
-  — **never modify or delete it**.
+  `THIRD_PARTY_NOTICES.md` when porting). The owner keeps a local copy of the
+  reference build **outside this repository** (in their private working
+  folder; ask the owner for the path). **Never modify or delete owner-local
+  files.**
 - Extracted analysis working copies (re-creatable): app sources at
   `%TEMP%\opencode\ytm311\` (app dir with `resources/app.asar`, upstream source
   tag v3.11.0 in `src\pear-desktop-3.11.0`).
@@ -677,7 +682,7 @@ tools/gen-icons.ps1         Regenerates app icons (placeholder mark)
 
 ```powershell
 # Build the app (from repo root; keep artifacts out of OneDrive)
-$env:CARGO_TARGET_DIR = "C:\Users\luigi\AppData\Local\Temp\opencode\ytm-target"
+$env:CARGO_TARGET_DIR = "$env:TEMP\mirlo-target"
 cargo build --manifest-path app/src-tauri/Cargo.toml --release
 
 # Run the app

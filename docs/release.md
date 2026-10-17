@@ -42,7 +42,7 @@ Keep these in sync:
 ## Pre-flight
 
 ```powershell
-$env:CARGO_TARGET_DIR = "C:\Users\luigi\AppData\Local\Temp\opencode\ytm-target"
+$env:CARGO_TARGET_DIR = "$env:TEMP\mirlo-target"
 cargo fmt --manifest-path app/src-tauri/Cargo.toml
 cargo clippy --manifest-path app/src-tauri/Cargo.toml --all-targets -- -D warnings
 cargo test --manifest-path app/src-tauri/Cargo.toml --lib

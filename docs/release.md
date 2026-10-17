@@ -104,8 +104,7 @@ The workflow builds the Windows bundles and creates a **draft** release with:
 
 - The private key is a release credential: it lives outside the repository
   (`%USERPROFILE%\.tauri\`) and in GitHub Actions secrets only.
-- `docs/research/images/phase-a-idle.png` was redacted (avatar and account
-  label) before going public. 2026-10-17: `phase-b-batch1.png` (account
-  label + avatar) and `phase-b-lyrics.png` (profile avatar) redacted; all
-  five research screenshots passed the privacy pass. Review any new
-  screenshot for personal data before attaching it to docs or releases.
+- Screenshots are intentionally not included in the repository (removed
+  2026-10-17 for privacy and because several captures predated window fixes).
+  Keep documentation text-only; review any future media for personal data
+  before attaching it anywhere.

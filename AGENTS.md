@@ -51,9 +51,7 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
   - Settings: `%LOCALAPPDATA%\Mirlo\config.json` (defaults written on first
     run).
   - Measured (idle, logged-in home, attached to running process):
-    **371.1 MB private** — acceptance < 450 MB met. Evidence:
-    `docs/research/images/phase-a-idle.png` (**contains a private session:
-    redact or replace before making the repo public**).
+    **371.1 MB private** — acceptance < 450 MB met.
   - Verified manually: bridge IPC end-to-end (via CDP + `MIRLO_DEBUG_PORT`),
     hotkeys firing (silent play/pause round-trip), single-instance, graceful
     shutdown with no orphan `msedgewebview2`.
@@ -81,8 +79,7 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     vars, video-toggle button inside `#player`, autoplay pause on load;
     dynamic disable/enable via config + page reload (no app restart);
     `set_plugin_config` persistence from a plugin; **368.4 MB idle private**
-    with all six on (Phase A baseline 371.1). Screenshot:
-    `docs/research/images/phase-b-batch1.png`.
+    with all six on (Phase A baseline 371.1).
   - Remaining Phase B: equalizer + precise-volume (batch 2 leftovers), port
     batch 3 (content), settings UI.
 - **Phase B batch 2a — DONE (2026-10-16)**: audio infrastructure + 3 ports.
@@ -147,10 +144,7 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
   - Verified (CDP on both targets): 11 cards / 17 toggles / 12 option fields
     rendered; toggling blur-nav-bar off + "Reload player" removed the blur
     from the player (styles 6→5, `backdropFilter: none`) and re-enabling
-    restored it; no horizontal overflow. Screenshot:
-    `docs/research/images/phase-b-settings.png` (capture artifact: PrintWindow
-    clips composited WebView2 surfaces at some window sizes — trust the CDP
-    layout numbers).
+    restored it; no horizontal overflow.
   - Remaining Phase B: port batch 3 (content).
 - **Phase B batch 3a — DONE (2026-10-16)**: five content plugins + UI helper.
   - Ports (all default OFF): skip-disliked-songs (observer on the like
@@ -168,8 +162,7 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     segments); nav buttons ×2, quality/captions buttons present, dislike
     observer attached, sponsorblock api wired + page fetch to
     sponsor.ajay.app returned HTTP 404 (reachable); settings window renders
-    16 cards / 24 toggles / 15 option fields without overflow. Screenshot:
-    `docs/research/images/phase-b-batch3.png`.
+    16 cards / 24 toggles / 15 option fields without overflow.
   - Remaining Phase B: album-actions (medium, upstream 22 KB) and
     synced-lyrics (large, 86 KB, upstream uses Electron `net` — decide
     renderer fetch vs shell proxy before porting).
@@ -202,9 +195,7 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     track; panel toggle; active line highlighted at the playback position;
     clicking a line seeks exactly (`lines[5]` → 51.0 s); buttons 40×40 in
     the nav bar/player; no plugin console errors (only expected LRCLib
-    503s during retries and SponsorBlock 404s). Screenshot:
-    `docs/research/images/phase-b-lyrics.png` (CDP capture; prefer
-    `cdp-screenshot.mjs` over PrintWindow for WebView2 evidence).
+    503s during retries and SponsorBlock 404s).
 - **Phase B — COMPLETE (all batches ported)**: 18 plugins shipped, plus the
   plugin host, audio provider and settings UI. crossfade excluded
   (ADR-0003).
@@ -383,11 +374,10 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
   - Docs: `docs/user/{install,faq,terms}.md`, `docs/release.md` (mantainer
     checklist: secrets, version bump, tag, verify draft, publish; key
     rotation caveat: old installs only trust the old pubkey).
-   - `docs/research/images/phase-a-idle.png` redacted (avatar + "4LE" label
-     painted over) in place; note added in measurements.md. Privacy pass
-     **completed 2026-10-17**: `phase-b-batch1.png` (account label + avatar)
-     and `phase-b-lyrics.png` (profile avatar) redacted; the two settings
-     screenshots verified clean (no account UI).
+   - Screenshots and research captures were **removed from the repository
+     entirely** (2026-10-17, owner decision: privacy and several captures
+     predated window fixes). Keep documentation text-only; if media is ever
+     re-added, review it for personal data and staleness first.
   - Owner actions remaining before the first public release: make repo
     public, add the signing key to GitHub Actions secrets, tag `v0.1.0`,
     verify the draft, publish (then re-verify auto-update from 0.1.0→next).

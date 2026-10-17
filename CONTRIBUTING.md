@@ -70,7 +70,3 @@ Mirlo ports plugins from [pear-desktop](https://github.com/pear-devs/pear-deskto
 
 Code, commits and documentation are written in English. Issues and PR
 discussions are welcome in English or Spanish.
-
-## Code of Conduct
-
-By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).

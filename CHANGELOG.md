@@ -11,8 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Repository foundation: README, LICENSE (MIT), contributing guide, code of
-  conduct, security policy and issue/PR templates.
+- Repository foundation: README, LICENSE (MIT), contributing guide, security
+  policy and issue/PR templates.
 - Research documentation (`docs/research/`): plugin inventory of pear-desktop
   v3.11.0, inherited IPC contract, PoC validation evidence and memory
   measurements.

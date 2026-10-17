@@ -31,6 +31,12 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 
 ## Current state (2026-10-17)
 
+- **v0.1.2 RELEASED (public, 2026-10-17)**: tag `v0.1.2` → workflow green →
+  draft verified (NSIS + MSI + sigs + portable ZIP, all checksums matched
+  `SHA256SUMS.txt`) → published; updater endpoint anonymous 200. Contents:
+  ad-block v2 (player-response prune — audio ads between tracks), the
+  beforeunload-dialog neutralizer, and the minimize-to-tray option. The
+  running app offers the 0.1.2 update on its next check.
 - **v0.1.0 RELEASED (public)**: repository is public
   (`https://github.com/4lefernandezc/mirlo`), release published with NSIS/MSI
   installers, updater signatures and `latest.json`; auto-update endpoint

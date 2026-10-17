@@ -320,7 +320,8 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     `videoId` from the player API; Discord resolves the external artwork
     URL to `mp:external/...` — visible in the ack reply) and the **timer**
     (milliseconds, start+end while playing). Paused tracks carry no
-    timestamps by design.
+    timestamps by design. **Confirmed working by the user (2026-10-16):
+    cover, timer and cross-track updates all render correctly in Discord.**
   - **What the user must do to activate it**: create a Discord application
     (Developer Portal) and paste its client id in Settings (Mirlo cannot
     ship one). The activity is displayed under that application's name.

@@ -42,8 +42,12 @@ plugins) is next. See [roadmap.md](roadmap.md).
 
 - **Window** (created from Rust, not from config): `WebviewUrl::External` to
   `https://music.youtube.com/` with `data_directory` at
-  `%LOCALAPPDATA%\Mirlo\webview2-profile` (WebView2 appends `EBWebView`, the
-  same layout the Phase 0 PoC produced, so sessions carry over).
+  `<data root>\webview2-profile` (WebView2 appends `EBWebView`, the same
+  layout the Phase 0 PoC produced, so sessions carry over).
+- **Data root** (`data_root.rs`): every app-owned path (config, window state,
+  logs, WebView2 profile) resolves through one pure function with the
+  precedence `MIRLO_DATA_DIR` → `portable.txt` next to the executable
+  (`<exe_dir>\data`) → `%LOCALAPPDATA%\Mirlo` (the installed default).
 - **Bridge**: `src-tauri/src/bridge.js`, injected at document start with the
   boot config templated into `window.__MIRLO_BOOT__`. Command surface
   (renderer → shell): `get_config`, `set_config`, `get_path`,
@@ -69,11 +73,13 @@ plugins) is next. See [roadmap.md](roadmap.md).
   for local inspection (env-gated, off by default).
 - **Packaging**: release builds run without a console
   (`windows_subsystem = "windows"`, Phase D) and write diagnostics to
-  `%LOCALAPPDATA%\Mirlo\logs\mirlo.log` (rotated; `logging.rs`). The NSIS
-  installer is per-user and installs to `%LOCALAPPDATA%\Programs\Mirlo`, away
-  from the app-data directory; the WiX MSI targets managed deployments.
-  Updates are signed bundles served from GitHub Releases and verified against
-  the public key in `tauri.conf.json` (`updates.rs`).
+  `<data root>\logs\mirlo.log` (rotated; `logging.rs`). The NSIS installer is
+  per-user and installs to `%LOCALAPPDATA%\Programs\Mirlo`, away from the
+  app-data directory; the WiX MSI targets managed deployments. The portable
+  ZIP ships the exe plus the `portable.txt` marker and keeps all data under
+  `<exe_dir>\data` (updates are manual there). Installed copies update from
+  signed bundles served from GitHub Releases and verified against the public
+  key in `tauri.conf.json` (`updates.rs`).
 
 ## Plugin model
 
@@ -123,7 +129,8 @@ Two classes of plugins, matching what Phase 0 found in pear-desktop v3.11.0
 - Remote page content gets **no privileged IPC**: the bridge is a strict,
   reviewed command surface (settings get/set, player control, plugin config).
   No arbitrary command execution, no filesystem access from page context.
-- The WebView profile folder is app-private under `%LOCALAPPDATA%\Mirlo`.
+- The WebView profile folder is app-private under the data root
+  (`%LOCALAPPDATA%\Mirlo`, or `<exe_dir>\data` for portable copies).
 - No analytics, no telemetry, no network calls except the user's own service
   usage and explicitly enabled integrations.
 

@@ -22,11 +22,20 @@ installed on Windows and keeps no per-app Node runtime. Measured on the same
 machine: **371 MB vs 1179 MB** private memory, idle, versus the Electron
 v3.11.0 build of pear-desktop (`docs/research/measurements.md`).
 
+## Is there a portable version?
+
+Yes: `Mirlo_<version>_portable_x64.zip` on the releases page. Extract it and
+run `mirlo.exe`; everything (settings, logs, session) stays under a `data\`
+folder next to the executable, and updates are manual (replace `mirlo.exe`
+with the new ZIP's copy). See
+[install.md → Portable](install.md#portable-no-installation).
+
 ## Where are the settings?
 
 - Tray icon → **Settings…** (or run `mirlo.exe --settings`).
-- The settings file itself: `%LOCALAPPDATA%\Mirlo\config.json` (close the app
-  before editing it by hand).
+- The settings file itself: `%LOCALAPPDATA%\Mirlo\config.json` for installed
+  copies (`data\config.json` next to the executable for portable ones); close
+  the app before editing it by hand.
 - Plugin changes apply with the **Reload player** button; global hotkey
   changes need an app restart.
 
@@ -73,9 +82,10 @@ silently dropped (this is logged once per run in `mirlo.log`).
 
 ## Where are the logs?
 
-`%LOCALAPPDATA%\Mirlo\logs\mirlo.log` (previous file kept as `mirlo.log.old`).
-Include it when reporting a bug. Typical harmless entry when offline or
-before the first release exists:
+`%LOCALAPPDATA%\Mirlo\logs\mirlo.log` for installed copies (`data\logs\`
+next to the executable for portable ones; previous file kept as
+`mirlo.log.old`). Include it when reporting a bug. Typical harmless entry
+when offline or before the first release exists:
 
 ```
 [ERROR] update check failed: Could not fetch a valid release JSON from the remote
@@ -88,6 +98,8 @@ Mirlo fetches the release manifest from GitHub. When a newer version exists
 it asks for confirmation, downloads the installer, verifies its signature
 against the public key compiled into the app, installs it and restarts.
 Updates can be turned off in Settings → *Check for updates on startup*.
+Portable copies check too but never run the installer: they show a message
+pointing at the releases page for a manual update.
 
 ## The window is blank / white
 
@@ -105,4 +117,5 @@ combination or disable Mirlo's hotkeys in Settings.
 
 Uninstall as described in [install.md](install.md), then delete
 `%LOCALAPPDATA%\Mirlo`. That removes the configuration, logs and the
-browser profile (including the stored Google session).
+browser profile (including the stored Google session). Portable copies have
+no uninstaller: deleting the extracted folder removes everything.

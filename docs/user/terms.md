@@ -47,7 +47,8 @@ enabled.
     enabled.
   - **Discord** via local IPC (named pipe) — only while Rich Presence is
     enabled; never over the network.
-- All app data stays under `%LOCALAPPDATA%\Mirlo` on your machine.
+- All app data stays under `%LOCALAPPDATA%\Mirlo` on your machine (portable
+  copies keep the same layout under `data\` next to `mirlo.exe`).
 
 ## Trademarks and affiliation
 

@@ -66,10 +66,14 @@ git push origin v0.1.0
 
 The workflow builds the Windows bundles and creates a **draft** release with:
 
-- `Mirlo_0.1.0_x64-setup.exe` (+ `.sig`) — NSIS, per-user (recommended).
-- `Mirlo_0.1.0_x64_en-US.msi` (+ `.sig`) — WiX, per-machine.
+- `Mirlo_0.1.1_x64-setup.exe` (+ `.sig`) — NSIS, per-user (recommended).
+- `Mirlo_0.1.1_x64_en-US.msi` (+ `.sig`) — WiX, per-machine.
+- `Mirlo_0.1.1_portable_x64.zip` — portable build: `mirlo.exe`, the empty
+  `portable.txt` marker, `LICENSE`, `THIRD_PARTY_NOTICES.md` and
+  `README-PORTABLE.txt` (data root → `<exe_dir>\data`; updates are manual, no
+  updater signature needed).
 - `latest.json` — updater manifest (points at the NSIS bundle).
-- `SHA256SUMS.txt` — checksums of the installers.
+- `SHA256SUMS.txt` — checksums of the installers **and** the portable ZIP.
 
 ## Verify and publish
 
@@ -80,9 +84,15 @@ The workflow builds the Windows bundles and creates a **draft** release with:
    correct.
 2. Check the log at `%LOCALAPPDATA%\Mirlo\logs\mirlo.log` contains
    `--- Mirlo <version> starting ---` and `ready:`.
-3. Confirm `SHA256SUMS.txt` matches the uploaded installers
-   (`Get-FileHash -Algorithm SHA256`).
-4. Publish the draft release (this is what makes the updater endpoint live).
+3. Portable ZIP: extract it into an empty folder, run `mirlo.exe` and verify
+   that a `data\` folder appears next to it containing `config.json`,
+   `window-state.json`, `logs\mirlo.log` and eventually `webview2-profile\`
+   (nothing new under `%LOCALAPPDATA%\Mirlo`); tray → *Check for updates…*
+   must report "latest version" (or offer manual update instructions when a
+   newer release exists).
+4. Confirm `SHA256SUMS.txt` matches the uploaded installers **and** the
+   portable ZIP (`Get-FileHash -Algorithm SHA256`).
+5. Publish the draft release (this is what makes the updater endpoint live).
 
 ## Post-release verification (auto-update)
 

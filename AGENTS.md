@@ -389,68 +389,85 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
      entirely** (2026-10-17, owner decision: privacy and several captures
      predated window fixes). Keep documentation text-only; if media is ever
      re-added, review it for personal data and staleness first.
-  - Owner actions remaining before the first public release: make repo
-    public, add the signing key to GitHub Actions secrets, tag `v0.1.0`,
-    verify the draft, publish (then re-verify auto-update from 0.1.0→next).
+  - v0.1.0 was **published** on 2026-10-17 (the earlier "owner actions
+    remaining" list was completed; see the first bullet in this section).
+- **v0.1.1 — portable build DONE (2026-10-17)**: no-install distribution.
+  - New `app/src-tauri/src/data_root.rs`: `resolve()` is a **pure function**
+    (exe dir, `MIRLO_DATA_DIR` value, LOCALAPPDATA passed in; 5 unit tests
+    cover the precedence) and `root()` wires it to the live process.
+    Precedence: `MIRLO_DATA_DIR` (explicit override) → empty marker
+    `portable.txt` next to the running exe (`<exe_dir>\data`) →
+    `%LOCALAPPDATA%\Mirlo` (unchanged default). `is_portable()` = marker
+    file only (the env var is a data override, not a distribution mode).
+  - All app-owned paths now resolve through it: `config.rs` (config.json,
+    webview2-profile), `logging.rs` (logs\mirlo.log), `window_state.rs`;
+    the now-unused `AppHandle` parameters were dropped from those helpers
+    and from the `set_config`/`set_plugin_config`/`get_path`/`restart_app`
+    commands; the panic hook and fatal-startup dialog print the **resolved**
+    log path instead of the hardcoded `%LOCALAPPDATA%` string.
+  - `updates.rs`: portable copies still run the startup/tray check, but when
+    an update exists they show a message pointing at the releases page and
+    never download/run the NSIS installer (it would install into
+    `%LOCALAPPDATA%\Programs\Mirlo`); installed copies unchanged.
+  - CI (`release.yml`): new "Build portable ZIP" step creates
+    `Mirlo_<version>_portable_x64.zip` (release `mirlo.exe` + empty
+    `portable.txt` + `LICENSE` + `THIRD_PARTY_NOTICES.md` +
+    `app/portable/README-PORTABLE.txt`); the checksum step includes the ZIP
+    in `SHA256SUMS.txt`; the upload step publishes it in the draft; the
+    release body explains the ZIP (manual updates, no updater signature).
+  - Docs: `install.md` portable section + download-table row, README
+    download line + dev note, `release.md` draft contents + portable
+    verification step, plus FAQ / terms / architecture / app README updates.
+  - Version bumped to **0.1.1** (`tauri.conf.json` + `Cargo.toml`),
+    CHANGELOG section `[0.1.1] - 2026-10-17`.
+  - Verified locally (2026-10-17): fmt/clippy/test green (24 tests, 5 new);
+    release build run from a folder with `portable.txt` created
+    `data\{config.json, logs\mirlo.log, webview2-profile\EBWebView}` while
+    the `%LOCALAPPDATA%` log stayed untouched; without the marker the
+    LOCALAPPDATA log grew (`--- Mirlo 0.1.1 starting ---`, `ready:
+    profile=...\Mirlo\webview2-profile`) and no `data\` appeared next to the
+    exe; the CI zip commands were reproduced locally, the extracted ZIP ran
+    storing data in `data\`; geometry persisted to `data\window-state.json`
+    after a window move; the portable update check reached `latest.json`
+    ("0.1.1 is up to date"); graceful close, no orphan webview processes.
+  - **Trap found**: during a fresh maximize-only run (no user interaction)
+    no Moved/Resized events reach `track` (creation-time events don't
+    arrive, matching the documented seed() trap), so `window-state.json` is
+    only written once the window is actually moved/resized — pre-existing
+    behavior, not a regression; fresh installs re-maximize by default.
 - Machine facts: Windows 11 x64; Rust 1.99.1 (MSVC) installed; VS 2019 Build
   Tools present; WebView2 runtime 155 present; Node 24 present; npm available.
 - Build artifacts must NOT go into OneDrive: always set
   `CARGO_TARGET_DIR=$env:TEMP\mirlo-target`
   (or any temp dir) before cargo commands.
 
-## Next step — publish v0.1.0 (owner actions) / Phase C leftover
+## Next step — v0.1.1 release (owner actions) / Phase C leftover
 
-**v0.1.0 is published** (2026-10-17). The publishing sequence was completed:
-repository made public, signing secret in Actions, tag `v0.1.0`, draft
-verified, release published, updater endpoint live. The signing key lives at
+**v0.1.0 is published** (2026-10-17); **v0.1.1 implementation is complete**
+(portable build, version bumped, docs updated — this is the release the
+publish sequence below targets). The signing key lives at
 `%USERPROFILE%\.tauri\mirlo.key` — keep it backed up (without it no future
 version can be signed).
 
-Next release: follow `docs/release.md` (bump versions in
+Releases: follow `docs/release.md` (bump versions in
 `tauri.conf.json` + `Cargo.toml`, update `CHANGELOG.md`, tag `vX.Y.Z`, verify
-the draft, publish). Auto-update E2E (old installed version prompts to update)
-requires the next tag — verify it then.
+the draft — installers, portable ZIP, `SHA256SUMS.txt` — publish). Auto-update
+E2E (old installed version prompts to update) requires the next tag — verify
+it then (v0.1.0 → v0.1.1).
 
-### Next work item — v0.1.1: full portable build (approved 2026-10-17)
+### Next work item — v0.1.1 release (implementation DONE, owner actions only)
 
-Design (agreed with the owner):
+Implementation finished 2026-10-17 (see the v0.1.1 bullet in Current state).
+Everything is committed and locally verified; what remains is the publish
+sequence (owner):
 
-- New `data_root()` resolution, precedence:
-  1. `MIRLO_DATA_DIR` env var (absolute path) — explicit override; used by tests.
-  2. Empty marker file `portable.txt` next to the running exe → `<exe_dir>\data`.
-  3. Fallback: `%LOCALAPPDATA%\Mirlo` (current behavior, unchanged).
-  Make the resolver a **pure function** (exe dir, env value, LOCALAPPDATA
-  passed in) so precedence is unit-testable.
-- Everything app-owned must use it: `config.json`, `window-state.json`,
-  `logs\`, and the WebView2 `data_directory` (profile/session). Known call
-  sites: `config.rs` (base), `logging.rs` (reads LOCALAPPDATA directly today,
-  ~line 39), `lib.rs` (webview data dir; the dialogs at ~474/~574 hardcode the
-  `%LOCALAPPDATA%\Mirlo\logs\mirlo.log` string — print the resolved path).
-- Updater: in portable mode the startup/tray check still runs, but an
-  available update must NOT run the NSIS updater — show a message pointing to
-  the releases page (no silent install). Non-portable behavior unchanged.
-- CI (`release.yml`): after the Tauri build, create
-  `Mirlo_<version>_portable_x64.zip` containing `mirlo.exe` (release build),
-  `portable.txt` (empty marker), `LICENSE`, `THIRD_PARTY_NOTICES.md` and a
-  short `README-PORTABLE.txt` (run from any folder, data goes to `data\`,
-  updates via the releases page). Include the zip in `SHA256SUMS.txt` (extend
-  the checksums step) and upload it to the release alongside the installers.
-- Docs: `install.md` new "Portable (no installation)" section (extract, run,
-  `data\`, SmartScreen honesty note, ZIP SHA256 verification); README
-  download one-liner; `release.md` checklist gains the zip asset.
-- Version bump to 0.1.1 (`tauri.conf.json` + `Cargo.toml`), CHANGELOG entry
-  (move `Unreleased`).
-
-Acceptance for the session:
-
-1. Unit tests for `data_root()` precedence; fmt/clippy/test green.
-2. Manual smoke: release build with `portable.txt` → config/logs/profile under
-   `<dir>\data`; without marker → `%LOCALAPPDATA%\Mirlo` unchanged.
-3. On tag `v0.1.1`: draft contains installers + `Mirlo_0.1.1_portable_x64.zip`;
-   downloaded zip checksum matches `SHA256SUMS.txt`; the extracted portable
-   copy runs, stores data in `data\`, and its update check reaches `latest.json`.
-4. After publish: auto-update E2E from the installed 0.1.0 (prompt appears,
-   passive install, restart, 0.1.1 in the log).
+1. Tag `v0.1.1` and push (the workflow builds installers + the portable ZIP,
+   signs the updater artifacts and creates the draft with `SHA256SUMS.txt`).
+2. Verify the draft: `Mirlo_0.1.1_portable_x64.zip` present and in
+   `SHA256SUMS.txt`; download the ZIP, check the hash, extract and run it
+   (data must go to `data\`, update check must reach `latest.json`).
+3. Publish; then run the auto-update E2E from the installed 0.1.0 (prompt
+   appears, passive NSIS install, restart, `0.1.1` in the log).
 
 Related follow-ups (separate, not blockers): code signing (SignPath Foundation
 free OSS signing / Azure Trusted Signing) and winget submission

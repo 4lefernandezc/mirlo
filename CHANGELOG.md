@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-17
+
+### Added
+
+- Portable build: the releases now include
+  `Mirlo_<version>_portable_x64.zip` (release `mirlo.exe`, an empty
+  `portable.txt` marker, `LICENSE`, `THIRD_PARTY_NOTICES.md` and
+  `README-PORTABLE.txt`). Extract it anywhere and run the exe — no installer,
+  no registry, and the ZIP is listed in `SHA256SUMS.txt`.
+- All app-owned state now resolves through a single data root
+  (`data_root.rs`, pure and unit-tested precedence): `MIRLO_DATA_DIR`
+  (explicit override) → `portable.txt` next to the executable
+  (`<exe_dir>\data`) → `%LOCALAPPDATA%\Mirlo` (the installed default,
+  unchanged). Config, window state, logs and the persistent WebView2 profile
+  (Google session) all follow it, so a portable copy keeps everything inside
+  its own `data\` folder.
+- Fatal-error dialogs and the panic hook now print the resolved log path
+  instead of the hardcoded `%LOCALAPPDATA%` one.
+
+### Changed
+
+- Portable copies update manually: the startup/tray update check still runs
+  and reports new versions, but instead of downloading and running the NSIS
+  installer it shows a message pointing to the releases page (the installer
+  would install into `%LOCALAPPDATA%\Programs\Mirlo`). Installed copies are
+  unaffected.
+
 ## [0.1.0] - 2026-10-17
 
 ### Added

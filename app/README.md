@@ -10,9 +10,11 @@ app/
   ui/                      Static fallback page (frontendDist; no build step)
   src-tauri/
     src/lib.rs             Shell: window, commands, hotkeys, tray, single-instance
-    src/config.rs          JSON settings store (%LOCALAPPDATA%\Mirlo\config.json)
+    src/config.rs          JSON settings store (<data root>\config.json)
+    src/data_root.rs       Installed vs portable data-root resolution
     src/bridge.js          Initialization script injected into the player page
     capabilities/main.json Remote-URL capability for the bridge
+  portable/                README-PORTABLE.txt shipped inside the portable ZIP
 ```
 
 ## Build and run
@@ -24,7 +26,9 @@ cargo run --manifest-path app/src-tauri/Cargo.toml --release
 
 First run creates `%LOCALAPPDATA%\Mirlo\` with `config.json` and the
 persistent WebView2 profile (`webview2-profile/`); the Google session survives
-restarts, exactly like the Phase 0 PoC.
+restarts, exactly like the Phase 0 PoC. Dropping an empty `portable.txt` next
+to `mirlo.exe` switches the data root to `<exe_dir>\data` (the portable ZIP
+ships that marker; `MIRLO_DATA_DIR` overrides the root for tests).
 
 ## Plugins (Phase B)
 

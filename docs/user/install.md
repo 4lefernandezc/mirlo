@@ -20,6 +20,7 @@ Installers are published on the GitHub Releases page
 | --- | --- |
 | `Mirlo_<version>_x64-setup.exe` (NSIS) | **Recommended.** Per-user install, no administrator rights required. |
 | `Mirlo_<version>_x64_en-US.msi` | Managed/enterprise deployments (per-machine, requires an administrator). |
+| `Mirlo_<version>_portable_x64.zip` | Portable: no installation; extract and run (see below). |
 | `SHA256SUMS.txt` | Checksums to verify your download. |
 
 ### Verify the download (optional but recommended)
@@ -50,9 +51,32 @@ Get-FileHash .\Mirlo_0.1.0_x64-setup.exe -Algorithm SHA256
   Changes apply immediately or with the *Reload player* button; a few
   settings (global hotkeys) need an app restart.
 
+## Portable (no installation)
+
+The portable ZIP (`Mirlo_<version>_portable_x64.zip`) needs no installer:
+
+1. Extract the ZIP into any writable folder (a local folder, a USB drive…).
+2. Run `mirlo.exe` from that folder.
+
+Everything app-owned is stored inside a `data\` folder created next to the
+executable (config, logs, window state and the browser profile with your
+Google session) — nothing is written to `%LOCALAPPDATA%`. Moving or deleting
+the extracted folder moves or deletes the whole copy, including your session.
+
+- Windows SmartScreen may warn because the binaries are not code-signed yet:
+  choose **More info** → **Run anyway** (same as the installer).
+- Updates are **manual** for portable copies: Mirlo still checks for new
+  versions and tells you when one exists, but it does not run the installer.
+  Download the new ZIP from the releases page and replace `mirlo.exe`,
+  keeping your `data\` folder.
+- Verify the ZIP the same way as the installers:
+  `Get-FileHash .\Mirlo_0.1.1_portable_x64.zip -Algorithm SHA256` and compare
+  with `SHA256SUMS.txt`.
+
 ## Where Mirlo keeps its data
 
-Everything app-owned lives under `%LOCALAPPDATA%\Mirlo`:
+For installed copies everything app-owned lives under `%LOCALAPPDATA%\Mirlo`
+(portable copies keep the same layout under `data\` next to `mirlo.exe`):
 
 | Path | Content |
 | --- | --- |
@@ -65,9 +89,10 @@ Everything app-owned lives under `%LOCALAPPDATA%\Mirlo`:
 
 Mirlo checks for updates silently at startup (can be disabled in Settings →
 *Check for updates on startup*) and on demand from the tray menu
-(*Check for updates…*). Updates are downloaded from this repository's
-releases, verified against the bundled public key, and installed only after
-you confirm a prompt; the app then restarts.
+(*Check for updates…*). Installed copies download the signed installer from
+this repository's releases, verify it against the bundled public key, and
+install it only after you confirm a prompt; the app then restarts. Portable
+copies are updated by hand (see *Portable* above).
 
 ## Uninstall
 
@@ -76,4 +101,5 @@ Use **Settings → Apps → Installed apps → Mirlo → Uninstall** (or run
 
 Uninstalling removes the program; **your data and session are kept** in
 `%LOCALAPPDATA%\Mirlo`. To wipe everything, delete that folder after
-uninstalling.
+uninstalling. (Portable copies have no uninstaller: just delete the extracted
+folder.)

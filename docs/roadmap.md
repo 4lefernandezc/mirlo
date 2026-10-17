@@ -97,24 +97,25 @@ Phases are ordered. Each phase ends with an updated `AGENTS.md`, a
 - [x] Phase A/B leftover: `windows_subsystem = "windows"` in release builds +
       file logging with rotation (`%LOCALAPPDATA%\Mirlo\logs\mirlo.log`),
       native error box on fatal errors.
-- [ ] Owner actions to publish the first release: make the repository public,
-      add the signing key to GitHub Actions secrets, tag `v0.1.0`, verify and
-      publish the draft (see `docs/release.md`).
+- [x] Owner actions to publish the first release (done 2026-10-17: repository
+      public, signing key in Actions secrets, tag `v0.1.0`, draft verified and
+      published; see `docs/release.md`).
 
-## v0.1.1 — Portable build (NEXT, approved 2026-10-17)
+## v0.1.1 — Portable build (implemented 2026-10-17; release pending)
 
-- [ ] `data_root()` resolution (`MIRLO_DATA_DIR` > `portable.txt` >
-      `%LOCALAPPDATA%\Mirlo`) + unit tests
-- [ ] All app-owned paths on the resolver (config, logs, window-state,
+- [x] `data_root()` resolution (`MIRLO_DATA_DIR` > `portable.txt` >
+      `%LOCALAPPDATA%\Mirlo`) + unit tests (pure `resolve()` precedence)
+- [x] All app-owned paths on the resolver (config, logs, window-state,
       WebView2 profile)
-- [ ] Updater in portable mode: point to the releases page, never run the NSIS
-      install
-- [ ] CI: build `Mirlo_<v>_portable_x64.zip` (exe + `portable.txt` + license +
-      portable README), add it to `SHA256SUMS.txt` and the release assets
-- [ ] Docs: `install.md` portable section, README download line, release
+- [x] Updater in portable mode: points to the releases page, never runs the
+      NSIS install
+- [x] CI: builds `Mirlo_<v>_portable_x64.zip` (exe + `portable.txt` + license +
+      portable README), adds it to `SHA256SUMS.txt` and the release assets
+- [x] Docs: `install.md` portable section, README download line, release
       checklist
-- [ ] Version 0.1.1 + CHANGELOG; tag → verify draft → publish; auto-update E2E
-      0.1.0 → 0.1.1
+- [x] Version 0.1.1 + CHANGELOG
+- [ ] Owner actions: tag `v0.1.1`, verify the draft (installers + portable
+      ZIP + checksums), publish; auto-update E2E 0.1.0 → 0.1.1
 
 ## Phase E — Future (evaluated, not committed)
 

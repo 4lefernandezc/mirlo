@@ -17,8 +17,10 @@ build of pear-desktop, idle, same machine).
 
 Installers are attached to
 [GitHub Releases](https://github.com/4lefernandezc/mirlo/releases):
-`Mirlo_<version>_x64-setup.exe` (recommended, per-user, no admin rights) or
-`.msi` for managed deployments. Requirements and first-run notes:
+`Mirlo_<version>_x64-setup.exe` (recommended, per-user, no admin rights),
+`.msi` for managed deployments, or `Mirlo_<version>_portable_x64.zip` — no
+installation: extract and run, all data stays in a `data\` folder next to the
+executable. Requirements and first-run notes:
 [docs/user/install.md](docs/user/install.md). Common questions:
 [docs/user/faq.md](docs/user/faq.md). Scope and ToS notes:
 [docs/user/terms.md](docs/user/terms.md).
@@ -60,8 +62,11 @@ cargo run --manifest-path app/src-tauri/Cargo.toml --release
 ```
 
 The first run creates `%LOCALAPPDATA%\Mirlo\` with `config.json` and the
-persistent WebView2 profile (the Google session survives restarts). Release
-built (no console) writes diagnostics to `%LOCALAPPDATA%\Mirlo\logs\mirlo.log`. Checks:
+persistent WebView2 profile (the Google session survives restarts). A
+`portable.txt` marker next to `mirlo.exe` switches the data root to
+`<exe_dir>\data` instead, and `MIRLO_DATA_DIR` overrides it (see
+[docs/user/install.md](docs/user/install.md)). Release built (no console)
+writes diagnostics to `<data root>\logs\mirlo.log`. Checks:
 
 ```powershell
 cargo fmt --manifest-path app/src-tauri/Cargo.toml

@@ -8,9 +8,9 @@ bundling an entire browser like Electron-based alternatives. Measurements:
 **371 MB vs 1179 MB** private memory (Tauri shell vs the Electron v3.11.0
 build of pear-desktop, idle, same machine).
 
-> **Status: pre-release.** The application is feature-complete for the first
-> release (player, 18 plugins, media session, notifications, Discord
-> presence, ad-block, auto-update) and is being packaged (Phase D). See
+> **Status: v0.1.0 released; v0.1.1 (portable build) in preparation.** Feature
+> set: player, 18 plugins, media session, notifications, Discord presence,
+> ad-block and signed auto-update. See
 > [docs/roadmap.md](docs/roadmap.md) for the current phase.
 
 ## Download

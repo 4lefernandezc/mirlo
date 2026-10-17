@@ -28,7 +28,7 @@ Installers are published on the GitHub Releases page
 In PowerShell, compare the file hash with the one in `SHA256SUMS.txt`:
 
 ```powershell
-Get-FileHash .\Mirlo_0.1.0_x64-setup.exe -Algorithm SHA256
+Get-FileHash .\Mirlo_0.1.1_x64-setup.exe -Algorithm SHA256
 ```
 
 ## Install

@@ -60,8 +60,8 @@ npx @tauri-apps/cli@^2 build --bundles nsis,msi
 ## Cut the release
 
 ```powershell
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.1.1
+git push origin v0.1.1
 ```
 
 The workflow builds the Windows bundles and creates a **draft** release with:

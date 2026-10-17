@@ -51,11 +51,9 @@ structurally tiny). Largest
 components in the Phase A run:
 renderer 165.8 MB, GPU 121.0 MB, browser 31.2 MB (private working set).
 
-Evidence: `images/phase-a-idle.png` is a window capture of the idle shell
-(official player loaded with the seeded session). The account avatar and
-account label were redacted (2026-10-17, Phase D release prep) before the
-repository became public; the player page itself and the album artwork remain
-as captured.
+The screenshot evidence was removed from the repository (2026-10-17, owner
+decision: privacy and stale pre-fix captures); the numbers above are the
+record, and the command below reproduces the measurement.
 
 Reproduce (attach form keeps graceful shutdown):
 

@@ -47,6 +47,22 @@ pub(crate) fn video_id(url: &str) -> Option<String> {
     })
 }
 
+/// The current track's video id from a `report_player_state` payload: the
+/// bridge's `videoid` (player API) first, then the URL's `v=` fallback.
+/// The SPA often keeps the address bar at the home URL, so the API field is
+/// the reliable source for artwork.
+pub(crate) fn artwork_id(data: &serde_json::Value) -> Option<String> {
+    data.get("videoId")
+        .and_then(serde_json::Value::as_str)
+        .filter(|id| !id.is_empty())
+        .map(str::to_string)
+        .or_else(|| {
+            data.get("url")
+                .and_then(serde_json::Value::as_str)
+                .and_then(video_id)
+        })
+}
+
 #[cfg(target_os = "windows")]
 mod platform {
     use std::sync::atomic::{AtomicU64, Ordering};
@@ -67,7 +83,7 @@ mod platform {
         ISystemMediaTransportControlsInterop, RoInitialize, RO_INIT_MULTITHREADED,
     };
 
-    use super::{split_byline, video_id};
+    use super::split_byline;
 
     /// Bounded debug logging for update errors (they should be rare).
     const LOG_FIRST: u64 = 10;
@@ -215,7 +231,7 @@ mod platform {
             props.SetAlbumTitle(&HSTRING::from(album))?;
         }
 
-        if let Some(id) = data.get("url").and_then(Value::as_str).and_then(video_id) {
+        if let Some(id) = super::artwork_id(data) {
             let art = HSTRING::from(format!("https://i.ytimg.com/vi/{id}/mqdefault.jpg"));
             let uri = Uri::CreateUri(&art)?;
             let thumbnail = RandomAccessStreamReference::CreateFromUri(&uri)?;
@@ -255,7 +271,7 @@ mod platform {
 
 #[cfg(test)]
 mod tests {
-    use super::{split_byline, video_id};
+    use super::{artwork_id, split_byline, video_id};
 
     #[test]
     fn splits_artist_album_year() {
@@ -281,5 +297,18 @@ mod tests {
         );
         assert_eq!(video_id("https://music.youtube.com/watch?v=&x=1"), None);
         assert_eq!(video_id("https://music.youtube.com/"), None);
+    }
+
+    #[test]
+    fn artwork_id_prefers_the_player_api_field() {
+        let with_api = serde_json::json!({
+            "videoId": "api123",
+            "url": "https://music.youtube.com/watch?v=url456",
+        });
+        assert_eq!(artwork_id(&with_api), Some("api123".to_string()));
+        let url_only = serde_json::json!({ "url": "https://music.youtube.com/watch?v=url456" });
+        assert_eq!(artwork_id(&url_only), Some("url456".to_string()));
+        let home = serde_json::json!({ "videoId": null, "url": "https://music.youtube.com/" });
+        assert_eq!(artwork_id(&home), None);
     }
 }

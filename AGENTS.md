@@ -310,11 +310,17 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     The activity maps `video-src-changed`/`play-or-paused`/`seeked` to
     type 2 (Listening) with `details` = title, `state` = artist and a
     `timestamps.start` while playing.
-  - Verified live against the running Discord client with a dummy id:
-    `connected to \\.\pipe\discord-ipc-0, handshake sent` →
+  - Verified live (2026-10-16) against the running Discord client with a
+    dummy id: `connected to \\.\pipe\discord-ipc-0, handshake sent` →
     `Discord closed the pipe: {"code":4000,"message":"Invalid Client ID"}`
-    — the round trip proves the frame codec and handshake are correct;
-    with a real app id Discord replies READY. Reconnect path exercised too.
+    — the round trip proves the frame codec and handshake are correct.
+  - Post-release fixes (same day, user's real client id): the activity now
+    updates across track changes (peek-gated reader; a pending blocking
+    read deadlocks writes — see traps), shows the **cover** (bridge reports
+    `videoId` from the player API; Discord resolves the external artwork
+    URL to `mp:external/...` — visible in the ack reply) and the **timer**
+    (milliseconds, start+end while playing). Paused tracks carry no
+    timestamps by design.
   - **What the user must do to activate it**: create a Discord application
     (Developer Portal) and paste its client id in Settings (Mirlo cannot
     ship one). The activity is displayed under that application's name.
@@ -395,6 +401,26 @@ must provide api_key/api_secret — see "Next step" above for the design).
   after a correct handshake — that reply proves the pipe connect + frame
   codec + handshake; a real client id yields `READY`. Discord must be
   running (`\\.\pipe\discord-ipc-0` exists).
+- **Discord IPC + Windows named pipes: never leave a blocking `ReadFile`
+  pending on the connection** — a pending synchronous read serializes
+  `WriteFile` even from a duplicated handle, so the next `SET_ACTIVITY`
+  hangs forever (the activity sticks on the first track). Fix proven with a
+  throwaway probe: peek with `PeekNamedPipe` and read only complete frames
+  (`available >= 8 + payload len`). Belt and braces in the module: writes
+  run on a helper thread with a 3 s deadline (timeout → drop the connection
+  and reconnect on the next activity) and the reader resets on oversized
+  (>1 MiB) or partial (5 s) frames. Discord's IPC can transiently stop
+  draining while it resolves external artwork; the ack reply mirrors the
+  registered activity (resolved `mp:external/...` asset paths, ms
+  timestamps) — log it when debugging.
+- Discord timestamps are **milliseconds** in the IPC payload; the modern
+  client resolves raw https `large_image` URLs via its external-assets API
+  (ack shows `mp:external/<hash>/https/...`), so no uploaded assets needed.
+- The YT Music SPA often keeps `location.href` at `music.youtube.com/`
+  while playing: never derive the video id from the URL alone. The bridge's
+  player state now carries `videoId` (from `#movie_player.getVideoData()`);
+  `media_controls::artwork_id` prefers it with a URL fallback (used by
+  Discord artwork, toast artwork and the SMTC thumbnail).
 
 Other carry-over notes:
 

@@ -86,7 +86,7 @@ mod platform {
     };
 
     use super::toast_xml;
-    use crate::media_controls::{split_byline, video_id};
+    use crate::media_controls::{artwork_id, split_byline};
 
     /// AppUserModelID used for toasts (also the registry subkey name).
     const AUMID: &str = "Mirlo";
@@ -128,10 +128,10 @@ mod platform {
             return;
         }
 
-        let url = data.get("url").and_then(Value::as_str).unwrap_or("");
         let byline = data.get("artist").and_then(Value::as_str).unwrap_or("");
         let artist = split_byline(byline).0;
-        let artwork = video_id(url).map(|id| format!("https://i.ytimg.com/vi/{id}/mqdefault.jpg"));
+        let artwork =
+            artwork_id(data).map(|id| format!("https://i.ytimg.com/vi/{id}/mqdefault.jpg"));
         match show(title, &artist, artwork.as_deref()) {
             Ok(()) => {
                 let count = SHOWN.fetch_add(1, Ordering::Relaxed) + 1;

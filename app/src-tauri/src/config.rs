@@ -11,6 +11,8 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 
+use crate::logging::log_error;
+
 /// Bumped when the on-disk shape changes in a way that needs migration.
 /// v2 adds the per-plugin configuration map (`plugins`).
 pub const CONFIG_VERSION: u32 = 2;
@@ -33,6 +35,8 @@ pub struct Config {
     /// Discord application client id (created by the user in the Discord
     /// Developer Portal; empty disables the integration).
     pub discord_client_id: String,
+    /// Silent update check on startup (the tray always offers a manual one).
+    pub update_check: bool,
     /// Per-plugin settings: `{ "<plugin-id>": { "enabled": bool, ...options } }`.
     /// Plugin option schemas and defaults live in the bridge (`plugins/*.js`);
     /// the shell stores only what the user changed.
@@ -48,6 +52,7 @@ impl Default for Config {
             notifications: true,
             discord_rpc: false,
             discord_client_id: String::new(),
+            update_check: true,
             plugins: BTreeMap::new(),
         }
     }
@@ -85,7 +90,7 @@ pub fn load(app: &AppHandle) -> Config {
                 config
             }
             Err(err) => {
-                eprintln!("[mirlo] config.json invalid ({err}); using defaults");
+                log_error!("config.json invalid ({err}); using defaults");
                 Config::default()
             }
         },
@@ -127,6 +132,7 @@ mod tests {
         assert!(config.notifications);
         assert!(!config.discord_rpc);
         assert!(config.discord_client_id.is_empty());
+        assert!(config.update_check);
     }
 
     #[test]

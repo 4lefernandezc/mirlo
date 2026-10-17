@@ -50,6 +50,7 @@ mod platform {
     use std::sync::atomic::{AtomicU64, Ordering};
 
     use super::{is_blocked, ENABLED};
+    use crate::logging::{log_error, log_info};
     use tauri::WebviewWindow;
     use webview2_com::Microsoft::Web::WebView2::Win32::{
         ICoreWebView2, ICoreWebView2Controller, ICoreWebView2Environment,
@@ -73,10 +74,10 @@ mod platform {
     pub fn install(window: &WebviewWindow) {
         if let Err(err) = window.with_webview(|platform| {
             if let Err(err) = register(&platform.controller()) {
-                eprintln!("[mirlo] adblock: could not install v1: {err}");
+                log_error!("adblock: could not install v1: {err}");
             }
         }) {
-            eprintln!("[mirlo] adblock: with_webview failed: {err}");
+            log_error!("adblock: with_webview failed: {err}");
         }
     }
 
@@ -155,7 +156,7 @@ mod platform {
     fn log_bounded(counter: &AtomicU64, message: &str) {
         let count = counter.fetch_add(1, Ordering::Relaxed) + 1;
         if count <= LOG_FIRST || count % LOG_EVERY == 0 {
-            println!("[mirlo] adblock: {message} (n={count})");
+            log_info!("adblock: {message} (n={count})");
         }
     }
 }

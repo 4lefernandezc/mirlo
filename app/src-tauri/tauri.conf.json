@@ -16,13 +16,45 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["nsis", "msi"],
+    "publisher": "Mirlo",
+    "category": "Music",
+    "shortDescription": "A lightweight, open-source desktop client for YouTube Music",
+    "longDescription": "Mirlo wraps the official YouTube Music web player in a fast native shell (Tauri + WebView2). It reuses the WebView2 runtime already installed on your machine, so it starts fast and uses far less memory than Electron-based alternatives.",
+    "licenseFile": "../../LICENSE",
+    "createUpdaterArtifacts": true,
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
       "icons/icon.png",
       "icons/icon.ico"
-    ]
+    ],
+    "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper",
+        "silent": true
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": ["English", "Spanish"],
+        "displayLanguageSelector": true,
+        "installerHooks": "installer-hooks.nsh"
+      },
+      "wix": {
+        "language": "en-US"
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDZFRDY3MzE0MDAxMTU2NjMKUldSalZoRUFGSFBXYnN1UEhxaHNoWHNOSU1XVFQzTGc5WXFiMnV1dFA3ZXlaNkp3OEd0cE12S3UK",
+      "endpoints": [
+        "https://github.com/4lefernandezc/mirlo/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }

@@ -391,7 +391,10 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
      re-added, review it for personal data and staleness first.
   - v0.1.0 was **published** on 2026-10-17 (the earlier "owner actions
     remaining" list was completed; see the first bullet in this section).
-- **v0.1.1 — portable build DONE (2026-10-17)**: no-install distribution.
+- **v0.1.1 — RELEASED publicly (2026-10-17)**: portable build published
+  (installers + portable ZIP, all three checksums verified, updater endpoint
+  serving 0.1.1); auto-update E2E 0.1.0 → 0.1.1 passed on the owner's machine.
+  No-install distribution.
   - New `app/src-tauri/src/data_root.rs`: `resolve()` is a **pure function**
     (exe dir, `MIRLO_DATA_DIR` value, LOCALAPPDATA passed in; 5 unit tests
     cover the precedence) and `root()` wires it to the live process.
@@ -441,33 +444,22 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
   `CARGO_TARGET_DIR=$env:TEMP\mirlo-target`
   (or any temp dir) before cargo commands.
 
-## Next step — v0.1.1 release (owner actions) / Phase C leftover
+## Next step — pending work / Phase C leftover
 
-**v0.1.0 is published** (2026-10-17); **v0.1.1 implementation is complete**
-(portable build, version bumped, docs updated — this is the release the
-publish sequence below targets). The signing key lives at
-`%USERPROFILE%\.tauri\mirlo.key` — keep it backed up (without it no future
-version can be signed).
+**v0.1.0 and v0.1.1 are published** (2026-10-17). v0.1.1 (portable build) was
+released end-to-end: tag → draft verified (installers + portable ZIP + all
+three checksums OK) → published → **auto-update E2E passed on the owner's
+machine** (`update available: 0.1.1 (current 0.1.0)` → confirm → passive
+install → restart → `--- Mirlo 0.1.1 starting ---`, session preserved). The
+signing key lives at `%USERPROFILE%\.tauri\mirlo.key` — keep it backed up
+(without it no future version can be signed).
 
-Releases: follow `docs/release.md` (bump versions in
+For the next release: follow `docs/release.md` (bump versions in
 `tauri.conf.json` + `Cargo.toml`, update `CHANGELOG.md`, tag `vX.Y.Z`, verify
-the draft — installers, portable ZIP, `SHA256SUMS.txt` — publish). Auto-update
-E2E (old installed version prompts to update) requires the next tag — verify
-it then (v0.1.0 → v0.1.1).
-
-### Next work item — v0.1.1 release (implementation DONE, owner actions only)
-
-Implementation finished 2026-10-17 (see the v0.1.1 bullet in Current state).
-Everything is committed and locally verified; what remains is the publish
-sequence (owner):
-
-1. Tag `v0.1.1` and push (the workflow builds installers + the portable ZIP,
-   signs the updater artifacts and creates the draft with `SHA256SUMS.txt`).
-2. Verify the draft: `Mirlo_0.1.1_portable_x64.zip` present and in
-   `SHA256SUMS.txt`; download the ZIP, check the hash, extract and run it
-   (data must go to `data\`, update check must reach `latest.json`).
-3. Publish; then run the auto-update E2E from the installed 0.1.0 (prompt
-   appears, passive NSIS install, restart, `0.1.1` in the log).
+the draft — installers, portable ZIP, `SHA256SUMS.txt` — publish). The
+auto-update E2E procedure is now known-good: watch
+`%LOCALAPPDATA%\Mirlo\logs\mirlo.log` for `update available:` and
+`--- Mirlo <version> starting ---`.
 
 Related follow-ups (separate, not blockers): code signing (SignPath Foundation
 free OSS signing / Azure Trusted Signing) and winget submission

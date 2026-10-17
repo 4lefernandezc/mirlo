@@ -86,6 +86,7 @@ mod platform {
     };
 
     use super::toast_xml;
+    use crate::logging::{log_error, log_info};
     use crate::media_controls::{artwork_id, split_byline};
 
     /// AppUserModelID used for toasts (also the registry subkey name).
@@ -136,13 +137,13 @@ mod platform {
             Ok(()) => {
                 let count = SHOWN.fetch_add(1, Ordering::Relaxed) + 1;
                 if count <= LOG_FIRST || count % LOG_EVERY == 0 {
-                    println!("[mirlo] notifications: toast: {title} (n={count})");
+                    log_info!("notifications: toast: {title} (n={count})");
                 }
             }
             Err(err) => {
                 let count = ERRORS.fetch_add(1, Ordering::Relaxed) + 1;
                 if count <= LOG_FIRST || count % LOG_EVERY == 0 {
-                    eprintln!("[mirlo] notifications: could not show toast: {err} (n={count})");
+                    log_error!("notifications: could not show toast: {err} (n={count})");
                 }
             }
         }
@@ -161,8 +162,8 @@ mod platform {
         if !SETTING_LOGGED.swap(true, Ordering::Relaxed) {
             if let Ok(setting) = notifier.Setting() {
                 if setting != NotificationSetting::Enabled {
-                    println!(
-                        "[mirlo] notifications: Windows notifications are disabled for \
+                    log_info!(
+                        "notifications: Windows notifications are disabled for \
                          this user (setting={}); toasts will not be visible",
                         setting.0
                     );
@@ -207,7 +208,7 @@ mod platform {
             )
         };
         if err != ERROR_SUCCESS {
-            eprintln!("[mirlo] notifications: could not create the AUMID key: {err:?}");
+            log_error!("notifications: could not create the AUMID key: {err:?}");
             return false;
         }
         let ok = set_sz(key, "DisplayName", "Mirlo") && set_sz(key, "IconUri", exe);
@@ -232,7 +233,7 @@ mod platform {
             )
         };
         if err != ERROR_SUCCESS {
-            eprintln!("[mirlo] notifications: could not write {name}: {err:?}");
+            log_error!("notifications: could not write {name}: {err:?}");
             return false;
         }
         true

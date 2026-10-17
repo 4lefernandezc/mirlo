@@ -383,9 +383,11 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
   - Docs: `docs/user/{install,faq,terms}.md`, `docs/release.md` (mantainer
     checklist: secrets, version bump, tag, verify draft, publish; key
     rotation caveat: old installs only trust the old pubkey).
-  - `docs/research/images/phase-a-idle.png` redacted (avatar + "4LE" label
-    painted over) in place; note added in measurements.md. **No other
-    screenshot should be published without a privacy pass.**
+   - `docs/research/images/phase-a-idle.png` redacted (avatar + "4LE" label
+     painted over) in place; note added in measurements.md. Privacy pass
+     **completed 2026-10-17**: `phase-b-batch1.png` (account label + avatar)
+     and `phase-b-lyrics.png` (profile avatar) redacted; the two settings
+     screenshots verified clean (no account UI).
   - Owner actions remaining before the first public release: make repo
     public, add the signing key to GitHub Actions secrets, tag `v0.1.0`,
     verify the draft, publish (then re-verify auto-update from 0.1.0→next).

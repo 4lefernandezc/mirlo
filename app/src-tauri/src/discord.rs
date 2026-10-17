@@ -41,8 +41,11 @@ fn encode_frame(op: u32, payload: &Value) -> Vec<u8> {
 
 /// Builds the SET_ACTIVITY payload for a `report_player_state` snapshot.
 ///
-/// `position` is the current playback position in seconds (used for the
-/// elapsed-time counter while playing); `now` is a UNIX timestamp.
+/// Position and duration are converted to **milliseconds** (the IPC
+/// timestamp unit); start+end render the track-length progress bar while
+/// playing. The artwork uses the modern client-side external URL support
+/// (`large_image` as an https URL resolves against Discord's external-assets
+/// API; the ack reply shows the resolved `mp:external/...` path).
 fn activity_args(data: &Value, now_secs: i64) -> Option<Value> {
     let title = data.get("title").and_then(Value::as_str)?;
     if title.is_empty() {
@@ -50,20 +53,33 @@ fn activity_args(data: &Value, now_secs: i64) -> Option<Value> {
     }
     let paused = data.get("paused").and_then(Value::as_bool).unwrap_or(false);
     let position = data.get("time").and_then(Value::as_f64).unwrap_or(0.0);
+    let duration = data.get("duration").and_then(Value::as_f64).unwrap_or(0.0);
+
     let mut activity = serde_json::json!({
         // 2 = Listening (music-style presence).
         "type": 2,
         "details": title,
         "instance": false,
     });
-    if let Some(artist) = data.get("artist").and_then(Value::as_str) {
-        if !artist.is_empty() {
-            activity["state"] = Value::String(artist.to_string());
-        }
+    let byline = data.get("artist").and_then(Value::as_str).unwrap_or("");
+    let (artist, album) = crate::media_controls::split_byline(byline);
+    if !artist.is_empty() {
+        activity["state"] = Value::String(artist);
     }
     if !paused {
-        let started = now_secs - position.max(0.0) as i64;
-        activity["timestamps"] = serde_json::json!({ "start": started });
+        let start_ms = (now_secs - position.max(0.0) as i64) * 1000;
+        let timestamps = if duration > 1.0 {
+            serde_json::json!({ "start": start_ms, "end": start_ms + duration as i64 * 1000 })
+        } else {
+            serde_json::json!({ "start": start_ms })
+        };
+        activity["timestamps"] = timestamps;
+    }
+    if let Some(id) = crate::media_controls::artwork_id(data) {
+        activity["assets"] = serde_json::json!({
+            "large_image": format!("https://i.ytimg.com/vi/{id}/mqdefault.jpg"),
+            "large_text": album.unwrap_or_else(|| "YouTube Music".to_string()),
+        });
     }
     Some(activity)
 }
@@ -72,12 +88,15 @@ fn activity_args(data: &Value, now_secs: i64) -> Option<Value> {
 mod platform {
     use std::fs::{File, OpenOptions};
     use std::io::{Read, Write};
+    use std::os::windows::io::AsRawHandle;
     use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
     use std::sync::mpsc::{self, RecvTimeoutError, Sender};
     use std::sync::{Arc, Mutex, OnceLock};
     use std::time::Duration;
 
     use serde_json::Value;
+    use windows::Win32::Foundation::HANDLE;
+    use windows::Win32::System::Pipes::PeekNamedPipe;
 
     use super::{activity_args, encode_frame};
 
@@ -87,10 +106,19 @@ mod platform {
     const OP_PING: u32 = 3;
     const OP_PONG: u32 = 4;
 
+    /// Bounded logging for the high-frequency per-activity lines; lifecycle
+    /// events (connect/disconnect/errors) are always logged — they are rare
+    /// and critical for diagnosing Discord-side stalls.
     const LOG_FIRST: u64 = 10;
-    const LOG_EVERY: u64 = 100;
+    const LOG_EVERY: u64 = 50;
     static EVENTS: AtomicU64 = AtomicU64::new(0);
     static LOGS: AtomicU64 = AtomicU64::new(0);
+
+    /// Deadline for a single pipe write (Discord's IPC can stall its pipe
+    /// transiently while it resolves external artwork).
+    const SEND_TIMEOUT: Duration = Duration::from_secs(3);
+    /// Deadline for a partially-received frame before resetting the pipe.
+    const FRAME_TIMEOUT: Duration = Duration::from_secs(5);
 
     enum Msg {
         Config {
@@ -212,6 +240,12 @@ mod platform {
                     if let Some(active) = conn.as_ref() {
                         if send_activity(active, &activity) {
                             last_sent = Some(activity);
+                        } else if let Some(dead) = conn.take() {
+                            // A timed-out write blocks a helper thread on the
+                            // old connection: dropping it and reconnecting
+                            // keeps the presence alive.
+                            close(dead, "send timed out");
+                            conn = connect(&client_id);
                         }
                     }
                 }
@@ -253,7 +287,7 @@ mod platform {
         if file.write_all(&handshake).is_err() || file.flush().is_err() {
             return None;
         }
-        log_bounded(&format!("connected to {pipe}, handshake sent"));
+        log_event(&format!("connected to {pipe}, handshake sent"));
 
         let writer = Arc::new(Mutex::new(file.try_clone().ok()?));
         let alive = Arc::new(AtomicBool::new(true));
@@ -272,17 +306,78 @@ mod platform {
         })
     }
 
+    /// Bytes readable from the pipe without blocking, or `None` when the
+    /// pipe is gone.
+    fn available(file: &File) -> Option<u32> {
+        let mut avail = 0u32;
+        let ok = unsafe {
+            PeekNamedPipe(
+                HANDLE(file.as_raw_handle()),
+                None,
+                0,
+                None,
+                Some(&mut avail),
+                None,
+            )
+        };
+        ok.ok().map(|_| avail)
+    }
+
+    /// Reads Discord frames. The reads are **peek-gated**: a pending
+    /// (blocking) `ReadFile` on a Windows named-pipe connection serializes
+    /// writes on the same connection — even from a duplicated handle — and
+    /// the next `SET_ACTIVITY` would hang forever. So we only call `read`
+    /// once a full frame is known to be available.
     fn read_loop(mut file: File, alive: Arc<AtomicBool>) {
         loop {
+            if !alive.load(Ordering::Relaxed) {
+                return;
+            }
+            let Some(avail) = available(&file) else {
+                log_event("reader: peek failed (pipe closed)");
+                alive.store(false, Ordering::Relaxed);
+                return;
+            };
+            if avail < 8 {
+                std::thread::sleep(Duration::from_millis(50));
+                continue;
+            }
             let mut header = [0u8; 8];
-            if file.read_exact(&mut header).is_err() {
+            if let Err(err) = file.read_exact(&mut header) {
+                log_event(&format!("reader: header read failed: {err}"));
                 alive.store(false, Ordering::Relaxed);
                 return;
             }
             let op = u32::from_le_bytes(header[0..4].try_into().unwrap());
             let len = u32::from_le_bytes(header[4..8].try_into().unwrap()) as usize;
+            if len > (1 << 20) {
+                log_event(&format!("reader: oversized frame ({len} bytes), resetting"));
+                alive.store(false, Ordering::Relaxed);
+                return;
+            }
+            // Wait for the full payload before touching the pipe again.
+            let started = std::time::Instant::now();
+            loop {
+                match available(&file) {
+                    Some(ready) if ready >= len as u32 => break,
+                    Some(_) => {
+                        if started.elapsed() > FRAME_TIMEOUT {
+                            log_event("reader: partial frame timed out, resetting");
+                            alive.store(false, Ordering::Relaxed);
+                            return;
+                        }
+                        std::thread::sleep(Duration::from_millis(20));
+                    }
+                    None => {
+                        log_event("reader: pipe closed during a frame");
+                        alive.store(false, Ordering::Relaxed);
+                        return;
+                    }
+                }
+            }
             let mut payload = vec![0u8; len.min(1 << 20)];
-            if file.read_exact(&mut payload).is_err() {
+            if let Err(err) = file.read_exact(&mut payload) {
+                log_event(&format!("reader: payload read failed: {err}"));
                 alive.store(false, Ordering::Relaxed);
                 return;
             }
@@ -292,16 +387,23 @@ mod platform {
                     if let Ok(json) = serde_json::from_str::<Value>(&text) {
                         let evt = json.get("evt").and_then(Value::as_str).unwrap_or("");
                         if evt == "READY" {
-                            log_bounded("handshake accepted (READY)");
+                            log_event("handshake accepted (READY)");
                         } else if let Some(cmd) = json.get("cmd").and_then(Value::as_str) {
-                            if cmd == "ERROR" {
-                                log_bounded(&format!("Discord error reply: {text}"));
+                            match cmd {
+                                // The reply mirrors what Discord registered,
+                                // including resolved external assets.
+                                "SET_ACTIVITY" => log_bounded(&format!(
+                                    "activity acked: {}",
+                                    json.get("data").map(Value::to_string).unwrap_or_default()
+                                )),
+                                "ERROR" => log_event(&format!("Discord error reply: {text}")),
+                                _ => {}
                             }
                         }
                     }
                 }
                 OP_CLOSE => {
-                    log_bounded(&format!("Discord closed the pipe: {text}"));
+                    log_event(&format!("Discord closed the pipe: {text}"));
                     alive.store(false, Ordering::Relaxed);
                     return;
                 }
@@ -313,7 +415,7 @@ mod platform {
                         return;
                     }
                 }
-                other => log_bounded(&format!("unexpected op {other}: {text}")),
+                other => log_event(&format!("unexpected op {other}: {text}")),
             }
         }
     }
@@ -328,17 +430,39 @@ mod platform {
             "nonce": format!("mirlo-{}", EVENTS.fetch_add(1, Ordering::Relaxed)),
         });
         let frame = encode_frame(OP_FRAME, &payload);
-        match conn.writer.lock() {
-            Ok(mut writer) => writer
-                .write_all(&frame)
-                .and_then(|_| writer.flush())
-                .is_ok(),
-            Err(_) => false,
+        // The write runs on a helper thread with a deadline: Discord's IPC
+        // can stop draining transiently (observed while it resolves external
+        // artwork), and a blocked synchronous write must not wedge the
+        // worker. A timed-out write abandons the frame; the caller drops the
+        // connection so the next activity starts a fresh pipe.
+        let writer = conn.writer.clone();
+        let (tx, rx) = mpsc::channel();
+        if std::thread::Builder::new()
+            .name("mirlo-discord-send".into())
+            .spawn(move || {
+                let sent = match writer.lock() {
+                    Ok(mut file) => file.write_all(&frame).and_then(|_| file.flush()).is_ok(),
+                    Err(_) => false,
+                };
+                let _ = tx.send(sent);
+            })
+            .is_err()
+        {
+            return false;
         }
+        let sent = rx.recv_timeout(SEND_TIMEOUT).unwrap_or(false);
+        if sent {
+            let details = activity
+                .get("details")
+                .and_then(Value::as_str)
+                .unwrap_or("<none>");
+            log_bounded(&format!("activity sent: {details}"));
+        }
+        sent
     }
 
     fn close(conn: Connection, reason: &str) {
-        log_bounded(&format!("disconnected from {} ({reason})", conn.pipe));
+        log_event(&format!("disconnected from {} ({reason})", conn.pipe));
     }
 
     fn log_bounded(message: &str) {
@@ -346,6 +470,11 @@ mod platform {
         if count < LOG_FIRST || count % LOG_EVERY == 0 {
             println!("[mirlo] discord: {message}");
         }
+    }
+
+    /// Lifecycle/error logging (rare, always visible).
+    fn log_event(message: &str) {
+        println!("[mirlo] discord: {message}");
     }
 }
 
@@ -374,15 +503,25 @@ mod tests {
     fn activity_maps_track_and_playing() {
         let data = json!({
             "title": "Unglued",
-            "artist": "Apartment",
+            "artist": "Apartment • The Dreamer Evasive • 2007",
             "paused": false,
             "time": 42.5,
+            "duration": 204,
+            "videoId": "abc123",
+            "url": "https://music.youtube.com/",
         });
         let activity = activity_args(&data, 1_000_000).unwrap();
         assert_eq!(activity["details"], "Unglued");
         assert_eq!(activity["state"], "Apartment");
         assert_eq!(activity["type"], 2);
-        assert_eq!(activity["timestamps"]["start"], 1_000_000 - 42);
+        // Milliseconds (the IPC timestamp unit), start+end for the bar.
+        assert_eq!(activity["timestamps"]["start"], (1_000_000 - 42) * 1000);
+        assert_eq!(activity["timestamps"]["end"], (1_000_000 - 42 + 204) * 1000);
+        assert_eq!(
+            activity["assets"]["large_image"],
+            "https://i.ytimg.com/vi/abc123/mqdefault.jpg"
+        );
+        assert_eq!(activity["assets"]["large_text"], "The Dreamer Evasive");
     }
 
     #[test]
@@ -390,6 +529,7 @@ mod tests {
         let data = json!({ "title": "T", "artist": "A", "paused": true, "time": 10 });
         let activity = activity_args(&data, 1_000_000).unwrap();
         assert!(activity.get("timestamps").is_none());
+        assert!(activity.get("assets").is_none());
         assert!(activity_args(&json!({ "title": "" }), 0).is_none());
         assert!(activity_args(&json!({}), 0).is_none());
     }

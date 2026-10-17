@@ -122,8 +122,19 @@
       const v = q('video');
       const title = q('ytmusic-player-bar .title');
       const byline = q('ytmusic-player-bar .byline');
+      // The SPA keeps the address bar at the home URL often; the player API
+      // is the reliable source for the current video id (artwork, etc.).
+      let videoId = null;
+      const p = q('#movie_player');
+      if (p && typeof p.getVideoData === 'function') {
+        try {
+          const data = p.getVideoData();
+          videoId = (data && data.video_id) || null;
+        } catch (_) {}
+      }
       return {
         url: location.href,
+        videoId,
         title: title ? title.textContent : null,
         artist: byline ? byline.getAttribute('title') || byline.textContent : null,
         paused: v ? v.paused : null,

@@ -411,6 +411,52 @@ Next release: follow `docs/release.md` (bump versions in
 the draft, publish). Auto-update E2E (old installed version prompts to update)
 requires the next tag — verify it then.
 
+### Next work item — v0.1.1: full portable build (approved 2026-10-17)
+
+Design (agreed with the owner):
+
+- New `data_root()` resolution, precedence:
+  1. `MIRLO_DATA_DIR` env var (absolute path) — explicit override; used by tests.
+  2. Empty marker file `portable.txt` next to the running exe → `<exe_dir>\data`.
+  3. Fallback: `%LOCALAPPDATA%\Mirlo` (current behavior, unchanged).
+  Make the resolver a **pure function** (exe dir, env value, LOCALAPPDATA
+  passed in) so precedence is unit-testable.
+- Everything app-owned must use it: `config.json`, `window-state.json`,
+  `logs\`, and the WebView2 `data_directory` (profile/session). Known call
+  sites: `config.rs` (base), `logging.rs` (reads LOCALAPPDATA directly today,
+  ~line 39), `lib.rs` (webview data dir; the dialogs at ~474/~574 hardcode the
+  `%LOCALAPPDATA%\Mirlo\logs\mirlo.log` string — print the resolved path).
+- Updater: in portable mode the startup/tray check still runs, but an
+  available update must NOT run the NSIS updater — show a message pointing to
+  the releases page (no silent install). Non-portable behavior unchanged.
+- CI (`release.yml`): after the Tauri build, create
+  `Mirlo_<version>_portable_x64.zip` containing `mirlo.exe` (release build),
+  `portable.txt` (empty marker), `LICENSE`, `THIRD_PARTY_NOTICES.md` and a
+  short `README-PORTABLE.txt` (run from any folder, data goes to `data\`,
+  updates via the releases page). Include the zip in `SHA256SUMS.txt` (extend
+  the checksums step) and upload it to the release alongside the installers.
+- Docs: `install.md` new "Portable (no installation)" section (extract, run,
+  `data\`, SmartScreen honesty note, ZIP SHA256 verification); README
+  download one-liner; `release.md` checklist gains the zip asset.
+- Version bump to 0.1.1 (`tauri.conf.json` + `Cargo.toml`), CHANGELOG entry
+  (move `Unreleased`).
+
+Acceptance for the session:
+
+1. Unit tests for `data_root()` precedence; fmt/clippy/test green.
+2. Manual smoke: release build with `portable.txt` → config/logs/profile under
+   `<dir>\data`; without marker → `%LOCALAPPDATA%\Mirlo` unchanged.
+3. On tag `v0.1.1`: draft contains installers + `Mirlo_0.1.1_portable_x64.zip`;
+   downloaded zip checksum matches `SHA256SUMS.txt`; the extracted portable
+   copy runs, stores data in `data\`, and its update check reaches `latest.json`.
+4. After publish: auto-update E2E from the installed 0.1.0 (prompt appears,
+   passive install, restart, 0.1.1 in the log).
+
+Related follow-ups (separate, not blockers): code signing (SignPath Foundation
+free OSS signing / Azure Trusted Signing) and winget submission
+(`InstallerType: portable` fits the new zip). Portable mode does NOT by itself
+remove the SmartScreen warning for unsigned binaries.
+
 Remaining Phase C item (currently **parked by the owner's decision**,
 2026-10-16 — do not start it until the user asks):
 

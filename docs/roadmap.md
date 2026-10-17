@@ -101,6 +101,21 @@ Phases are ordered. Each phase ends with an updated `AGENTS.md`, a
       add the signing key to GitHub Actions secrets, tag `v0.1.0`, verify and
       publish the draft (see `docs/release.md`).
 
+## v0.1.1 — Portable build (NEXT, approved 2026-10-17)
+
+- [ ] `data_root()` resolution (`MIRLO_DATA_DIR` > `portable.txt` >
+      `%LOCALAPPDATA%\Mirlo`) + unit tests
+- [ ] All app-owned paths on the resolver (config, logs, window-state,
+      WebView2 profile)
+- [ ] Updater in portable mode: point to the releases page, never run the NSIS
+      install
+- [ ] CI: build `Mirlo_<v>_portable_x64.zip` (exe + `portable.txt` + license +
+      portable README), add it to `SHA256SUMS.txt` and the release assets
+- [ ] Docs: `install.md` portable section, README download line, release
+      checklist
+- [ ] Version 0.1.1 + CHANGELOG; tag → verify draft → publish; auto-update E2E
+      0.1.0 → 0.1.1
+
 ## Phase E — Future (evaluated, not committed)
 
 - [ ] MIC optimizations: audio-only mode, GPU flags, background throttling.

@@ -12,7 +12,10 @@
  *   - player control:    window.__mirlo.player.{play, pause, playPause, next,
  *                        previous, seek} (used by global hotkeys and the
  *                        SMTC media session through `eval`)
- *   - ad-block v0:       fetch/XHR wrappers, only when enabled in the config
+ *   - ad-block v2:       URL wrappers (fetch/XHR, non-Windows fallback for
+ *                        the WebView2 network block) plus pruning of the ad
+ *                        metadata from `/youtubei/v1/player` responses;
+ *                        always installed, gated by the live config flag
  *                        (ships OFF by default, ADR-0003)
  *
  * Phase B adds the renderer plugin host (`window.__MIRLO_PLUGINS__`):
@@ -40,23 +43,79 @@
   );
   if (!config.plugins || typeof config.plugins !== 'object') config.plugins = {};
 
-  // --- Ad-block v0 (ported from the validated Phase 0 PoC) --------------
+  // --- Ad-block (URL block + player-response prune) ---------------------
+  // v1 on Windows answers matching requests with a synthesized 403 at the
+  // WebView2 layer; these wrappers are the non-Windows/fallback layer for
+  // that. v2 additionally prunes the ad metadata (`playerAds`,
+  // `adPlacements`, `adSlots`) from `/youtubei/v1/player` responses:
+  // YouTube Music announces audio ads inside that JSON and serves their
+  // audio as regular streams, so URL blocking alone cannot stop them (the
+  // same technique as uBlock Origin's json-prune filters on YouTube,
+  // implemented independently). The wrappers are always installed and
+  // consult the live `config.adblock` flag, so the settings toggle applies
+  // without a page reload (ships OFF by default, ADR-0003).
   const AD_RE =
     /(doubleclick\.net|googlesyndication|googleadservices|\/pagead\/|\/api\/stats\/ads|activeview)/i;
+  const PRUNED_KEYS = ['playerAds', 'adPlacements', 'adSlots'];
+
+  const adblockStats = { blocked: 0, pruned: 0 };
+  let adblockCheckedAt = 0;
+
+  function adblockEnabled() {
+    // The flag lives in the shell config; refresh it at most once every
+    // 5 s so changes made in the settings window apply roughly live.
+    const now = Date.now();
+    if (now - adblockCheckedAt > 5000) {
+      adblockCheckedAt = now;
+      refreshConfig().catch(() => {});
+    }
+    return !!config.adblock;
+  }
+
+  function prunePlayerAds(response) {
+    return response
+      .clone()
+      .json()
+      .then((data) => {
+        if (!data || typeof data !== 'object') return response;
+        let pruned = false;
+        for (const key of PRUNED_KEYS) {
+          if (key in data) {
+            delete data[key];
+            pruned = true;
+          }
+        }
+        if (!pruned) return response;
+        adblockStats.pruned += 1;
+        const headers = new Headers(response.headers);
+        headers.delete('content-encoding');
+        headers.delete('content-length');
+        return new Response(JSON.stringify(data), {
+          status: response.status,
+          statusText: response.statusText,
+          headers,
+        });
+      })
+      .catch(() => response);
+  }
 
   function installAdblock() {
     const origFetch = window.fetch;
     window.fetch = function (input) {
       const url = typeof input === 'string' ? input : (input && input.url) || '';
+      if (!adblockEnabled()) return origFetch.apply(this, arguments);
       if (AD_RE.test(url)) {
+        adblockStats.blocked += 1;
         return Promise.reject(new TypeError('blocked by mirlo'));
       }
-      return origFetch.apply(this, arguments);
+      const call = origFetch.apply(this, arguments);
+      if (!url.includes('/youtubei/v1/player')) return call;
+      return call.then(prunePlayerAds);
     };
 
     const origOpen = XMLHttpRequest.prototype.open;
     XMLHttpRequest.prototype.open = function (method, url) {
-      if (AD_RE.test(String(url))) this.__mirloBlocked = true;
+      if (adblockEnabled() && AD_RE.test(String(url))) this.__mirloBlocked = true;
       return origOpen.apply(this, arguments);
     };
     const origSend = XMLHttpRequest.prototype.send;
@@ -70,7 +129,7 @@
       return origSend.apply(this, arguments);
     };
   }
-  if (config.adblock) installAdblock();
+  installAdblock();
 
   // --- Player access ----------------------------------------------------
   const q = (sel) => document.querySelector(sel);
@@ -155,7 +214,28 @@
   // --- Shell API surface (hotkeys use player.* through eval) ------------
   async function refreshConfig() {
     config = await invoke('get_config');
-    if (!config.plugins || typeof config.plugins !== 'object') config.plugins = {};
+  if (!config.plugins || typeof config.plugins !== 'object') config.plugins = {};
+
+  // --- beforeunload neutralizer -----------------------------------------
+  // YouTube Music arms a beforeunload handler, so Chromium shows its
+  // "leave site?" dialog on unload (Spanish: "Los cambios no se guardarán")
+  // — meaningless in a wrapper (nothing to lose) and, while pending, it
+  // blocks renderer JS (looks like a freeze) and breaks automation.
+  // WebView2's ScriptDialogOpening event does not fire for beforeunload
+  // (verified live: the handler is never invoked), so the arming itself is
+  // neutralized here, before any page script can register it.
+  const origAddEventListener = EventTarget.prototype.addEventListener;
+  EventTarget.prototype.addEventListener = function (type, listener, options) {
+    if (type === 'beforeunload') return;
+    return origAddEventListener.call(this, type, listener, options);
+  };
+  try {
+    Object.defineProperty(window, 'onbeforeunload', {
+      get: () => null,
+      set: () => {},
+      configurable: true,
+    });
+  } catch (_) {}
     return config;
   }
 
@@ -567,6 +647,7 @@
     version: boot.version || null,
     player,
     plugins: window.__MIRLO_PLUGINS__,
+    adblockStats,
     async getConfig() {
       return refreshConfig();
     },

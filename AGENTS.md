@@ -31,6 +31,13 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 
 ## Current state (2026-10-17)
 
+- **v0.1.0 RELEASED (public)**: repository is public
+  (`https://github.com/4lefernandezc/mirlo`), release published with NSIS/MSI
+  installers, updater signatures and `latest.json`; auto-update endpoint
+  verified anonymously (HTTP 200). Private vulnerability reporting enabled.
+  Git history sanitized: all commits use the noreply identity, no personal
+  names/emails/local paths in content (repo-local git config pins the noreply
+  email — keep it).
 - **Phase 0 — DONE**: research + validated PoC.
   - `poc/webview2-probe/` builds and runs (Rust + wry + WebView2).
   - Validated: Premium playback on WebView2 (no DRM problem), ad-blocking via
@@ -393,12 +400,16 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 
 ## Next step — publish v0.1.0 (owner actions) / Phase C leftover
 
-**Phase D is done; the codebase is release-ready.** What remains is the
-owner's publishing sequence (see `docs/release.md`): make the repository
-public, add `TAURI_SIGNING_PRIVATE_KEY` (+ password if set) to GitHub Actions
-secrets, tag `v0.1.0`, push the tag, verify the draft release and publish it;
-then verify auto-update from the installed build. Register
-`%USERPROFILE%\.tauri\mirlo.key` somewhere safe (password manager).
+**v0.1.0 is published** (2026-10-17). The publishing sequence was completed:
+repository made public, signing secret in Actions, tag `v0.1.0`, draft
+verified, release published, updater endpoint live. The signing key lives at
+`%USERPROFILE%\.tauri\mirlo.key` — keep it backed up (without it no future
+version can be signed).
+
+Next release: follow `docs/release.md` (bump versions in
+`tauri.conf.json` + `Cargo.toml`, update `CHANGELOG.md`, tag `vX.Y.Z`, verify
+the draft, publish). Auto-update E2E (old installed version prompts to update)
+requires the next tag — verify it then.
 
 Remaining Phase C item (currently **parked by the owner's decision**,
 2026-10-16 — do not start it until the user asks):
@@ -621,11 +632,10 @@ for probes — pass a URL substring as 4th arg to target the settings window;
 
 ## Critical facts and guardrails
 
-- Remote: `https://github.com/4lefernandezc/mirlo` — **private until the first
-  release**; the owner will make it public then. Never change repository
-  visibility without explicit owner approval. gh CLI is installed and
-  authenticated (account `4lefernandezc`); use it for releases, secrets and
-  workflow inspection.
+- Remote: `https://github.com/4lefernandezc/mirlo` — **public** since the
+  v0.1.0 release (2026-10-17). Never change repository visibility without
+  explicit owner approval. gh CLI is installed and authenticated (account
+  `4lefernandezc`); use it for releases, secrets and workflow inspection.
 - Reference app: pear-desktop v3.11.0 (ex th-ch/youtube-music), MIT. We MAY
   reuse its plugin code with attribution (add notices to
   `THIRD_PARTY_NOTICES.md` when porting). The owner keeps a local copy of the

@@ -3,8 +3,9 @@
 //! The player window reopens in the state it had when the app last closed
 //! (size, position and whether it was maximized). Fresh installs start
 //! **maximized**. The geometry lives next to the config in
-//! `%LOCALAPPDATA%\Mirlo\window-state.json`; updates are throttled during
-//! drags/resizes and flushed on close/quit/restart.
+//! `window-state.json` under the app-data root (see `data_root.rs`);
+//! updates are throttled during drags/resizes and flushed on
+//! close/quit/restart.
 //!
 //! Sizes/positions are stored in **logical** units (DPI-independent) and the
 //! restore verifies the saved placement still intersects a monitor (monitor
@@ -14,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
-use tauri::{AppHandle, WebviewWindow, Window};
+use tauri::{WebviewWindow, Window};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct WindowGeometry {
@@ -47,13 +48,13 @@ const SAVE_THROTTLE: Duration = Duration::from_secs(1);
 /// Minimum visible window area (px) required for a restored position.
 const MIN_VISIBLE: i32 = 80;
 
-fn state_path(app: &AppHandle) -> PathBuf {
-    crate::config::app_data_dir(app).join("window-state.json")
+fn state_path() -> PathBuf {
+    crate::config::app_data_dir().join("window-state.json")
 }
 
 /// Reads the saved geometry, if any (invalid/missing files start fresh).
-pub fn load(app: &AppHandle) -> Option<WindowGeometry> {
-    let text = std::fs::read_to_string(state_path(app)).ok()?;
+pub fn load() -> Option<WindowGeometry> {
+    let text = std::fs::read_to_string(state_path()).ok()?;
     serde_json::from_str(&text).ok()
 }
 
@@ -69,15 +70,15 @@ pub fn seed(geometry: Option<WindowGeometry>) {
     }
 }
 
-fn save(app: &AppHandle, geometry: &WindowGeometry) {
-    let dir = crate::config::app_data_dir(app);
+fn save(geometry: &WindowGeometry) {
+    let dir = crate::config::app_data_dir();
     if std::fs::create_dir_all(&dir).is_err() {
         return;
     }
     let Ok(text) = serde_json::to_string_pretty(geometry) else {
         return;
     };
-    let path = state_path(app);
+    let path = state_path();
     let tmp = path.with_extension("json.tmp");
     if std::fs::write(&tmp, text).is_ok() {
         let _ = std::fs::rename(&tmp, &path);
@@ -137,7 +138,7 @@ fn maximized_now(window: &Window) -> Option<bool> {
 /// Records the current geometry (call from `Moved`/`Resized` events of the
 /// main window). Minimized transitions are ignored; only the normal-state
 /// geometry is stored, so restore always reopens a sane window.
-pub fn track(app: &AppHandle, window: &Window) {
+pub fn track(window: &Window) {
     if window.is_minimized().unwrap_or(false) {
         return;
     }
@@ -180,15 +181,15 @@ pub fn track(app: &AppHandle, window: &Window) {
         })
         .unwrap_or(false);
     if should_save {
-        save(app, &snapshot);
+        save(&snapshot);
     }
 }
 
 /// Flushes the tracked geometry immediately (close/quit/restart paths).
-pub fn persist(app: &AppHandle) {
+pub fn persist() {
     if let Ok(current) = CURRENT.lock() {
         if let Some(geometry) = current.as_ref() {
-            save(app, geometry);
+            save(geometry);
         }
     }
 }

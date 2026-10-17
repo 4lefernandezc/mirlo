@@ -4,17 +4,21 @@
 //! `update_check` config flag) and on demand from the tray. When a newer
 //! version is published, the bundle is downloaded, verified against the
 //! public key in `tauri.conf.json` and executed (passive NSIS mode) before
-//! the app restarts. While the GitHub repository is not public yet the check
-//! simply fails with a 404 and is logged.
+//! the app restarts. Portable copies check too, but never run the installer:
+//! they are updated by hand from the releases page (`data_root::is_portable`).
 
 use std::time::Duration;
 
+use crate::data_root;
 use crate::logging::{log_error, log_info};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_updater::UpdaterExt;
 
 /// Lets the first page load settle before competing for bandwidth.
 const STARTUP_DELAY: Duration = Duration::from_secs(30);
+
+/// Manual-update pointer for portable copies (the ZIP, not the installer).
+const PORTABLE_RELEASES_URL: &str = "https://github.com/4lefernandezc/mirlo/releases/latest";
 
 /// Silent startup check (only prompts when an update is actually available).
 pub fn check_on_startup(app: &AppHandle) {
@@ -62,6 +66,21 @@ async fn run(
     };
 
     log_info!("update available: {} (current {current})", update.version);
+    if data_root::is_portable() {
+        // Running the NSIS updater from a portable copy would install into
+        // `%LOCALAPPDATA%\Programs\Mirlo` instead of updating the extracted
+        // folder, so portable copies always update by hand.
+        log_info!("portable build: manual update required (no installer run)");
+        prompt_info(
+            app,
+            &format!(
+                "Mirlo {} is available (you have {current}).\n\nThis is a portable copy, so it does not install updates automatically.\n\nDownload the new portable ZIP and replace your files (your data folder is kept):\n{PORTABLE_RELEASES_URL}",
+                update.version
+            ),
+            "Mirlo update",
+        );
+        return Ok(());
+    }
     let prompt = format!(
         "Mirlo {} is available (you have {current}).\n\nDownload and install it now? The app will restart.",
         update.version

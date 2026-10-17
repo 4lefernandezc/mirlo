@@ -1,15 +1,15 @@
 //! Persistent application configuration.
 //!
-//! Stored as JSON under `%LOCALAPPDATA%\Mirlo\config.json`. The same base
-//! directory hosts the persistent WebView2 profile (`webview2-profile/`), so
-//! all app-owned state lives in one app-private location (see
-//! `docs/architecture.md`).
+//! Stored as JSON under the app-data root (`config.json`). The same root
+//! hosts the persistent WebView2 profile (`webview2-profile/`), so all
+//! app-owned state lives in one app-private location — the installed default
+//! is `%LOCALAPPDATA%\Mirlo`, portable copies use `<exe_dir>\data` (see
+//! `data_root.rs` and `docs/architecture.md`).
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
-use tauri::{AppHandle, Manager};
 
 use crate::logging::log_error;
 
@@ -58,29 +58,26 @@ impl Default for Config {
     }
 }
 
-/// `%LOCALAPPDATA%\Mirlo` (all app-owned state lives here).
-pub fn app_data_dir(app: &AppHandle) -> PathBuf {
-    let base = app
-        .path()
-        .local_data_dir()
-        .unwrap_or_else(|_| PathBuf::from("."));
-    base.join("Mirlo")
+/// The app-data root (installed: `%LOCALAPPDATA%\Mirlo`; portable:
+/// `<exe_dir>\data`; override: `MIRLO_DATA_DIR`). See `data_root.rs`.
+pub fn app_data_dir() -> PathBuf {
+    crate::data_root::root()
 }
 
-pub fn config_path(app: &AppHandle) -> PathBuf {
-    app_data_dir(app).join("config.json")
+pub fn config_path() -> PathBuf {
+    app_data_dir().join("config.json")
 }
 
 /// Persistent WebView2 user-data folder (keeps the Google session across runs).
-pub fn profile_dir(app: &AppHandle) -> PathBuf {
-    app_data_dir(app).join("webview2-profile")
+pub fn profile_dir() -> PathBuf {
+    app_data_dir().join("webview2-profile")
 }
 
 /// Loads the config from disk; falls back to defaults (logging the problem)
 /// when the file is missing or invalid. Older versions are normalized in
 /// memory (additive changes only; no field renames yet).
-pub fn load(app: &AppHandle) -> Config {
-    let path = config_path(app);
+pub fn load() -> Config {
+    let path = config_path();
     match std::fs::read_to_string(&path) {
         Ok(text) => match serde_json::from_str::<Config>(&text) {
             Ok(mut config) => {
@@ -99,11 +96,11 @@ pub fn load(app: &AppHandle) -> Config {
 }
 
 /// Persists the config atomically (write to a temp file, then rename).
-pub fn save(app: &AppHandle, config: &Config) -> Result<(), String> {
-    let dir = app_data_dir(app);
+pub fn save(config: &Config) -> Result<(), String> {
+    let dir = app_data_dir();
     std::fs::create_dir_all(&dir).map_err(|e| format!("create dir: {e}"))?;
     let text = serde_json::to_string_pretty(config).map_err(|e| format!("serialize: {e}"))?;
-    let path = config_path(app);
+    let path = config_path();
     let tmp = path.with_extension("json.tmp");
     std::fs::write(&tmp, text).map_err(|e| format!("write: {e}"))?;
     std::fs::rename(&tmp, &path).map_err(|e| format!("rename: {e}"))?;
@@ -112,11 +109,11 @@ pub fn save(app: &AppHandle, config: &Config) -> Result<(), String> {
 
 /// Writes the config file on first run so users can discover and edit it.
 /// Existing files are left untouched.
-pub fn ensure_stored(app: &AppHandle, config: &Config) -> Result<(), String> {
-    if config_path(app).exists() {
+pub fn ensure_stored(config: &Config) -> Result<(), String> {
+    if config_path().exists() {
         return Ok(());
     }
-    save(app, config)
+    save(config)
 }
 
 #[cfg(test)]

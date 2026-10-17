@@ -7,6 +7,7 @@
 
 mod adblock;
 mod config;
+mod data_root;
 #[cfg(target_os = "windows")]
 mod dialog;
 mod discord;
@@ -220,7 +221,7 @@ fn create_tray(app: &tauri::App) -> tauri::Result<()> {
             "check-updates" => updates::check_now(app),
             "toggle" => toggle_main_window(app),
             "quit" => {
-                window_state::persist(app);
+                window_state::persist();
                 app.exit(0)
             }
             _ => {}
@@ -271,7 +272,7 @@ fn open_settings_window(app: &AppHandle) {
 
     #[cfg(target_os = "windows")]
     {
-        builder = builder.data_directory(config::profile_dir(app));
+        builder = builder.data_directory(config::profile_dir());
     }
     if let Some(args) = debug_browser_args() {
         builder = builder.additional_browser_args(&args);
@@ -301,7 +302,7 @@ fn create_main_window(
     let url = WebviewUrl::External(PLAYER_URL.parse()?);
 
     // Restore the geometry of the last session (fresh installs maximize).
-    let saved = window_state::load(app.handle());
+    let saved = window_state::load();
     window_state::seed(saved.clone());
     let mut builder = WebviewWindowBuilder::new(app, MAIN_WINDOW, url)
         .title("Mirlo")
@@ -369,12 +370,8 @@ fn get_config(state: tauri::State<'_, AppState>) -> Result<Config, String> {
 }
 
 #[tauri::command]
-fn set_config(
-    app: AppHandle,
-    state: tauri::State<'_, AppState>,
-    config: Config,
-) -> Result<Config, String> {
-    config::save(&app, &config)?;
+fn set_config(state: tauri::State<'_, AppState>, config: Config) -> Result<Config, String> {
+    config::save(&config)?;
     adblock::set_enabled(config.adblock);
     discord::set_config(config.discord_rpc, config.discord_client_id.clone());
     let mut current = state
@@ -387,7 +384,6 @@ fn set_config(
 
 #[tauri::command]
 fn set_plugin_config(
-    app: AppHandle,
     state: tauri::State<'_, AppState>,
     plugin_id: String,
     config: Value,
@@ -397,15 +393,15 @@ fn set_plugin_config(
         .lock()
         .map_err(|_| "config lock poisoned".to_string())?;
     current.plugins.insert(plugin_id, config);
-    config::save(&app, &current)?;
+    config::save(&current)?;
     Ok(current.clone())
 }
 
 #[tauri::command]
-fn get_path(app: AppHandle, kind: String) -> Result<String, String> {
+fn get_path(kind: String) -> Result<String, String> {
     let path = match kind.as_str() {
-        "config" => config::config_path(&app),
-        "profile" => config::profile_dir(&app),
+        "config" => config::config_path(),
+        "profile" => config::profile_dir(),
         other => return Err(format!("unknown path kind: {other}")),
     };
     Ok(path.to_string_lossy().into_owned())
@@ -457,21 +453,25 @@ fn reload_player(app: AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 fn restart_app(app: AppHandle) {
-    window_state::persist(&app);
+    window_state::persist();
     app.restart();
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     logging::init();
+    // Resolved log path (installed vs portable), for the fatal-error boxes.
+    let log_file = data_root::root().join("logs").join("mirlo.log");
     // Under `windows_subsystem = "windows"` a panic would close the app
     // without any trace: write it to the log and surface a native box.
     let default_hook = std::panic::take_hook();
+    let log_file_for_panic = log_file.clone();
     std::panic::set_hook(Box::new(move |info| {
         logging::emergency(&format!("panic: {info}"));
         #[cfg(target_os = "windows")]
         crate::dialog::fatal(&format!(
-            "Mirlo hit an unexpected error and has to close.\n\n{info}\n\nDetails: %LOCALAPPDATA%\\Mirlo\\logs\\mirlo.log"
+            "Mirlo hit an unexpected error and has to close.\n\n{info}\n\nDetails: {}",
+            log_file_for_panic.display()
         ));
         if cfg!(debug_assertions) {
             default_hook(info);
@@ -494,12 +494,12 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(move |app| {
             let handle = app.handle().clone();
-            let config = config::load(&handle);
+            let config = config::load();
             adblock::set_enabled(config.adblock);
             discord::set_config(config.discord_rpc, config.discord_client_id.clone());
 
-            std::fs::create_dir_all(config::profile_dir(&handle))?;
-            if let Err(err) = config::ensure_stored(&handle, &config) {
+            std::fs::create_dir_all(config::profile_dir())?;
+            if let Err(err) = config::ensure_stored(&config) {
                 log_error!("could not write initial config: {err}");
             }
             app.manage(AppState {
@@ -507,7 +507,7 @@ pub fn run() {
                 last_player_state: Mutex::new(None),
             });
 
-            create_main_window(app, &config, &config::profile_dir(&handle))?;
+            create_main_window(app, &config, &config::profile_dir())?;
 
             if config.hotkeys_enabled {
                 register_hotkeys(&handle);
@@ -529,8 +529,8 @@ pub fn run() {
 
             log_info!(
                 "ready: profile={} config={}",
-                config::profile_dir(&handle).display(),
-                config::config_path(&handle).display()
+                config::profile_dir().display(),
+                config::config_path().display()
             );
             Ok(())
         })
@@ -551,7 +551,7 @@ pub fn run() {
                 tauri::WindowEvent::Moved(_) | tauri::WindowEvent::Resized(_)
                     if window.label() == MAIN_WINDOW =>
                 {
-                    window_state::track(window.app_handle(), window);
+                    window_state::track(window);
                 }
                 _ => {}
             }
@@ -560,7 +560,7 @@ pub fn run() {
             // settings window just closes/destroys itself.
             if let tauri::WindowEvent::CloseRequested { .. } = event {
                 if window.label() == MAIN_WINDOW {
-                    window_state::persist(window.app_handle());
+                    window_state::persist();
                     window.app_handle().exit(0);
                 }
             }
@@ -571,7 +571,8 @@ pub fn run() {
         log_error!("fatal: {err}");
         #[cfg(target_os = "windows")]
         crate::dialog::fatal(&format!(
-            "Mirlo could not start.\n\n{err}\n\nDetails: %LOCALAPPDATA%\\Mirlo\\logs\\mirlo.log"
+            "Mirlo could not start.\n\n{err}\n\nDetails: {}",
+            log_file.display()
         ));
         std::process::exit(1);
     }

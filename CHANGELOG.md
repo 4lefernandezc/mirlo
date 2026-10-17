@@ -153,6 +153,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reopens with the size, position and maximized state of the last session;
   fresh installs start maximized. Restore falls back to a centered window
   when the saved placement no longer intersects a monitor.
+- Phase D — packaging and release:
+  - Windows installers: NSIS (per-user, no administrator rights, English +
+    Spanish, MIT license page, embedded WebView2 bootstrapper) and WiX MSI
+    (per-machine, for managed deployments). An NSIS install hook relocates
+    the default install directory to `%LOCALAPPDATA%\Programs\Mirlo` so the
+    program never mixes with the app-data directory
+    (`%LOCALAPPDATA%\Mirlo`); a directory chosen by the user is respected.
+  - Auto-update (Tauri updater, signed bundles): public key embedded in
+    `tauri.conf.json`, silent startup check honoring a new `update_check`
+    setting (General toggle), tray item *Check for updates…*, native
+    confirmation prompt, passive installer execution and app restart.
+    Failures (offline, no release published yet) are only logged.
+  - Release pipeline (`.github/workflows/release.yml`): pushing a `v*` tag
+    builds and signs the NSIS/MSI bundles and creates a draft GitHub release
+    with the installers, their updater signatures, `latest.json` and
+    `SHA256SUMS.txt`.
+  - Release builds now run without a console window
+    (`windows_subsystem = "windows"`) and write diagnostics to
+    `%LOCALAPPDATA%\Mirlo\logs\mirlo.log` (size-based rotation, one previous
+    file kept as `mirlo.log.old`); panics and fatal startup errors also show
+    a native error dialog.
+  - User documentation: `docs/user/install.md`, `docs/user/faq.md` and
+    `docs/user/terms.md`; maintainer release guide in `docs/release.md`.
+    The Phase A idle screenshot was redacted (account avatar/label) for
+    publication.
 
 ### Fixed
 

@@ -149,6 +149,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   application and pastes its id. Verified live against the running Discord
   client with a dummy id (handshake accepted and parsed; Discord replies
   `Invalid Client ID` — the real round trip; a real id yields READY).
+- Window geometry persistence (`window-state.json`): the player window
+  reopens with the size, position and maximized state of the last session;
+  fresh installs start maximized. Restore falls back to a centered window
+  when the saved placement no longer intersects a monitor.
 
 ### Fixed
 

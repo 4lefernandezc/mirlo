@@ -325,6 +325,27 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
   - **What the user must do to activate it**: create a Discord application
     (Developer Portal) and paste its client id in Settings (Mirlo cannot
     ship one). The activity is displayed under that application's name.
+- **Window geometry persistence — DONE (2026-10-16)**: the player window
+  reopens with the size/position/maximized state of the last session;
+  fresh installs start **maximized**.
+  - New module `app/src-tauri/src/window_state.rs`: geometry stored in
+    **logical** units (DPI-independent) in
+    `%LOCALAPPDATA%\Mirlo\window-state.json`; `Moved`/`Resized` events feed
+    `track` (disk writes throttled to 1/s), and `persist` flushes on
+    window close, tray quit and `restart_app`.
+  - Traps handled: minimize transitions are skipped (bogus bounds); the
+    maximized check uses **`GetWindowPlacement().showCmd`**, not tao's
+    `is_maximized()` (during the maximize transition IsZoomed lags and the
+    maximized bounds were stored as the "restore" geometry); `seed()` loads
+    the file into the tracked state *before* the window is built, because
+    creation-time events do not arrive and the first (maximized) event used
+    to clobber the persisted bounds with defaults.
+  - Restore verifies the saved placement still intersects a monitor (≥80 px
+    visible) and centers the window otherwise (monitor unplugged).
+  - Verified live: fresh → maximized; custom 1200×750 @ (210,160) restored
+    exactly; maximize + close keeps the normal geometry with
+    `maximized: true`; reopen maximized and un-maximize returns to the
+    saved bounds.
 - Machine facts: Windows 11 x64; Rust 1.99.1 (MSVC) installed; VS 2019 Build
   Tools present; WebView2 runtime 155 present; Node 24 present; npm available.
 - Build artifacts must NOT go into OneDrive: always set
@@ -562,6 +583,7 @@ app/                        Tauri 2 application (Phases A+B done; Phase C next)
   src-tauri/src/media_controls.rs  SMTC media session (Windows)
   src-tauri/src/notifications.rs  Track-change toasts (Windows)
   src-tauri/src/discord.rs  Discord Rich Presence IPC client (thin, no deps)
+  src-tauri/src/window_state.rs  Window geometry persistence (window-state.json)
   src-tauri/src/bridge.js   Bridge + plugin host injected into the player page
   src-tauri/src/plugins.rs  Plugin source registry + settings manifest
   src-tauri/plugins/*.js    Renderer plugin ports (one file per plugin)

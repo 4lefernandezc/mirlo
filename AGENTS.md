@@ -31,6 +31,12 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 
 ## Current state (2026-10-18)
 
+- **v0.1.5 RELEASED (public, 2026-10-18)**: tag `v0.1.5` → workflow green →
+  draft verified (NSIS + MSI + sigs + portable ZIP, all checksums matched)
+  → published; updater endpoint anonymous 200 (0.1.5, NSIS/MSI signatures).
+  Contents: "resume playback where you left off" (track/position/play state
+  saved on close and restored on launch) and Discord Rich Presence working
+  out of the box (project's built-in application id; config v3 migration).
 - **v0.1.4 RELEASED (public, 2026-10-18)**: tag `v0.1.4` → workflow green →
   draft verified (NSIS + MSI + sigs + portable ZIP, all checksums matched)
   → published; updater endpoint anonymous 200 (0.1.4, NSIS/MSI signatures).

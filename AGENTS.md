@@ -31,6 +31,12 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 
 ## Current state (2026-10-17)
 
+- **v0.1.3 RELEASED (public, 2026-10-17)**: tag `v0.1.3` → workflow green →
+  draft verified (NSIS + MSI + sigs + portable ZIP, all checksums matched)
+  → published; updater endpoint anonymous 200 (0.1.3, NSIS/MSI signatures).
+  Contents: synced lyrics with highlight animation inside the native
+  "Letra" tab (plus the loading-race/flicker/wrapper fixes) — see the
+  batch 3c notes below.
 - **v0.1.2 RELEASED (public, 2026-10-17)**: tag `v0.1.2` → workflow green →
   draft verified (NSIS + MSI + sigs + portable ZIP, all checksums matched
   `SHA256SUMS.txt`) → published; updater endpoint anonymous 200. Contents:

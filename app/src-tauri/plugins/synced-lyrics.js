@@ -55,11 +55,11 @@ __MIRLO_PLUGINS__.register('synced-lyrics', {
   activeIndex: -1,
   lastTime: 0,
   lastNativeCheck: 0,
+  staleRetries: 0,
   hoverLock: false,
   requestToken: 0,
   nativeShelf: null,
-  nativeContainer: null,
-  nativeLineElements: null,
+  nativeContainers: null,
   nativeObserver: null,
 
   // --- parsers/lrc.ts (upstream) ----------------------------------------
@@ -255,20 +255,19 @@ __MIRLO_PLUGINS__.register('synced-lyrics', {
       filteredResults.push(item);
     }
 
-    filteredResults.sort(({ duration: durationA }, { duration: durationB }) =>
-      Math.abs(durationA - songDuration) - Math.abs(durationB - songDuration)
+    // Candidates within the duration tolerance, instrumentals excluded;
+    // timed lyrics win over plain text (the same song often has both).
+    const candidates = filteredResults.filter(
+      (item) => !item.instrumental && Math.abs(item.duration - songDuration) <= 15
+    );
+    candidates.sort(
+      (a, b) =>
+        (a.syncedLyrics ? 0 : 1) - (b.syncedLyrics ? 0 : 1) ||
+        Math.abs(a.duration - songDuration) - Math.abs(b.duration - songDuration)
     );
 
-    const closestResult = filteredResults[0];
+    const closestResult = candidates[0];
     if (!closestResult) {
-      return null;
-    }
-
-    if (Math.abs(closestResult.duration - songDuration) > 15) {
-      return null;
-    }
-
-    if (closestResult.instrumental) {
       return null;
     }
 
@@ -303,71 +302,103 @@ __MIRLO_PLUGINS__.register('synced-lyrics', {
     return null;
   },
 
-  teardownNative() {
-    this.nativeContainer?.remove();
-    this.nativeContainer = null;
-    if (this.nativeShelf) {
-      for (const el of this.nativeShelf.querySelectorAll('yt-formatted-string.description')) {
+  removeNativeContainer() {
+    for (const c of this.nativeContainers || []) c.el.remove();
+    this.nativeContainers = null;
+    this.nativeShelf = null;
+  },
+
+  restoreNativePlain() {
+    const page = document.querySelector('ytmusic-player-page');
+    if (!page) return;
+    for (const shelf of page.querySelectorAll('ytmusic-description-shelf-renderer')) {
+      for (const el of shelf.querySelectorAll('yt-formatted-string.description')) {
         el.style.display = '';
       }
-      this.nativeShelf = null;
     }
-    this.nativeLineElements = null;
+  },
+
+  teardownNative() {
+    this.removeNativeContainer();
+    this.restoreNativePlain();
   },
 
   enhanceNativeShelf() {
-    if (this.state !== 'ready' || !this.lines?.length) return;
     const shelf = this.findNativeShelf();
     if (!shelf) return;
 
-    // The shelf keeps both an expandable and a hidden "non-expandable"
-    // description; the container must land in the wrapper the user
-    // actually sees, or the lyrics area renders empty.
-    const descriptions = Array.from(shelf.querySelectorAll('yt-formatted-string.description'));
-    const source = descriptions.find((el) => el.getBoundingClientRect().width > 0);
-    const current = this.nativeShelf === shelf && this.nativeContainer?.isConnected;
-    if (current && (!source || this.nativeContainer.parentElement === source.parentElement)) {
-      // Already in the right wrapper (or the tab is closed and no wrapper
-      // is visible: keep the existing container).
+    if (this.state !== 'ready' || !this.lines?.length) {
+      // While lyrics resolve, keep the native plain blob hidden: it would
+      // flash the previous track's text (or the wrong variant) until the
+      // synced lines arrive. Plain-only / not-found states restore it.
+      if (this.state === 'loading') {
+        for (const el of shelf.querySelectorAll('yt-formatted-string.description')) {
+          el.style.display = 'none';
+        }
+      }
+      return;
+    }
+
+    const current =
+      this.nativeShelf === shelf &&
+      this.nativeContainers?.length &&
+      this.nativeContainers.every((c) => c.el.isConnected);
+    if (current) {
+      // YT can swap the inner description nodes in place; make sure no
+      // freshly rendered plain variant shows next to our lines.
+      for (const el of shelf.querySelectorAll('yt-formatted-string.description')) {
+        if (el.style.display !== 'none') el.style.display = 'none';
+      }
       this.updateActive();
       return;
     }
-    this.teardownNative();
+    this.removeNativeContainer();
 
-    const anchor = source || descriptions[0];
-    if (!anchor) return;
-    const computed = getComputedStyle(anchor);
+    // The shelf keeps several variants of the description (expandable,
+    // non-expandable) in different wrappers and only one of them is shown;
+    // which one varies. Inject a container into every wrapper instead of
+    // guessing — the hidden wrappers' copies stay invisible.
+    const descriptions = Array.from(shelf.querySelectorAll('yt-formatted-string.description'));
+    if (!descriptions.length) return;
+    const computed = getComputedStyle(descriptions[0]);
 
-    const container = document.createElement('div');
-    container.id = 'mirlo-native-lyrics';
-    container.style.cssText =
-      'white-space:pre-wrap;padding:0 0 12px;' +
-      `font-size:${computed.fontSize};font-family:${computed.fontFamily};` +
-      `line-height:${computed.lineHeight};`;
-    container.addEventListener('mouseenter', () => (this.hoverLock = true));
-    container.addEventListener('mouseleave', () => (this.hoverLock = false));
+    this.nativeContainers = [];
+    const seenParents = new Set();
+    for (const desc of descriptions) {
+      desc.style.display = 'none';
+      const parent = desc.parentElement;
+      if (!parent || seenParents.has(parent)) continue;
+      seenParents.add(parent);
 
-    this.nativeLineElements = [];
-    for (const line of this.lines) {
-      const lineEl = document.createElement('div');
-      lineEl.dataset.mirloTab = '1';
-      lineEl.textContent = line.text || '♪';
-      lineEl.style.cssText =
-        'padding:1px 0;cursor:pointer;color:var(--yt-spec-text-secondary,#aaaaaa);' +
-        'transition:color .25s ease;';
-      lineEl.addEventListener('click', () => {
-        const video = document.querySelector('video');
-        if (video) video.currentTime = line.timeInMs / 1000;
-      });
-      container.appendChild(lineEl);
-      this.nativeLineElements.push(lineEl);
+      const container = document.createElement('div');
+      container.className = 'mirlo-native-lyrics';
+      container.style.cssText =
+        'white-space:pre-wrap;padding:0 0 12px;' +
+        `font-size:${computed.fontSize};font-family:${computed.fontFamily};` +
+        `line-height:${computed.lineHeight};`;
+      container.addEventListener('mouseenter', () => (this.hoverLock = true));
+      container.addEventListener('mouseleave', () => (this.hoverLock = false));
+
+      const lines = [];
+      for (const line of this.lines) {
+        const lineEl = document.createElement('div');
+        lineEl.dataset.mirloTab = '1';
+        lineEl.textContent = line.text || '♪';
+        lineEl.style.cssText =
+          'padding:1px 0;cursor:pointer;color:var(--yt-spec-text-secondary,#aaaaaa);' +
+          'transition:color .25s ease;';
+        lineEl.addEventListener('click', () => {
+          const video = document.querySelector('video');
+          if (video) video.currentTime = line.timeInMs / 1000;
+        });
+        container.appendChild(lineEl);
+        lines.push(lineEl);
+      }
+      parent.insertBefore(container, desc);
+      this.nativeContainers.push({ el: container, lines });
     }
 
-    for (const el of descriptions) el.style.display = 'none';
-    anchor.parentElement.insertBefore(container, anchor);
-
     this.nativeShelf = shelf;
-    this.nativeContainer = container;
     this.activeIndex = -1;
     this.updateActive();
   },
@@ -382,7 +413,7 @@ __MIRLO_PLUGINS__.register('synced-lyrics', {
       setTimeout(() => {
         scheduled = false;
         this.enhanceNativeShelf();
-      }, 300);
+      }, 120);
     });
     this.nativeObserver.observe(target, { childList: true, subtree: true });
   },
@@ -519,7 +550,10 @@ __MIRLO_PLUGINS__.register('synced-lyrics', {
     const video = document.querySelector('video');
     if (!video) return;
 
-    const sets = [this.lineElements, this.nativeLineElements].filter((set) => set?.length);
+    const sets = [
+      this.lineElements,
+      ...((this.nativeContainers || []).map((c) => c.lines)),
+    ].filter((set) => set?.length);
     if (!sets.length) return;
 
     const timeMs = video.currentTime * 1000;
@@ -553,9 +587,10 @@ __MIRLO_PLUGINS__.register('synced-lyrics', {
         if (panelEl && this.panel?.style.display === 'flex') {
           panelEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
         }
-        const nativeEl = this.nativeLineElements?.[index];
-        if (nativeEl && nativeEl.offsetParent !== null) {
-          nativeEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        for (const c of this.nativeContainers || []) {
+          if (c.el.isConnected && c.el.getBoundingClientRect().width > 0) {
+            c.lines[index]?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          }
         }
       }
     }
@@ -578,14 +613,40 @@ __MIRLO_PLUGINS__.register('synced-lyrics', {
 
   async videoDataChangeListener(event) {
     if (event.detail.name !== 'dataloaded') return;
+    // A new track invalidates any in-flight fetch and switches the native
+    // tab into its suppressed state right away (no stale/plain flash).
+    this.requestToken++;
+    this.staleRetries = 0;
+    this.state = 'loading';
+    this.removeNativeContainer();
+    if (this.panel?.style.display === 'flex') this.renderBody();
     await this.fetchLyrics();
   },
 
   async fetchLyrics() {
     const api = this.api;
     if (!api) return;
-    const details = api.getPlayerResponse()?.videoDetails;
-    if (!details) return;
+    const response = api.getPlayerResponse?.();
+    const details = response?.videoDetails;
+    const currentId = api.getVideoData?.()?.video_id;
+    // The player response lags behind the source swap on quick
+    // next/previous changes (and list picks): fetching then would store the
+    // previous track's lyrics. Retry briefly instead of giving up.
+    if (
+      !details ||
+      !details.title ||
+      (currentId && details.videoId && details.videoId !== currentId)
+    ) {
+      if (this.staleRetries >= 8) return;
+      this.staleRetries += 1;
+      if (this.retryTimer) clearTimeout(this.retryTimer);
+      this.retryTimer = setTimeout(() => {
+        this.retryTimer = null;
+        this.fetchLyrics();
+      }, 400);
+      return;
+    }
+    this.staleRetries = 0;
 
     if (this.retryTimer) {
       clearTimeout(this.retryTimer);
@@ -596,7 +657,7 @@ __MIRLO_PLUGINS__.register('synced-lyrics', {
     this.state = 'loading';
     this.lines = null;
     this.plainLyrics = null;
-    this.teardownNative();
+    this.removeNativeContainer();
     const titleEl = this.panel?.querySelector('#mirlo-lyrics-title');
     if (titleEl) titleEl.textContent = details.title || 'Lyrics';
     if (this.panel?.style.display === 'flex') this.renderBody();
@@ -629,7 +690,12 @@ __MIRLO_PLUGINS__.register('synced-lyrics', {
     }
 
     if (this.panel?.style.display === 'flex') this.renderBody();
-    this.enhanceNativeShelf();
+    if (this.state === 'ready' && this.lines?.length) {
+      this.enhanceNativeShelf();
+    } else {
+      // Plain-only / not found / error: give the native view its text back.
+      this.restoreNativePlain();
+    }
   },
 
   async start(ctx) {
@@ -638,8 +704,8 @@ __MIRLO_PLUGINS__.register('synced-lyrics', {
     this.state = 'idle';
     this.lineElements = null;
     this.nativeShelf = null;
-    this.nativeContainer = null;
-    this.nativeLineElements = null;
+    this.nativeContainers = null;
+    this.staleRetries = 0;
   },
 
   async onPlayerApiReady(api) {

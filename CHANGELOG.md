@@ -15,6 +15,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   highlighted and smoothly auto-scrolled inside the native view, click a
   line to seek. Without timed lyrics the native plain text is kept.
 
+### Fixed
+
+- Lyrics not loading (or loading the previous track's lyrics) when picking
+  a song from a list or pressing next/previous quickly: the player response
+  can lag behind the source swap, so the fetch now waits until its video id
+  matches the current video (short retries) instead of giving up.
+- Plain-text flash in the native lyrics tab when switching tracks: the
+  native blob stays hidden while lyrics resolve and is only restored when
+  no timed lyrics exist for the new track.
+- LRCLib results now prefer a candidate with timed lyrics (within the
+  duration tolerance) when one exists, instead of only taking the closest
+  duration match (which could be plain-text only).
+- Native tab robustness: containers are injected into every description
+  wrapper of the shelf (the visible variant — expandable or
+  non-expandable — varies), fixing an empty lyrics area after track
+  changes.
+
 ## [0.1.2] - 2026-10-17
 
 ### Added

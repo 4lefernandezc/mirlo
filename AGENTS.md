@@ -217,11 +217,17 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     renders the song as one plain-text blob; when timed lyrics exist the
     plugin replaces it with its line-by-line rendering (active line
     highlighted + smooth auto-scroll + click-to-seek) inside the native
-    view. Traps: the shelf keeps a **hidden non-expandable copy** of the
-    description — pick the wrapper whose description is visible or the
-    lyrics area renders empty; style-only tab toggles emit no childList
-    mutations, so a 2 s `timeupdate` poll re-runs `enhanceNativeShelf()`
-    (it early-returns when nothing changed).
+    view. Traps: the shelf keeps **several description variants**
+    (expandable/non-expandable) in different wrappers and the visible one
+    varies — the plugin injects a container into **every** description
+    wrapper instead of guessing (the hidden copies stay invisible); while
+    a track change resolves, the plain blob is suppressed to avoid a
+    stale-text flash; quick next/previous swaps can return a **stale
+    `getPlayerResponse()`** — the fetch verifies `videoDetails.videoId`
+    against `getVideoData().video_id` and retries briefly instead of
+    fetching for the wrong track; style-only tab toggles emit no
+    childList mutations, so a 2 s `timeupdate` poll re-runs
+    `enhanceNativeShelf()` (it early-returns when nothing changed).
   - **Phase B — COMPLETE (all batches ported)**: 18 plugins shipped, plus the
     plugin host, audio provider and settings UI. crossfade excluded
   (ADR-0003).

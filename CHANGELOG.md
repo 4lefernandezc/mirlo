@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- "Are you still there?" inactivity prompt: YouTube Music pauses playback
+  after a long stretch without interaction. The bridge now keeps the page's
+  last-activity timestamp (`window._lact`) fresh every 15 minutes so the
+  prompt never appears (the same approach pear-desktop uses in its
+  renderer).
+
 ## [0.1.3] - 2026-10-17
 
 ### Added

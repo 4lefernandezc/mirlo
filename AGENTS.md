@@ -499,6 +499,14 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     Note: `Process.MainWindowHandle` (PowerShell) switches to another
     top-level window once the main one is hidden — keep the original HWND
     when testing visibility.
+- **Inactivity prompt blocked — DONE (2026-10-17)**: the bridge refreshes
+  `window._lact` (YouTube Music's last-activity timestamp) every 15 minutes,
+  so the "¿Sigues ahí?" / "Are you still there?" prompt — which pauses
+  playback until answered — never appears. Same approach as pear-desktop's
+  renderer (MIT); the prompt cannot be intercepted after the fact because
+  it pauses the player first. Verified that `_lact` exists and stays fresh
+  on music.youtube.com; reproducing the prompt itself needs ~1 h idle, so
+  end-to-end confirmation rides on the upstream-proven mechanism.
 - Machine facts: Windows 11 x64; Rust 1.99.1 (MSVC) installed; VS 2019 Build
   Tools present; WebView2 runtime 155 present; Node 24 present; npm available.
 - Build artifacts must NOT go into OneDrive: always set
@@ -805,7 +813,7 @@ app/                        Tauri 2 application (Phases A+B done; Phase C next)
   src-tauri/src/discord.rs  Discord Rich Presence IPC client (thin, no deps)
   src-tauri/src/window_state.rs  Window geometry persistence (window-state.json)
   src-tauri/src/bridge.js   Bridge + plugin host + ad-block v2 (prune) +
-                            beforeunload neutralizer injected into the page
+                            beforeunload + inactivity-prompt neutralizers
   src-tauri/src/plugins.rs  Plugin source registry + settings manifest
   src-tauri/installer-hooks.nsh  NSIS hook: install dir move + (future) tweaks
   src-tauri/plugins/*.js    Renderer plugin ports (one file per plugin)

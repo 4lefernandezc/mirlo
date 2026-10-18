@@ -236,6 +236,17 @@
       configurable: true,
     });
   } catch (_) {}
+
+  // --- inactivity-prompt blocker -----------------------------------------
+  // YouTube Music pops "Are you still there?" after a long stretch without
+  // interaction and pauses playback until answered. Keeping the page's
+  // last-activity timestamp (`window._lact`) fresh prevents the prompt
+  // entirely (same approach as pear-desktop's renderer, MIT; the prompt
+  // itself cannot be intercepted because it pauses the player first).
+  window._lact = Date.now();
+  setInterval(() => {
+    window._lact = Date.now();
+  }, 900_000);
     return config;
   }
 

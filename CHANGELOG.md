@@ -14,6 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   app closes (and mirrored to disk every 30 s, so a hard kill is covered
   too) and restored on the next launch — including the paused state.
 
+### Changed
+
+- Discord Rich Presence now works out of the box: it ships enabled and
+  uses Mirlo's own Discord application (a public client id — Rich Presence
+  uses Discord's local pipe, no login or tokens involved). The Settings
+  field is an optional override for users who prefer their own
+  application; configs that never configured a client id are migrated to
+  enabled (config v3).
+
 ### Fixed
 
 - The bridge now always resolves the *active* video element

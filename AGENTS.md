@@ -377,9 +377,17 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     (milliseconds, start+end while playing). Paused tracks carry no
     timestamps by design. **Confirmed working by the user (2026-10-16):
     cover, timer and cross-track updates all render correctly in Discord.**
-  - **What the user must do to activate it**: create a Discord application
-    (Developer Portal) and paste its client id in Settings (Mirlo cannot
-    ship one). The activity is displayed under that application's name.
+  - **Built-in Discord application (2026-10-18)**: the project now ships
+    its own public client id (`discord.rs::DEFAULT_CLIENT_ID`, app "Mirlo");
+    the feature is **on by default** and works out of the box (an empty
+    configured id falls back to the built-in one). The Settings field is an
+    optional override. Config v3 migration enables the feature for users
+    who never configured a client id (their choice was respected otherwise).
+    Verified live: empty id → `READY` + ack under `application_id
+    1560828287050195045`.
+  - **What the user must do to activate it**: nothing (Discord must be
+    running); the toggle in Settings turns it off. The activity is displayed
+    under the project's "Mirlo" application.
 - **Window geometry persistence — DONE (2026-10-16)**: the player window
   reopens with the size/position/maximized state of the last session;
   fresh installs start **maximized**.

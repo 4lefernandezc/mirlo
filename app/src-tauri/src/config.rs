@@ -15,7 +15,7 @@ use crate::logging::log_error;
 
 /// Bumped when the on-disk shape changes in a way that needs migration.
 /// v2 adds the per-plugin configuration map (`plugins`).
-pub const CONFIG_VERSION: u32 = 2;
+pub const CONFIG_VERSION: u32 = 3;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
@@ -30,10 +30,10 @@ pub struct Config {
     /// Track-change toast notifications (shown only while the player window
     /// is not focused).
     pub notifications: bool,
-    /// Discord Rich Presence (OFF until a client id is configured).
+    /// Discord Rich Presence (shows what you are listening to; works with
+    /// the project's built-in Discord application, can be overridden below).
     pub discord_rpc: bool,
-    /// Discord application client id (created by the user in the Discord
-    /// Developer Portal; empty disables the integration).
+    /// Discord application client id override (empty = the built-in one).
     pub discord_client_id: String,
     /// Silent update check on startup (the tray always offers a manual one).
     pub update_check: bool,
@@ -57,7 +57,7 @@ impl Default for Config {
             adblock: false,
             hotkeys_enabled: true,
             notifications: true,
-            discord_rpc: false,
+            discord_rpc: true,
             discord_client_id: String::new(),
             update_check: true,
             minimize_to_tray: true,
@@ -91,7 +91,7 @@ pub fn load() -> Config {
         Ok(text) => match serde_json::from_str::<Config>(&text) {
             Ok(mut config) => {
                 if config.version < CONFIG_VERSION {
-                    config.version = CONFIG_VERSION;
+                    config = migrate(config);
                 }
                 config
             }
@@ -102,6 +102,18 @@ pub fn load() -> Config {
         },
         Err(_) => Config::default(),
     }
+}
+
+/// Version upgrades for stored configs. v3: Discord Rich Presence now works
+/// with the project's built-in application, so users who never configured
+/// their own client id (the feature could not have worked for them) get it
+/// enabled; anyone with a custom id keeps their choice.
+fn migrate(mut config: Config) -> Config {
+    if config.version < 3 && config.discord_client_id.trim().is_empty() {
+        config.discord_rpc = true;
+    }
+    config.version = CONFIG_VERSION;
+    config
 }
 
 /// Persists the config atomically (write to a temp file, then rename).
@@ -136,9 +148,33 @@ mod tests {
         assert!(!config.adblock, "ad-block must ship off (ADR-0003)");
         assert!(config.hotkeys_enabled);
         assert!(config.notifications);
-        assert!(!config.discord_rpc);
+        assert!(
+            config.discord_rpc,
+            "presence works out of the box (built-in app)"
+        );
         assert!(config.discord_client_id.is_empty());
         assert!(config.update_check);
+    }
+
+    #[test]
+    fn migration_v3_enables_discord_for_never_configured_users() {
+        // Old config, no custom client id: the feature could not have
+        // worked for this user, so it gets enabled.
+        let old: Config = serde_json::from_str(
+            r#"{"version": 2, "discord_rpc": false, "discord_client_id": ""}"#,
+        )
+        .unwrap();
+        let migrated = super::migrate(old);
+        assert!(migrated.discord_rpc);
+        assert_eq!(migrated.version, CONFIG_VERSION);
+
+        // A custom id means the user configured it: keep their choice.
+        let configured: Config = serde_json::from_str(
+            r#"{"version": 2, "discord_rpc": false, "discord_client_id": "123"}"#,
+        )
+        .unwrap();
+        let migrated = super::migrate(configured);
+        assert!(!migrated.discord_rpc);
     }
 
     #[test]

@@ -11,12 +11,19 @@
 //! A worker thread owns the connection, retries in the background and sends
 //! activity updates only when the rendered activity actually changed.
 //!
-//! Gating: OFF by default and inert until a Discord **application client id**
-//! is configured (Settings → General; the user creates the application in
-//! the Discord Developer Portal — Mirlo cannot ship one). The activity uses
-//! the app name from that Discord application.
+//! Gating: enabled by default and works out of the box with the project's
+//! own Discord application ([`DEFAULT_CLIENT_ID`] — a public id, no secret;
+//! Rich Presence uses the local pipe, not OAuth). Users can override it with
+//! their own application id in Settings → General, or turn the whole feature
+//! off with its checkbox.
 
 use serde_json::Value;
+
+/// The project's Discord application (name "Mirlo"). Client ids are public:
+/// Rich Presence only needs the id for the local IPC handshake — no OAuth,
+/// no tokens, nothing tied to any user account. An empty configured id falls
+/// back to this one, so the feature works without any setup.
+pub const DEFAULT_CLIENT_ID: &str = "1560828287050195045";
 
 /// Applies the config (enabled + client id) to the worker.
 pub fn set_config(enabled: bool, client_id: String) {
@@ -133,6 +140,13 @@ mod platform {
     static WORKER: OnceLock<Sender<Msg>> = OnceLock::new();
 
     pub fn set_config(enabled: bool, client_id: String) {
+        // An empty configured id means "use the project's built-in
+        // application" — the worker treats an empty id as not configured.
+        let client_id = if client_id.trim().is_empty() {
+            super::DEFAULT_CLIENT_ID.to_string()
+        } else {
+            client_id
+        };
         let worker = worker();
         // Synchronous so a config change is applied before its command returns
         // (also makes tests able to wait for the outcome).

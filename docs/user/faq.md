@@ -63,15 +63,13 @@ startup.
 
 ## How do I set up Discord Rich Presence?
 
-1. Create an application at the
-   [Discord Developer Portal](https://discord.com/developers/applications)
-   (any name; it will be shown as "Listening to …").
-2. Copy its **Application ID**.
-3. In Mirlo Settings → General: enable *Discord Rich Presence* and paste the
-   id. Discord must be running.
+Nothing to set up: with *Discord Rich Presence* enabled (default) and the
+Discord client running, your friends see the current track under Mirlo's
+own Discord application — cover, title, artist and a live timer.
 
-Mirlo cannot ship a shared client id — the presence appears under *your*
-application's name.
+Advanced: you can override the client id in Settings → General to show the
+activity under your own Discord application instead. A client id is public
+and involves no login or tokens (Rich Presence uses Discord's local pipe).
 
 ## Why don't I see track-change notifications?
 

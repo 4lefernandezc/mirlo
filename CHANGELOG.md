@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- "Resume playback where you left off" option (General settings, on by
+  default): the track, position and play/pause state are saved when the
+  app closes (and mirrored to disk every 30 s, so a hard kill is covered
+  too) and restored on the next launch — including the paused state.
+
+### Fixed
+
+- The bridge now always resolves the *active* video element
+  (`#movie_player video` first): YouTube Music keeps preloaded/extra
+  `<video>` elements in the DOM whose order can flip during transitions,
+  which could make state reports and player helpers read the wrong one.
+
 ## [0.1.4] - 2026-10-18
 
 ### Fixed

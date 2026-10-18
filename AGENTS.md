@@ -491,6 +491,24 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     arrive, matching the documented seed() trap), so `window-state.json` is
     only written once the window is actually moved/resized — pre-existing
     behavior, not a regression; fresh installs re-maximize by default.
+- **Resume playback — DONE (2026-10-18)**: new config `resume_playback`
+  (**default true**) + General checkbox ("Resume playback where you left
+  off"); new module `playback.rs` mirrors the latest player state to
+  `playback.json` (throttled 30 s + final write on close/restart) and the
+  shell applies it **once per run** on the first `player-api-loaded` via
+  `__mirlo.resumePlayback` (waits for the player API + a loaded video,
+  seeks or loads the video, restores the play/pause state, and verifies up
+  to 4× against YouTube Music's own queue restore).
+  - Traps: serde serializes struct fields snake_case by default — the
+    struct uses `rename_all = "camelCase"` (+ a `video_id` alias for older
+    files) because the bridge reads `target.videoId`; `getVideoData()`
+    throws while the player element boots (all calls guarded, and the
+    bridge waits for the API instead of bailing); the DOM can hold
+    preloaded extra `<video>` elements whose order flips during
+    transitions — the bridge resolves the active one via `findVideo()`
+    (`#movie_player video` first) everywhere instead of "the first video".
+  - Verified live: playing case (resumed at 40 s, t≈97 after ~1 min) and
+    paused case (resumed exactly at 11.9 s, paused).
 - **Minimize-to-tray option — DONE (2026-10-17)**: minimizing the player
   hides it from the taskbar (like the tray "Show / Hide"); new config field
   `minimize_to_tray` (**default true**) with a General checkbox in Settings.
@@ -818,6 +836,7 @@ app/                        Tauri 2 application (Phases A+B done; Phase C next)
   src-tauri/src/notifications.rs  Track-change toasts (Windows)
   src-tauri/src/discord.rs  Discord Rich Presence IPC client (thin, no deps)
   src-tauri/src/window_state.rs  Window geometry persistence (window-state.json)
+  src-tauri/src/playback.rs  Resume-playback state (playback.json)
   src-tauri/src/bridge.js   Bridge + plugin host + ad-block v2 (prune) +
                             beforeunload + inactivity-prompt neutralizers
   src-tauri/src/plugins.rs  Plugin source registry + settings manifest

@@ -41,6 +41,9 @@ pub struct Config {
     /// (the tray "Show / Hide" item and the single-instance handler bring
     /// it back).
     pub minimize_to_tray: bool,
+    /// Remember the playing track/position on close and resume it on the
+    /// next launch.
+    pub resume_playback: bool,
     /// Per-plugin settings: `{ "<plugin-id>": { "enabled": bool, ...options } }`.
     /// Plugin option schemas and defaults live in the bridge (`plugins/*.js`);
     /// the shell stores only what the user changed.
@@ -58,6 +61,7 @@ impl Default for Config {
             discord_client_id: String::new(),
             update_check: true,
             minimize_to_tray: true,
+            resume_playback: true,
             plugins: BTreeMap::new(),
         }
     }

@@ -203,6 +203,10 @@
             Hide to the tray when the window is minimized
           </label>
           <label class="field inline">
+            <input type="checkbox" id="resume-playback" />
+            Resume playback where you left off (on app start)
+          </label>
+          <label class="field inline">
             <input type="text" id="discord-client-id" placeholder="Discord application client id" size="24" />
           </label>
         </div>
@@ -256,6 +260,7 @@
           const discordClientId = document.getElementById('discord-client-id');
           const updateCheck = document.getElementById('update-check');
           const minimizeToTray = document.getElementById('minimize-to-tray');
+          const resumePlayback = document.getElementById('resume-playback');
           adblock.checked = !!fullConfig.adblock;
           hotkeys.checked = !!fullConfig.hotkeys_enabled;
           notifications.checked = !!fullConfig.notifications;
@@ -263,6 +268,7 @@
           discordClientId.value = fullConfig.discord_client_id || '';
           updateCheck.checked = fullConfig.update_check !== false;
           minimizeToTray.checked = fullConfig.minimize_to_tray !== false;
+          resumePlayback.checked = fullConfig.resume_playback !== false;
 
           const save = async () => {
             try {
@@ -276,6 +282,7 @@
                   discord_client_id: discordClientId.value.trim(),
                   update_check: updateCheck.checked,
                   minimize_to_tray: minimizeToTray.checked,
+                  resume_playback: resumePlayback.checked,
                 },
               });
               status('General settings saved.');
@@ -290,6 +297,7 @@
           discordClientId.addEventListener('change', save);
           updateCheck.addEventListener('change', save);
           minimizeToTray.addEventListener('change', save);
+          resumePlayback.addEventListener('change', save);
         }
 
         function renderOption(plugin, state, option) {

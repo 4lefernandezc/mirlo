@@ -29,8 +29,14 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 - If context runs out mid-task: commit WIP with a clear message and add a
   "Resume notes" bullet here before finishing.
 
-## Current state (2026-10-17)
+## Current state (2026-10-18)
 
+- **v0.1.4 RELEASED (public, 2026-10-18)**: tag `v0.1.4` → workflow green →
+  draft verified (NSIS + MSI + sigs + portable ZIP, all checksums matched)
+  → published; updater endpoint anonymous 200 (0.1.4, NSIS/MSI signatures).
+  Contents: the "¿Sigues ahí?" inactivity-prompt blocker (`window._lact`
+  refresh every 15 min). Released specifically for a user report about
+  interrupted playback.
 - **v0.1.3 RELEASED (public, 2026-10-17)**: tag `v0.1.3` → workflow green →
   draft verified (NSIS + MSI + sigs + portable ZIP, all checksums matched)
   → published; updater endpoint anonymous 200 (0.1.3, NSIS/MSI signatures).

@@ -134,6 +134,11 @@
   // --- Player access ----------------------------------------------------
   const q = (sel) => document.querySelector(sel);
 
+  // The active playback video lives inside the player element; YouTube
+  // Music also keeps preloaded/other <video> elements in the DOM, so never
+  // take "the first video" (the DOM order can flip during transitions).
+  const findVideo = () => q('#movie_player video') || q('video');
+
   const player = {
     playPause() {
       const b = q('#play-pause-button');
@@ -144,12 +149,12 @@
       return false;
     },
     play() {
-      const v = q('video');
+      const v = findVideo();
       if (v && v.paused) this.playPause();
       return true;
     },
     pause() {
-      const v = q('video');
+      const v = findVideo();
       if (v && !v.paused) this.playPause();
       return true;
     },
@@ -178,7 +183,7 @@
       return false;
     },
     state() {
-      const v = q('video');
+      const v = findVideo();
       const title = q('ytmusic-player-bar .title');
       const byline = q('ytmusic-player-bar .byline');
       // The SPA keeps the address bar at the home URL often; the player API
@@ -353,7 +358,7 @@
 
   function setupAudio() {
     if (hostState.audio || !wantsAudio()) return;
-    const video = q('video');
+    const video = findVideo();
     if (!video) return;
     const audioContext = new AudioContext();
     const audioSource = audioContext.createMediaElementSource(video);
@@ -595,7 +600,7 @@
       if (!name) return;
       if (name === 'dataloaded') {
         hostState.dataloaded = true;
-        const video = q('video');
+        const video = findVideo();
         if (video) video.dispatchEvent(new CustomEvent('ytmd:src-changed'));
       }
       document.dispatchEvent(
@@ -631,7 +636,7 @@
   }
 
   function scan() {
-    const v = q('video');
+    const v = findVideo();
     if (v) attachVideo(v);
     if (v) setupAudio();
     const apiElement = q('#movie_player');
@@ -674,6 +679,82 @@
     },
     restart() {
       return invoke('restart_app');
+    },
+    // "Continue where you left off": called once by the shell after the
+    // player API is ready, with the state saved at the last close.
+    async resumePlayback(target) {
+      console.log('[mirlo] resumePlayback:', JSON.stringify(target));
+      if (!target || !target.videoId) {
+        console.log('[mirlo] resumePlayback: no usable target');
+        return false;
+      }
+
+      // The player element can be re-created during YouTube Music's boot
+      // and its API is not necessarily attached when the event fires, so
+      // resolve it freshly on every use and wait for it instead of bailing.
+      const player = () => {
+        const el = q('#movie_player');
+        return el && typeof el.getVideoData === 'function' ? el : null;
+      };
+      const currentId = () => {
+        const el = player();
+        if (!el) return null;
+        try {
+          const data = el.getVideoData();
+          return (data && data.video_id) || null;
+        } catch (_) {
+          return null;
+        }
+      };
+      const apply = () => {
+        const el = player();
+        if (!el) return;
+        try {
+          if (currentId() !== target.videoId) {
+            if (typeof el.loadVideoById === 'function') {
+              el.loadVideoById({
+                videoId: target.videoId,
+                startSeconds: Math.max(0, target.position || 0),
+              });
+            }
+          } else if (typeof el.seekTo === 'function') {
+            el.seekTo(Math.max(0, target.position || 0), true);
+          }
+          setTimeout(() => {
+            const el2 = player();
+            if (!el2) return;
+            try {
+              if (target.paused) el2.pauseVideo && el2.pauseVideo();
+              else el2.playVideo && el2.playVideo();
+            } catch (_) {}
+          }, target.paused ? 800 : 400);
+        } catch (err) {
+          console.log('[mirlo] resumePlayback apply failed:', err);
+        }
+      };
+      const isApplied = () => {
+        if (currentId() !== target.videoId) return false;
+        const v = findVideo();
+        if (!v) return false;
+        if (target.paused) {
+          return v.paused && Math.abs(v.currentTime - (target.position || 0)) < 5;
+        }
+        return !v.paused;
+      };
+
+      // Wait for the player API and a loaded video (or ~20 s) — YouTube
+      // Music restores its own queue around this time and can still
+      // override the load while finishing, so apply and verify a few times.
+      for (let i = 0; i < 40 && !currentId(); i++) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+      for (let attempt = 0; attempt < 4; attempt++) {
+        apply();
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        if (isApplied()) break;
+      }
+      console.log('[mirlo] resumePlayback done:', target.videoId, isApplied());
+      return true;
     },
   };
 

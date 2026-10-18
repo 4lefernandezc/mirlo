@@ -14,6 +14,7 @@ mod discord;
 mod logging;
 mod media_controls;
 mod notifications;
+mod playback;
 mod plugins;
 mod updates;
 mod window_state;
@@ -41,6 +42,9 @@ const BRIDGE_JS: &str = include_str!("bridge.js");
 struct AppState {
     config: Mutex<Config>,
     last_player_state: Mutex<Option<Value>>,
+    /// Saved playback to apply once after launch (taken on the first
+    /// `player-api-loaded` of this run).
+    resume_target: Mutex<Option<playback::PlaybackState>>,
 }
 
 /// The MVP hotkey set (matches the validated PoC).
@@ -437,6 +441,45 @@ fn report_player_state(
     if let Ok(mut last) = state.last_player_state.lock() {
         *last = Some(data.clone());
     }
+
+    // Mirror the playback state to disk (throttled) so "continue where you
+    // left off" survives even a hard kill; the close path writes the final
+    // state.
+    let resume_enabled = state
+        .config
+        .lock()
+        .map(|c| c.resume_playback)
+        .unwrap_or(false);
+    if resume_enabled {
+        if let Some(playback_state) = playback::from_player_state(&data) {
+            playback::save_throttled(&playback_state);
+        }
+    }
+
+    // Apply the saved playback once per run, after the player API is ready
+    // (the bridge waits for YouTube Music's own queue restore to settle).
+    if kind == "player-api-loaded" {
+        let target = state
+            .resume_target
+            .lock()
+            .ok()
+            .and_then(|mut target| target.take());
+        if let Some(target) = target {
+            log_info!(
+                "playback: resuming {} at {:.0}s (paused={})",
+                target.title.as_deref().unwrap_or("track"),
+                target.position,
+                target.paused
+            );
+            if let Ok(json) = serde_json::to_string(&target) {
+                eval_in_player(
+                    &app,
+                    &format!("window.__mirlo && window.__mirlo.resumePlayback({json})"),
+                );
+            }
+        }
+    }
+
     let _ = app.emit(
         "player-state",
         serde_json::json!({ "kind": kind, "data": data }),
@@ -453,8 +496,30 @@ fn reload_player(app: AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 fn restart_app(app: AppHandle) {
+    save_playback(&app.state::<AppState>());
     window_state::persist();
     app.restart();
+}
+
+/// Writes the final playback state (close/restart paths) when the
+/// "resume playback" option is enabled.
+fn save_playback(app_state: &AppState) {
+    let enabled = app_state
+        .config
+        .lock()
+        .map(|c| c.resume_playback)
+        .unwrap_or(false);
+    if !enabled {
+        return;
+    }
+    let last = app_state
+        .last_player_state
+        .lock()
+        .ok()
+        .and_then(|last| last.clone());
+    if let Some(playback_state) = last.as_ref().and_then(playback::from_player_state) {
+        playback::save(&playback_state);
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -502,9 +567,17 @@ pub fn run() {
             if let Err(err) = config::ensure_stored(&config) {
                 log_error!("could not write initial config: {err}");
             }
+            // "Continue where you left off": seed the resume target before the
+            // window loads (applied on the first player-api-loaded of this run).
+            let resume_target = if config.resume_playback {
+                playback::load()
+            } else {
+                None
+            };
             app.manage(AppState {
                 config: Mutex::new(config.clone()),
                 last_player_state: Mutex::new(None),
+                resume_target: Mutex::new(resume_target),
             });
 
             create_main_window(app, &config, &config::profile_dir())?;
@@ -576,6 +649,7 @@ pub fn run() {
             if let tauri::WindowEvent::CloseRequested { .. } = event {
                 if window.label() == MAIN_WINDOW {
                     window_state::persist();
+                    save_playback(&window.app_handle().state::<AppState>());
                     window.app_handle().exit(0);
                 }
             }

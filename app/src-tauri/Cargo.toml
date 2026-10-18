@@ -1,6 +1,6 @@
 [package]
 name = "mirlo"
-version = "0.1.4"
+version = "0.1.5"
 description = "A lightweight, open-source desktop client for YouTube Music"
 authors = ["Mirlo contributors"]
 edition = "2021"

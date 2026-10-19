@@ -11,6 +11,22 @@ extracted from the service (see [terms and scope](terms.md)).
   If it is missing, the Mirlo installer downloads and installs it
   automatically (the machine needs internet access for that step).
 
+### Linux requirements
+
+- A 64-bit distribution with **webkit2gtk-4.1** (Ubuntu 22.04+, Debian 12+,
+  Arch, Fedora 39+…).
+- The **GStreamer** plugin packages — without them WebKitGTK cannot decode
+  YouTube Music's audio/video and playback fails:
+
+  | Distro | Packages |
+  | --- | --- |
+  | Ubuntu/Debian | `gstreamer1.0-libav gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly` |
+  | Arch | `gst-libav gst-plugins-good gst-plugins-bad gst-plugins-ugly gst-plugins-base` |
+  | Fedora | `gstreamer1-libav gstreamer1-plugins-good gstreamer1-plugins-bad-free gstreamer1-plugins-ugly` |
+
+  Mirlo logs a warning at startup when the codecs are missing (see
+  `logs/mirlo.log`).
+
 ## Download
 
 Installers are published on the GitHub Releases page
@@ -73,10 +89,35 @@ the extracted folder moves or deletes the whole copy, including your session.
   `Get-FileHash .\Mirlo_0.1.1_portable_x64.zip -Algorithm SHA256` and compare
   with `SHA256SUMS.txt`.
 
+## Linux (AppImage / .deb)
+
+| File | Use case |
+| --- | --- |
+| `Mirlo_<version>_amd64.AppImage` | **Recommended.** Portable single file; works with the built-in auto-updater. |
+| `Mirlo_<version>_amd64.deb` | Debian/Ubuntu package (updates are manual). |
+
+1. AppImage: `chmod +x Mirlo_*_amd64.AppImage` and run it. If your system
+   lacks FUSE, run it with `--appimage-extract-and-run` (or extract it).
+2. deb: `sudo apt install ./Mirlo_<version>_amd64.deb` (or your graphical
+   package manager).
+
+Notes:
+
+- **Tray icon**: most desktops show it; GNOME needs the *AppIndicator*
+  extension.
+- **Wayland**: the app runs fine, but global media hotkeys
+  (`Ctrl+Alt+Space/…`) only work on X11 sessions.
+- **NVIDIA**: if the window renders black or crashes, start Mirlo with
+  `WEBKIT_DISABLE_DMABUF_RENDERER=1` (a known WebKitGTK + NVIDIA workaround).
+- Feature differences vs. Windows (for now): no taskbar media controls
+  (MPRIS), no native notifications and no Discord Rich Presence; the
+  network-level ad-block is replaced by the built-in script fallback.
+
 ## Where Mirlo keeps its data
 
 For installed copies everything app-owned lives under `%LOCALAPPDATA%\Mirlo`
-(portable copies keep the same layout under `data\` next to `mirlo.exe`):
+on Windows and `~/.local/share/Mirlo` on Linux (portable copies keep the same
+layout under `data\` next to `mirlo.exe`):
 
 | Path | Content |
 | --- | --- |
@@ -92,7 +133,9 @@ Mirlo checks for updates silently at startup (can be disabled in Settings →
 (*Check for updates…*). Installed copies download the signed installer from
 this repository's releases, verify it against the bundled public key, and
 install it only after you confirm a prompt; the app then restarts. Portable
-copies are updated by hand (see *Portable* above).
+copies are updated by hand (see *Portable* above). On Linux the AppImage
+uses the same built-in updater; `.deb` installations are updated manually
+with the new package.
 
 ## Uninstall
 

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Linux support (initial): the app builds and runs on Linux with
+  WebKitGTK 4.1 — release pipeline now produces `Mirlo_<version>_amd64.AppImage`
+  (self-updating) and `Mirlo_<version>_amd64.deb`, CI builds on Linux on
+  every push, and app data lives in `~/.local/share/Mirlo` (XDG). Playback
+  verified on Ubuntu 24.04 (WSLg); the GStreamer plugin packages are
+  required and documented in the install guide (Mirlo logs a startup
+  warning when the media codecs are missing). Not yet ported to Linux:
+  MPRIS media controls, native notifications, Discord Rich Presence and
+  the network-level ad-block (the script fallback applies).
+
 ### Fixed
 
 - Resume playback: when the saved track had to be loaded because YouTube

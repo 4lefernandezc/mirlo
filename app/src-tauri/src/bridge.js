@@ -775,10 +775,33 @@
     },
   };
 
+  // Media capabilities (diagnostics): on Linux, WebKitGTK's MSE codecs
+  // depend on the system GStreamer plugin packages — the shell logs a
+  // warning when they are missing because playback would fail.
+  const mediaCaps = () => {
+    try {
+      return {
+        ms: typeof MediaSource !== 'undefined',
+        aac:
+          typeof MediaSource !== 'undefined' &&
+          MediaSource.isTypeSupported('audio/mp4; codecs="mp4a.40.2"'),
+        opus:
+          typeof MediaSource !== 'undefined' &&
+          MediaSource.isTypeSupported('audio/webm; codecs="opus"'),
+        h264:
+          typeof MediaSource !== 'undefined' &&
+          MediaSource.isTypeSupported('video/mp4; codecs="avc1.42E01E"'),
+      };
+    } catch (err) {
+      return { err: String(err) };
+    }
+  };
+
   report('bridge-ready', {
     version: boot.version || null,
     adblock: !!config.adblock,
     href: location.href,
+    caps: mediaCaps(),
   });
   console.log('[mirlo] bridge loaded', boot.version || '');
   scan();

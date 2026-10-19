@@ -585,6 +585,31 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     temporary capability/autoplay probes in `bridge.js`; rebuild with
     `~/.cargo/bin/cargo build --release`); runner script:
     `%TEMP%\opencode\run-mirlo.sh`.
+- **Linux support (initial) — DONE (2026-10-18)**: release pipeline now
+  builds Linux bundles and the app runs on WebKitGTK 4.1.
+  - `release.yml`: new `release-linux` job (ubuntu-22.04 → AppImage + deb,
+    signed updater artifacts; tauri-action merges the `linux-x86_64` entry
+    into `latest.json` alongside the Windows ones) + a final `checksums`
+    job that generates one `SHA256SUMS.txt` from every uploaded bundle
+    (the Windows job no longer generates checksums). `ci.yml` has an
+    `app-linux` build job.
+  - `data_root.rs`: non-Windows default base is `$XDG_DATA_HOME` or
+    `~/.local/share` (data root `~/.local/share/Mirlo`).
+  - `bridge.js` reports media capabilities in `bridge-ready`
+    (`caps: {ms, aac, opus, h264}`); the shell logs a warning when MSE
+    exists but the codecs are missing (Linux without GStreamer plugins).
+  - **Playback VERIFIED on Ubuntu 24.04/WSLg** (even logged-out). Required
+    packages: `gstreamer1.0-libav/plugins-good/bad/ugly` (without them
+    `aac/h264/opus` are all false and playback fails). Docs: install.md
+    has a Linux section (per-distro package names, AppImage/deb, tray/
+    Wayland/NVIDIA notes).
+  - Known gaps vs Windows (documented): no MPRIS media controls, no
+    native notifications, no Discord RPC (needs Unix sockets), network
+    ad-block falls back to the script layer, global hotkeys are X11-only.
+  - WSL quirks observed (not app bugs): cross-domain navigation
+    (music.youtube.com → www.youtube.com) segfaulted/hung once in
+    software rendering; WSLg's host must be alive (`wsl --shutdown` fixes
+    "no window" symptoms — check for `msrdc`).
 - Machine facts: Windows 11 x64; Rust 1.99.1 (MSVC) installed; VS 2019 Build
   Tools present; WebView2 runtime 155 present; Node 24 present; npm available.
 - Build artifacts must NOT go into OneDrive: always set

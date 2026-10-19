@@ -45,8 +45,28 @@ pub fn root() -> PathBuf {
     resolve(
         exe_dir().as_deref(),
         std::env::var_os("MIRLO_DATA_DIR").as_deref(),
-        std::env::var_os("LOCALAPPDATA").as_deref(),
+        default_data_base().as_deref(),
     )
+}
+
+/// The per-user data base of the platform: `%LOCALAPPDATA%` on Windows,
+/// `$XDG_DATA_HOME` (or `~/.local/share`) elsewhere.
+#[cfg(target_os = "windows")]
+fn default_data_base() -> Option<std::ffi::OsString> {
+    std::env::var_os("LOCALAPPDATA")
+}
+
+#[cfg(not(target_os = "windows"))]
+fn default_data_base() -> Option<std::ffi::OsString> {
+    if let Some(xdg) = std::env::var_os("XDG_DATA_HOME").filter(|value| !value.is_empty()) {
+        return Some(xdg);
+    }
+    std::env::var_os("HOME").map(|home| {
+        let mut path = PathBuf::from(home);
+        path.push(".local");
+        path.push("share");
+        path.into_os_string()
+    })
 }
 
 /// Whether this process is a portable install (marker next to the running

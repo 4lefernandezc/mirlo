@@ -553,6 +553,38 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
   it pauses the player first. Verified that `_lact` exists and stays fresh
   on music.youtube.com; reproducing the prompt itself needs ~1 h idle, so
   end-to-end confirmation rides on the upstream-proven mechanism.
+- **Linux feasibility validation (2026-10-18, WSL2/Ubuntu 24.04 + WSLg)**:
+  investigated a possible Linux release. Findings:
+  - The app **compiles and runs** on Linux as-is: the Windows-only deps
+    are gated in `Cargo.toml` and every platform module has
+    `cfg(not(target_os = "windows"))` stubs (adblock v1, SMTC, toasts,
+    Discord, window state, focus). Verified live in WSLg: bridge loads,
+    plugin host starts, SPA navigation works, the updater reached
+    `latest.json` (`update check: 0.1.5 is up to date`), config/logs/data
+    files work.
+  - **Codecs need GStreamer**: with only `libwebkit2gtk-4.1` installed,
+    WebKitGTK's MSE reported `aac:false, h264:false, opus:false`
+    (`MediaSource` itself exists). Installing
+    `gstreamer1.0-libav gstreamer1.0-plugins-good gstreamer1.0-plugins-bad
+    gstreamer1.0-plugins-ugly` flips all three to `true` (probe via
+    `MediaSource.isTypeSupported`). A Linux release must document/require
+    these.
+  - `data_root.rs` falls back to `.` without `LOCALAPPDATA` — a real port
+    needs XDG paths (`~/.local/share/mirlo`).
+  - Boot under WSLg software rendering is slow (~35 s to `ready`); one
+    segfault and one hang were observed while *cross-domain navigating*
+    (music.youtube.com → www.youtube.com, an artificial test path, not a
+    normal Mirlo flow) — needs re-checking on real hardware.
+  - **Signed-in playback on WebKitGTK is still UNVERIFIED** (needs a
+    Google login in the WSLg window or a real Linux machine).
+  - Remaining port work for a release: CI job (ubuntu-22.04 →
+    AppImage/deb + updater `linux-x86_64` entry), XDG data paths, MPRIS
+    for media keys, libnotify toasts, Discord over Unix sockets, Wayland
+    hotkey limitations, install docs.
+  - WSL working copy for further tests: `~/mirlo-app` (patched with
+    temporary capability/autoplay probes in `bridge.js`; rebuild with
+    `~/.cargo/bin/cargo build --release`); runner script:
+    `%TEMP%\opencode\run-mirlo.sh`.
 - Machine facts: Windows 11 x64; Rust 1.99.1 (MSVC) installed; VS 2019 Build
   Tools present; WebView2 runtime 155 present; Node 24 present; npm available.
 - Build artifacts must NOT go into OneDrive: always set

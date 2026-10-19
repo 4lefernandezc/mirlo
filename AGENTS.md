@@ -31,6 +31,15 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 
 ## Current state (2026-10-18)
 
+- **v0.1.6 RELEASED (public, 2026-10-18)**: **first release with Linux
+  support** — tag `v0.1.6` → workflow: Windows job ✓ + Linux job ✓
+  (AppImage 82 MB + deb, both signed) → the `checksums` job failed on its
+  first run (missing `actions/checkout`: `gh` needs a repo context — fixed
+  in `6c08890` for future releases; the checksums were generated manually
+  this time) → draft verified (all 9 assets + `latest.json` with
+  `linux-x86_64*` **and** `windows-x86_64*` entries) → published; updater
+  endpoint anonymous 200 (0.1.6, both platforms). Contents: Linux
+  support + the resume-playback router fix ("suena pero no se muestra").
 - **v0.1.5 RELEASED (public, 2026-10-18)**: tag `v0.1.5` → workflow green →
   draft verified (NSIS + MSI + sigs + portable ZIP, all checksums matched)
   → published; updater endpoint anonymous 200 (0.1.5, NSIS/MSI signatures).

@@ -113,6 +113,8 @@ jobs:
     needs: [release-windows, release-linux]
     runs-on: ubuntu-22.04
     steps:
+      - uses: actions/checkout@v4
+
       - name: Generate SHA-256 checksums for every uploaded bundle
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

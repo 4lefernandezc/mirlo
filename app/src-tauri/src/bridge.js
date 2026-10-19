@@ -711,12 +711,16 @@
         if (!el) return;
         try {
           if (currentId() !== target.videoId) {
-            if (typeof el.loadVideoById === 'function') {
-              el.loadVideoById({
-                videoId: target.videoId,
-                startSeconds: Math.max(0, target.position || 0),
-              });
-            }
+            // Load through the app router (a synthetic click on a watch
+            // link, like the user picking a song) so YouTube Music's own
+            // UI follows the track: the raw loadVideoById() switches the
+            // audio without updating the player bar/cover (verified live).
+            const a = document.createElement('a');
+            a.href = `/watch?v=${encodeURIComponent(target.videoId)}`;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
           } else if (typeof el.seekTo === 'function') {
             el.seekTo(Math.max(0, target.position || 0), true);
           }
@@ -724,10 +728,15 @@
             const el2 = player();
             if (!el2) return;
             try {
+              // A router navigation loads the track from 0: seek once it
+              // has become the current video, then set the play state.
+              if (currentId() === target.videoId && (target.position || 0) > 1) {
+                el2.seekTo(Math.max(0, target.position || 0), true);
+              }
               if (target.paused) el2.pauseVideo && el2.pauseVideo();
               else el2.playVideo && el2.playVideo();
             } catch (_) {}
-          }, target.paused ? 800 : 400);
+          }, 1500);
         } catch (err) {
           console.log('[mirlo] resumePlayback apply failed:', err);
         }
@@ -736,10 +745,10 @@
         if (currentId() !== target.videoId) return false;
         const v = findVideo();
         if (!v) return false;
-        if (target.paused) {
-          return v.paused && Math.abs(v.currentTime - (target.position || 0)) < 5;
-        }
-        return !v.paused;
+        if (target.paused && !v.paused) return false;
+        if (!target.paused && v.paused) return false;
+        // The position matters too: a fresh router load starts at 0.
+        return Math.abs(v.currentTime - (target.position || 0)) < 15;
       };
 
       // Wait for the player API and a loaded video (or ~20 s) — YouTube
@@ -752,6 +761,14 @@
         apply();
         await new Promise((resolve) => setTimeout(resolve, 3000));
         if (isApplied()) break;
+      }
+      // Late safety net: YouTube Music's own queue restore can finish
+      // after the attempts above and override the state (it may resume
+      // playback); re-check once and correct.
+      await new Promise((resolve) => setTimeout(resolve, 15000));
+      if (!isApplied()) {
+        apply();
+        await new Promise((resolve) => setTimeout(resolve, 3000));
       }
       console.log('[mirlo] resumePlayback done:', target.videoId, isApplied());
       return true;

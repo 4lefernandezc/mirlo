@@ -520,9 +520,17 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     bridge waits for the API instead of bailing); the DOM can hold
     preloaded extra `<video>` elements whose order flips during
     transitions — the bridge resolves the active one via `findVideo()`
-    (`#movie_player video` first) everywhere instead of "the first video".
+    (`#movie_player video` first) everywhere instead of "the first video";
+    **loading a track must go through the app router** (a synthetic click
+    on a `<a href="/watch?v=…">`), never `loadVideoById()`: the raw API
+    switches the audio while YouTube Music's UI keeps showing the previous
+    track (reported by a user: "suena pero no se muestra" — reproduced
+    live). A late safety check (15 s) re-applies once, because YouTube
+    Music's own queue restore can finish after our attempts and resume
+    playback on paused resumes.
   - Verified live: playing case (resumed at 40 s, t≈97 after ~1 min) and
-    paused case (resumed exactly at 11.9 s, paused).
+    paused case (resumed exactly at 11.9 s, paused); router-load case
+    (target differs from the restored queue: bar/cover follow the track).
 - **Minimize-to-tray option — DONE (2026-10-17)**: minimizing the player
   hides it from the taskbar (like the tray "Show / Hide"); new config field
   `minimize_to_tray` (**default true**) with a General checkbox in Settings.

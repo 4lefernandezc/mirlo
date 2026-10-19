@@ -29,6 +29,28 @@ jobs:
       - name: Build
         run: cargo build --release
 
+  app-linux:
+    name: App (Tauri 2, Linux)
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: app/src-tauri
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux dependencies
+        working-directory: .
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libxdo-dev libssl-dev build-essential curl wget file
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app/src-tauri -> target
+      - name: Test
+        run: cargo test --lib
+      - name: Build
+        run: cargo build --release
+
   poc:
     name: PoC (Rust, Windows)
     runs-on: windows-latest

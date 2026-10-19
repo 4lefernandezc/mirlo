@@ -8,7 +8,7 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  release-windows:
     name: Release (Windows x64)
     runs-on: windows-latest
     steps:
@@ -38,9 +38,11 @@ jobs:
           releaseBody: |
             See [CHANGELOG.md](https://github.com/4lefernandezc/mirlo/blob/main/CHANGELOG.md) for the full list of changes.
 
-            The `-setup.exe` (NSIS) is the recommended per-user installer; the `.msi` is intended for managed deployments (per-machine, administrator required). Both are signed for the built-in auto-updater.
+            Windows: the `-setup.exe` (NSIS) is the recommended per-user installer; the `.msi` is intended for managed deployments (per-machine, administrator required). Both are signed for the built-in auto-updater.
 
-            `Mirlo_<version>_portable_x64.zip` is the portable build: extract it anywhere and run `mirlo.exe`; all app data stays in a `data` folder next to the executable (`data\`) and updates are manual (download the new ZIP, see `README-PORTABLE.txt` inside). Not signed for the auto-updater.
+            Linux: `Mirlo_<version>_amd64.AppImage` (portable, works with the built-in auto-updater) and `Mirlo_<version>_amd64.deb`. Requirements: `webkit2gtk-4.1` and the GStreamer plugin packages (`gst-plugins-base/good/bad/ugly`, `gst-libav`) — see [install docs](https://github.com/4lefernandezc/mirlo/blob/main/docs/user/install.md).
+
+            `Mirlo_<version>_portable_x64.zip` is the portable Windows build: extract it anywhere and run `mirlo.exe`; all app data stays in a `data` folder next to the executable (`data\`) and updates are manual (download the new ZIP, see `README-PORTABLE.txt` inside). Not signed for the auto-updater.
           releaseDraft: true
           prerelease: false
           updaterJsonPreferNsis: true
@@ -62,23 +64,62 @@ jobs:
           Compress-Archive -Path (Join-Path $staging "*") -DestinationPath "Mirlo_${version}_portable_x64.zip"
           Get-ChildItem "Mirlo_${version}_portable_x64.zip" | Select-Object Name, Length
 
-      - name: Generate SHA-256 checksums
-        shell: pwsh
-        run: |
-          $artifacts = @()
-          $artifacts += Get-ChildItem -Path app/src-tauri/target/release/bundle/nsis/*.exe
-          $artifacts += Get-ChildItem -Path app/src-tauri/target/release/bundle/msi/*.msi
-          $artifacts += Get-ChildItem -Path . -Filter "Mirlo_*_portable_x64.zip"
-          $lines = foreach ($file in $artifacts) {
-            $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $file.FullName).Hash.ToLowerInvariant()
-            "$hash  $($file.Name)"
-          }
-          $lines | Set-Content -Path SHA256SUMS.txt -Encoding ascii
-
-      - name: Upload checksums and portable ZIP
+      - name: Upload portable ZIP
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           $zip = (Get-ChildItem -Path . -Filter "Mirlo_*_portable_x64.zip").FullName
-          gh release upload "${{ github.ref_name }}" SHA256SUMS.txt $zip
+          gh release upload "${{ github.ref_name }}" $zip
+
+  release-linux:
+    name: Release (Linux x64)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libxdo-dev libssl-dev build-essential curl wget file
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app/src-tauri -> target
+
+      # Builds the AppImage + deb, signs the updater artifacts and adds the
+      # Linux bundles and its `latest.json` platform entry to the same draft
+      # release created by the Windows job.
+      - name: Build and publish to GitHub Releases
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          projectPath: app
+          tagName: ${{ github.ref_name }}
+          releaseName: "Mirlo v__VERSION__"
+          releaseDraft: true
+          prerelease: false
+          args: "--bundles appimage,deb"
+
+  checksums:
+    name: Checksums
+    needs: [release-windows, release-linux]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Generate SHA-256 checksums for every uploaded bundle
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p assets
+          gh release download "${{ github.ref_name }}" --pattern "Mirlo_*" --dir assets
+          cd assets
+          sha256sum Mirlo_* > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+          gh release upload "${{ github.ref_name }}" SHA256SUMS.txt

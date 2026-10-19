@@ -420,6 +420,25 @@ fn report_player_state(
 ) {
     match kind.as_str() {
         "time-changed" => {}
+        "bridge-ready" => {
+            // Surface the media capabilities: on Linux, WebKitGTK's MSE
+            // codecs depend on the system GStreamer plugin packages.
+            if let Some(caps) = data.get("caps") {
+                let flag = |key: &str| caps.get(key).and_then(Value::as_bool).unwrap_or(false);
+                let (ms, aac, opus) = (flag("ms"), flag("aac"), flag("opus"));
+                if ms && (!aac || !opus) {
+                    log_error!(
+                        "playback: media codecs missing (aac={aac}, opus={opus}) — \
+                         install the GStreamer plugin packages (see docs/user/install.md) \
+                         or playback will fail"
+                    );
+                } else {
+                    log_info!("state: bridge-ready (ms={ms} aac={aac} opus={opus})");
+                }
+            } else {
+                log_info!("state: bridge-ready");
+            }
+        }
         other => log_info!("state: {other}"),
     }
     media_controls::on_player_state(&kind, &data);

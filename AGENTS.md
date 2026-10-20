@@ -541,7 +541,7 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     **aborts on the first real (`isTrusted`) input event**
     (pointerdown/keydown/wheel/touchstart). The shell fires it **1.2 s
     after each `bridge-ready`** and keeps the target armed until the
-    bridge confirms with `resume-done` â€” YouTube Music reloads the SPA
+    bridge confirms with `resume-done`  - YouTube Music reloads the SPA
     during boot (the player flicker), so a reload simply re-applies the
     resume (max 5 attempts). The bridge then verifies the state in a
     user-safe window (up to 6 x 3 s): re-navigates only when the
@@ -573,7 +573,10 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
   both to existing configs. `CloseRequested` uses `api.prevent_close()` +
   `window.hide()` when on, else persists state and exits; the tray Quit
   handler now also saves playback.
-- **MPRIS (Linux media controls) — DONE (2026-10-19)**: new module
+- **Dark boot background (2026-10-19)**: the main window is created with
+  `background_color` (#030303) so YouTube Music's startup reloads (the
+  player flicker) do not flash white; the settings window uses #121212.
+- **MPRIS (Linux media controls) - DONE (2026-10-19)**: new module
   `mpris.rs` (non-Windows) mirrors the SMTC module using `mpris-server`
   0.9 (zbus 5; async-std executor on a dedicated thread). Reports
   PlaybackStatus + Metadata (title, artist, album, `mpris:artUrl` from the

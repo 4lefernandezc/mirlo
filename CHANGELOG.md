@@ -15,9 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- A dark window background now backs the player (and the settings window) so
+  YouTube Music's startup reloads do not flash white.
 - Closing the window now hides Mirlo to the tray (Quit from the tray menu
   to exit); minimizing is a normal minimize again. Both behaviors have
-  their own checkbox in Settings → General (config v4 migration).
+  their own checkbox in Settings â†’ General (config v4 migration).
 
 ### Fixed
 
@@ -35,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Linux support (initial): the app builds and runs on Linux with
-  WebKitGTK 4.1 — release pipeline now produces `Mirlo_<version>_amd64.AppImage`
+  WebKitGTK 4.1 â€” release pipeline now produces `Mirlo_<version>_amd64.AppImage`
   (self-updating) and `Mirlo_<version>_amd64.deb`, CI builds on Linux on
   every push, and app data lives in `~/.local/share/Mirlo` (XDG). Playback
   verified on Ubuntu 24.04 (WSLg); the GStreamer plugin packages are
@@ -49,7 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Resume playback: when the saved track had to be loaded because YouTube
   Music had restored a different one (more common for free accounts), the
   raw player API switched the audio while the UI kept showing the old
-  track — the song played but was not displayed. The resume now loads the
+  track â€” the song played but was not displayed. The resume now loads the
   track through the app's own router (a synthetic watch-link click, like
   picking a song), so the player bar, cover and queue follow, and a late
   safety check corrects YouTube Music's own queue restore if it overrides
@@ -62,12 +64,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - "Resume playback where you left off" option (General settings, on by
   default): the track, position and play/pause state are saved when the
   app closes (and mirrored to disk every 30 s, so a hard kill is covered
-  too) and restored on the next launch — including the paused state.
+  too) and restored on the next launch â€” including the paused state.
 
 ### Changed
 
 - Discord Rich Presence now works out of the box: it ships enabled and
-  uses Mirlo's own Discord application (a public client id — Rich Presence
+  uses Mirlo's own Discord application (a public client id â€” Rich Presence
   uses Discord's local pipe, no login or tokens involved). The Settings
   field is an optional override for users who prefer their own
   application; configs that never configured a client id are migrated to
@@ -96,7 +98,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Synced lyrics with animation in the native player "Letra"/"Lyrics" tab:
   when the synced-lyrics plugin has timed lyrics for the current track, the
-  tab's plain-text blob is replaced with line-by-line lyrics — active line
+  tab's plain-text blob is replaced with line-by-line lyrics â€” active line
   highlighted and smoothly auto-scrolled inside the native view, click a
   line to seek. Without timed lyrics the native plain text is kept.
 
@@ -113,8 +115,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   duration tolerance) when one exists, instead of only taking the closest
   duration match (which could be plain-text only).
 - Native tab robustness: containers are injected into every description
-  wrapper of the shelf (the visible variant — expandable or
-  non-expandable — varies), fixing an empty lyrics area after track
+  wrapper of the shelf (the visible variant â€” expandable or
+  non-expandable â€” varies), fixing an empty lyrics area after track
   changes.
 
 ## [0.1.2] - 2026-10-17
@@ -133,14 +135,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `adSlots`) and serves their audio as regular streams, so URL blocking
   alone could not stop them. The bridge now prunes those keys from the
   player response (the same technique as uBlock Origin's `json-prune`
-  filters; implemented independently — ADR-0003 Addendum 2). The fetch
+  filters; implemented independently â€” ADR-0003 Addendum 2). The fetch
   wrapper consults the live `config.adblock` flag (refreshed at most every
   5 s); `__mirlo.adblockStats` exposes `{blocked, pruned}` counters.
   Verified live: with ad-block on the player response holds no ad keys
   while playback continues; with it off the keys are present.
-- "Los cambios no se guardarán" dialog: YouTube Music arms a
+- "Los cambios no se guardarÃ¡n" dialog: YouTube Music arms a
   `beforeunload` handler, so navigating the player away popped Chromium's
-  leave-site dialog — while pending it blocks renderer JS (looks like a
+  leave-site dialog â€” while pending it blocks renderer JS (looks like a
   freeze and breaks automation). The bridge now drops `beforeunload`
   listeners and no-ops `window.onbeforeunload` at document start.
   WebView2's `ScriptDialogOpening` event does not fire for beforeunload
@@ -154,12 +156,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Portable build: the releases now include
   `Mirlo_<version>_portable_x64.zip` (release `mirlo.exe`, an empty
   `portable.txt` marker, `LICENSE`, `THIRD_PARTY_NOTICES.md` and
-  `README-PORTABLE.txt`). Extract it anywhere and run the exe — no installer,
+  `README-PORTABLE.txt`). Extract it anywhere and run the exe â€” no installer,
   no registry, and the ZIP is listed in `SHA256SUMS.txt`.
 - All app-owned state now resolves through a single data root
   (`data_root.rs`, pure and unit-tested precedence): `MIRLO_DATA_DIR`
-  (explicit override) → `portable.txt` next to the executable
-  (`<exe_dir>\data`) → `%LOCALAPPDATA%\Mirlo` (the installed default,
+  (explicit override) â†’ `portable.txt` next to the executable
+  (`<exe_dir>\data`) â†’ `%LOCALAPPDATA%\Mirlo` (the installed default,
   unchanged). Config, window state, logs and the persistent WebView2 profile
   (Google session) all follow it, so a portable copy keeps everything inside
   its own `data\` folder.
@@ -218,7 +220,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Verified live: styles/body classes/album-color variables/video-toggle
     button applied; enable/disable via config + reload; no measurable idle
     memory overhead (368.4 MB with all six enabled).
-- Phase B batch 2a — audio infrastructure and three ports:
+- Phase B batch 2a â€” audio infrastructure and three ports:
   - On-demand Web Audio provider in the bridge (only wires
     `AudioContext`/`MediaElementSource` when an enabled plugin declares
     `audio: true`) with the upstream-compatible `ytmd:audio-can-play` event
@@ -228,7 +230,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     forced `playbackRate`), skip-silences (analyser-based).
   - `crossfade` is **excluded** (ADR-0003 addendum): upstream extracts the
     next track's stream URL through InnerTube to fade it.
-- Phase B batch 2b — equalizer and precise-volume:
+- Phase B batch 2b â€” equalizer and precise-volume:
   - equalizer: config-driven BiquadFilters plus the `bass-booster` preset,
     applied through the host audio graph (v3.11.0 upstream has no sliders
     UI).
@@ -239,7 +241,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - YouTube Music's Trusted Types enforcement and the audio-provider timing
     are handled (DOM-built UI, `audio()` accessor).
 - Phase B settings UI:
-  - Local settings window (tray → "Settings…", or `mirlo.exe --settings`)
+  - Local settings window (tray â†’ "Settingsâ€¦", or `mirlo.exe --settings`)
     with General switches (ad-block, hotkeys) and one card per plugin:
     enable toggle plus typed option fields backed by a new
     `get_plugin_manifest` command; changes persist immediately and a
@@ -247,28 +249,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - New local-only `settings-capability`; the settings window shares the
     WebView2 environment with the player, and closing it no longer exits
     the app.
-- Phase B batch 3a — content plugins (all default OFF):
+- Phase B batch 3a â€” content plugins (all default OFF):
   - skip-disliked-songs, captions-selector (track picker + autoload),
     quality-changer (quality picker), navigation (back/forward buttons) and
     sponsorblock (segments fetched from the page; third-party calls only
     while enabled).
   - New host helper `showChoiceMenu` replaces the Electron dialogs for
     in-page pickers.
-- Phase B batch 3b — album-actions (default OFF): bulk like/dislike buttons
+- Phase B batch 3b â€” album-actions (default OFF): bulk like/dislike buttons
   with a fill-percentage mask on album and playlist pages.
-- Phase B batch 3c — synced-lyrics (default OFF, reduced port): lyrics
+- Phase B batch 3c â€” synced-lyrics (default OFF, reduced port): lyrics
   overlay panel with synced highlighting and click-to-seek, LRCLib provider
   fetched from the page (`Lrclib-Client` header, 503 retries), upstream LRC
   parser and a minimal Jaro-Winkler matcher; plain-text fallback and
   `showLyricsEvenIfInexact` option.
   - Fix: plugin buttons no longer reuse YouTube's `yt-icon-button` custom
-    element bare (it renders unstyled at 300×300); quality-changer,
+    element bare (it renders unstyled at 300Ã—300); quality-changer,
     captions-selector and synced-lyrics build plain buttons with a shared
     `.mirlo-icon-button` style block.
 - Stable additive plugins now ship **enabled by default** (navigation,
   video-toggle, precise-volume, captions-selector, quality-changer,
   compact-sidebar); behavioral/opinionated plugins stay opt-in.
-- Ad-block v1 — network-level request blocking on the WebView2 controller
+- Ad-block v1 â€” network-level request blocking on the WebView2 controller
   (Windows): a `WebResourceRequested` handler on the player webview answers
   matching requests with a synthesized `403 Blocked` response (WebView2 has
   no cancel API; the approach from the official samples), replacing the
@@ -281,7 +283,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   while the same URL returns the real 200 content with the toggle off;
   playback unaffected (track played through the active filter); 371.1 MB
   idle private (no regression vs the Phase A baseline).
-- Media session (SMTC) — native Windows integration in `media_controls.rs`
+- Media session (SMTC) â€” native Windows integration in `media_controls.rs`
   (no new dependencies: the `windows` crate features were extended):
   - Session created for the player window so the taskbar media flyout, lock
     screen and hardware media keys control playback: play/pause/next/previous
@@ -294,10 +296,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     correct metadata/status/timeline; `TryTogglePlayPauseAsync` (the media
     key path) paused/resumed the page; a flyout seek to 120 s moved playback
     accordingly; 387.5 MB private after a full round trip (< 450 MB target).
-- Track-change notifications — native Windows toasts in `notifications.rs`
+- Track-change notifications â€” native Windows toasts in `notifications.rs`
   (no new dependencies; AUMID registered lazily in HKCU):
   - New `notifications` config flag (default on; General checkbox) and a
-    focus check via `GetForegroundWindow` — tao's `is_focused()` is
+    focus check via `GetForegroundWindow` â€” tao's `is_focused()` is
     unreliable under WebView2, so toasts are suppressed only when the player
     window is truly in the foreground.
   - Deduplicated per track (the bridge re-emits `video-src-changed` several
@@ -307,22 +309,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     unfocused change with the right title. Banner delivery could not be
     observed on this machine because Windows notifications are disabled at
     the user level (`ToastNotifier.Setting()` = `DisabledForUser`; `Show()`
-    succeeds and the OS drops the toast) — the module logs that state once
+    succeeds and the OS drops the toast) â€” the module logs that state once
     per run. Memory: 409 MB fresh idle, 427.9 MB after a long session.
-- Discord Rich Presence — minimal IPC client in `discord.rs` (no new
+- Discord Rich Presence â€” minimal IPC client in `discord.rs` (no new
   dependencies): frame codec, worker/reader threads over
   `\\.\pipe\discord-ipc-0..9`, handshake, READY/ERROR handling, PING/PONG and
   reconnect pacing; SET_ACTIVITY (type Listening) fires only when the
-  track/state actually changes. Settings → General gains a toggle and a
+  track/state actually changes. Settings â†’ General gains a toggle and a
   client-id field; it ships OFF until the user creates a Discord
   application and pastes its id. Verified live against the running Discord
   client with a dummy id (handshake accepted and parsed; Discord replies
-  `Invalid Client ID` — the real round trip; a real id yields READY).
+  `Invalid Client ID` â€” the real round trip; a real id yields READY).
 - Window geometry persistence (`window-state.json`): the player window
   reopens with the size, position and maximized state of the last session;
   fresh installs start maximized. Restore falls back to a centered window
   when the saved placement no longer intersects a monitor.
-- Phase D — packaging and release:
+- Phase D â€” packaging and release:
   - Windows installers: NSIS (per-user, no administrator rights, English +
     Spanish, MIT license page, embedded WebView2 bootstrapper) and WiX MSI
     (per-machine, for managed deployments). An NSIS install hook relocates
@@ -331,7 +333,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     (`%LOCALAPPDATA%\Mirlo`); a directory chosen by the user is respected.
   - Auto-update (Tauri updater, signed bundles): public key embedded in
     `tauri.conf.json`, silent startup check honoring a new `update_check`
-    setting (General toggle), tray item *Check for updates…*, native
+    setting (General toggle), tray item *Check for updatesâ€¦*, native
     confirmation prompt, passive installer execution and app restart.
     Failures (offline, no release published yet) are only logged.
   - Release pipeline (`.github/workflows/release.yml`): pushing a `v*` tag
@@ -353,7 +355,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Discord Rich Presence sticking on the first track and never updating:
   a pending blocking pipe read serialized writes on the connection (the
   second `SET_ACTIVITY` blocked forever). The reader is now peek-gated
-  (`PeekNamedPipe`), sends run with a 3 s deadline (timeout → reconnect),
+  (`PeekNamedPipe`), sends run with a 3 s deadline (timeout â†’ reconnect),
   and the reader resets on partial/oversized frames.
 - Discord/tray artwork: the player state now carries the current `videoId`
   from the YouTube player API (the SPA keeps the address bar at the home

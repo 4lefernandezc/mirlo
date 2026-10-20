@@ -796,6 +796,14 @@
         isApplied(),
         interacted ? 'user-interrupted' : 'ok'
       );
+      // Confirm to the shell (it stops re-arming the resume on page loads).
+      try {
+        report('resume-done', {
+          ok: isApplied(),
+          reason: interacted ? 'input' : 'done',
+          videoId: target.videoId,
+        });
+      } catch (_) {}
       cleanup();
       return true;
     },

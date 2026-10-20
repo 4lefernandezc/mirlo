@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- MPRIS media controls on Linux: the desktop media widget and media keys
+  (play/pause, next/previous, seek) now control Mirlo, with title, artist,
+  album and cover art shown by the environment.
+
+### Changed
+
+- Closing the window now hides Mirlo to the tray (Quit from the tray menu
+  to exit); minimizing is a normal minimize again. Both behaviors have
+  their own checkbox in Settings → General (config v4 migration).
+
+### Fixed
+
+- Resume playback could fight the user: the app could open with the saved
+  track "playing silently", and after picking a new song the saved track's
+  audio could take over while the UI showed the selection (the late
+  re-apply raced the user). The resume now applies once, **aborts
+  immediately on any user input** (pointer/keyboard/wheel/touch), gives
+  YouTube Music's own queue restore a moment to settle before deciding,
+  and only loads the saved track (through the app router) when the
+  restored one differs.
+
 ## [0.1.6] - 2026-10-18
 
 ### Added

@@ -15,7 +15,7 @@ use crate::logging::log_error;
 
 /// Bumped when the on-disk shape changes in a way that needs migration.
 /// v2 adds the per-plugin configuration map (`plugins`).
-pub const CONFIG_VERSION: u32 = 3;
+pub const CONFIG_VERSION: u32 = 4;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
@@ -41,6 +41,9 @@ pub struct Config {
     /// (the tray "Show / Hide" item and the single-instance handler bring
     /// it back).
     pub minimize_to_tray: bool,
+    /// Hide the player window to the tray when the user closes it instead
+    /// of quitting (quit from the tray menu to exit).
+    pub close_to_tray: bool,
     /// Remember the playing track/position on close and resume it on the
     /// next launch.
     pub resume_playback: bool,
@@ -60,7 +63,8 @@ impl Default for Config {
             discord_rpc: true,
             discord_client_id: String::new(),
             update_check: true,
-            minimize_to_tray: true,
+            minimize_to_tray: false,
+            close_to_tray: true,
             resume_playback: true,
             plugins: BTreeMap::new(),
         }
@@ -112,6 +116,12 @@ fn migrate(mut config: Config) -> Config {
     if config.version < 3 && config.discord_client_id.trim().is_empty() {
         config.discord_rpc = true;
     }
+    if config.version < 4 {
+        // v4: closing the window hides it to the tray (quit from the tray
+        // menu to exit); minimizing is a normal minimize again.
+        config.minimize_to_tray = false;
+        config.close_to_tray = true;
+    }
     config.version = CONFIG_VERSION;
     config
 }
@@ -154,6 +164,21 @@ mod tests {
         );
         assert!(config.discord_client_id.is_empty());
         assert!(config.update_check);
+        assert!(!config.minimize_to_tray, "minimize stays a normal minimize");
+        assert!(config.close_to_tray, "closing hides to the tray by default");
+        assert!(config.resume_playback);
+    }
+
+    #[test]
+    fn migration_v4_moves_tray_behavior_to_close() {
+        let old: Config = serde_json::from_str(
+            r#"{"version": 3, "minimize_to_tray": true, "close_to_tray": false}"#,
+        )
+        .unwrap();
+        let migrated = super::migrate(old);
+        assert!(!migrated.minimize_to_tray);
+        assert!(migrated.close_to_tray);
+        assert_eq!(migrated.version, CONFIG_VERSION);
     }
 
     #[test]

@@ -105,13 +105,15 @@ Notes:
 
 - **Tray icon**: most desktops show it; GNOME needs the *AppIndicator*
   extension.
-- **Wayland**: the app runs fine, but global media hotkeys
-  (`Ctrl+Alt+Space/…`) only work on X11 sessions.
+- **Media controls**: media keys and the desktop media widget work through
+  MPRIS (title, artist, album and cover art included).
+- **Wayland**: the app runs fine; global app hotkeys (`Ctrl+Alt+Space/…`)
+  only work on X11 sessions (the desktop's own media keys work on both).
 - **NVIDIA**: if the window renders black or crashes, start Mirlo with
   `WEBKIT_DISABLE_DMABUF_RENDERER=1` (a known WebKitGTK + NVIDIA workaround).
-- Feature differences vs. Windows (for now): no taskbar media controls
-  (MPRIS), no native notifications and no Discord Rich Presence; the
-  network-level ad-block is replaced by the built-in script fallback.
+- Feature differences vs. Windows (for now): no native notifications and
+  no Discord Rich Presence; the network-level ad-block is replaced by the
+  built-in script fallback.
 
 ## Where Mirlo keeps its data
 

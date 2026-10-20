@@ -49,6 +49,15 @@ windows = { version = "0.62", features = [
     "Win32_UI_WindowsAndMessaging",
 ] }
 
+# MPRIS (Linux media controls over D-Bus). `mpris-server` pins zbus ^5.5,
+# which unifies with the version the single-instance plugin already uses;
+# async-std only provides the executor for the dedicated MPRIS thread.
+[target.'cfg(not(target_os = "windows"))'.dependencies]
+async-channel = "2"
+async-std = "1"
+futures = "0.3"
+mpris-server = "0.9"
+
 [profile.release]
 codegen-units = 1
 lto = true

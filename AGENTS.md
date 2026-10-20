@@ -534,12 +534,26 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     on a `<a href="/watch?v=…">`), never `loadVideoById()`: the raw API
     switches the audio while YouTube Music's UI keeps showing the previous
     track (reported by a user: "suena pero no se muestra" — reproduced
-    live). A late safety check (15 s) re-applies once, because YouTube
-    Music's own queue restore can finish after our attempts and resume
-    playback on paused resumes.
-  - Verified live: playing case (resumed at 40 s, t≈97 after ~1 min) and
-    paused case (resumed exactly at 11.9 s, paused); router-load case
-    (target differs from the restored queue: bar/cover follow the track).
+    live).
+  - **Do not fight the user** (reported inconsistencies: opened with the
+    saved track "playing silently", or after picking a new song the saved
+    track's audio took over while the UI showed the selection): the resume
+    **aborts on the first real (`isTrusted`) input event**
+    (pointerdown/keydown/wheel/touchstart) and is scheduled from
+    `bridge-ready` with an **8 s settle debounce** — YouTube Music can
+    reload the SPA during boot and a resume started on a dying document is
+    lost (observed live: the restored track won). It then verifies the
+    state in a user-safe window (up to 6 × 3 s): re-navigates only when the
+    restored track differs, re-applies seek/play-state, and stops when
+    applied.
+  - Verified live: playing case (resumed at 40 s, t~97 after ~1 min);
+    router-load case (target differs from the restored queue: bar/cover
+    follow the track - resumed at 30 s, t=100). The paused case verified
+    exactly (11.9 s, paused) before the settle-debounce change; the
+    extended verification now re-applies after YouTube Music's late queue
+    restore (which can resume playback on a paused target) - the last live
+    run was inconclusive because the owner was actively using the app
+    (input aborts the resume by design).
 - **Minimize-to-tray option — DONE (2026-10-17)**: minimizing the player
   hides it from the taskbar (like the tray "Show / Hide"); new config field
   `minimize_to_tray` (**default true**) with a General checkbox in Settings.
@@ -554,6 +568,21 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     Note: `Process.MainWindowHandle` (PowerShell) switches to another
     top-level window once the main one is hidden — keep the original HWND
     when testing visibility.
+- **Close-to-tray (config v4, 2026-10-19)**: closing the window now hides it
+  to the tray instead of quitting (Quit from the tray menu exits;
+  `restart_app` unaffected). New config `close_to_tray` (default true) and
+  `minimize_to_tray` flipped to default **false**; the v4 migration applies
+  both to existing configs. `CloseRequested` uses `api.prevent_close()` +
+  `window.hide()` when on, else persists state and exits; the tray Quit
+  handler now also saves playback.
+- **MPRIS (Linux media controls) — DONE (2026-10-19)**: new module
+  `mpris.rs` (non-Windows) mirrors the SMTC module using `mpris-server`
+  0.9 (zbus 5; async-std executor on a dedicated thread). Reports
+  PlaybackStatus + Metadata (title, artist, album, `mpris:artUrl` from the
+  video id) and forwards Play/Pause/PlayPause/Next/Previous/Stop(→pause)/
+  SetPosition to the page. Verified in WSLg: the service registers as
+  `org.mpris.MediaPlayer2.mirlo` on the session bus and the properties
+  reply.
 - **Inactivity prompt blocked — DONE (2026-10-17)**: the bridge refreshes
   `window._lact` (YouTube Music's last-activity timestamp) every 15 minutes,
   so the "¿Sigues ahí?" / "Are you still there?" prompt — which pauses
@@ -612,9 +641,10 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     `aac/h264/opus` are all false and playback fails). Docs: install.md
     has a Linux section (per-distro package names, AppImage/deb, tray/
     Wayland/NVIDIA notes).
-  - Known gaps vs Windows (documented): no MPRIS media controls, no
-    native notifications, no Discord RPC (needs Unix sockets), network
-    ad-block falls back to the script layer, global hotkeys are X11-only.
+  - Known gaps vs Windows (documented): no native notifications, no
+    Discord RPC (needs Unix sockets), network ad-block falls back to the
+    script layer, global hotkeys are X11-only. MPRIS media controls are
+    done (see the MPRIS note above).
   - WSL quirks observed (not app bugs): cross-domain navigation
     (music.youtube.com → www.youtube.com) segfaulted/hung once in
     software rendering; WSLg's host must be alive (`wsl --shutdown` fixes

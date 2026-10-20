@@ -29,8 +29,17 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 - If context runs out mid-task: commit WIP with a clear message and add a
   "Resume notes" bullet here before finishing.
 
-## Current state (2026-10-18)
+## Current state (2026-10-19)
 
+- **v0.1.7 RELEASED (public, 2026-10-19)**: tag `v0.1.7` -> workflow green
+  (Windows + Linux + the `checksums` job, now fixed) -> draft verified (11
+  assets, every checksum OK, `latest.json` with `windows-*` and `linux-*`
+  entries) -> published; updater endpoint anonymous 200 (0.1.7). Contents:
+  faster and safer resume playback (fires ~1 s after the page is usable,
+  the watch URL loads at the saved second with `&t=`, navigation clicks the
+  booting app ignored are retried within 3 s, real user input aborts it,
+  elapsed ms reported in the log), close-to-tray default (config v4), MPRIS
+  media controls on Linux, dark boot background, README install-first.
 - **v0.1.6 RELEASED (public, 2026-10-18)**: **first release with Linux
   support** — tag `v0.1.6` → workflow: Windows job ✓ + Linux job ✓
   (AppImage 82 MB + deb, both signed) → the `checksums` job failed on its

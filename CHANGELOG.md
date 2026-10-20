@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.7] - 2026-10-19
 
 ### Added
 
@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   YouTube Music's startup reloads do not flash white.
 - Closing the window now hides Mirlo to the tray (Quit from the tray menu
   to exit); minimizing is a normal minimize again. Both behaviors have
-  their own checkbox in Settings â†’ General (config v4 migration).
+  their own checkbox in Settings → General (config v4 migration).
 
 ### Fixed
 

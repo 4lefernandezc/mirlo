@@ -535,6 +535,10 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     switches the audio while YouTube Music's UI keeps showing the previous
     track (reported by a user: "suena pero no se muestra" — reproduced
     live).
+  - **Fast start**: the shell fires 0.5 s after each bridge-ready and the
+    bridge waits at most ~2 s for a restored video before loading the saved
+    track (it used to wait 15 s), with a 0.3 s settle; verified 5.1-5.8 s
+    from process launch to playback (the app boot is ~3.5-4 s of that).
   - **Do not fight the user** (reported inconsistencies: opened with the
     saved track "playing silently", or after picking a new song the saved
     track's audio took over while the UI showed the selection): the resume

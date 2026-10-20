@@ -756,13 +756,15 @@
         a.remove();
       };
 
-      // 1) Wait for the player API and a loaded video, then give YouTube
-      //    Music's own queue restore a moment to settle before deciding.
-      for (let i = 0; i < 30 && !currentId() && !interacted; i++) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
+      // 1) Wait briefly for the player API and any restored video: YouTube
+      //    Music's own queue restore usually lands within ~1-2 s; if
+      //    nothing shows up we load the saved track right away instead of
+      //    sitting idle. A page reload re-arms the resume from the shell.
+      for (let i = 0; i < 8 && !currentId() && !interacted; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 250));
       }
       if (!interacted) {
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+        await new Promise((resolve) => setTimeout(resolve, 300));
       }
       if (interacted) {
         console.log('[mirlo] resumePlayback: user interacted, aborting');
@@ -780,13 +782,13 @@
       for (let check = 0; check < 6 && !interacted; check++) {
         if (currentId() !== target.videoId) {
           navigateToTarget();
-          for (let i = 0; i < 16 && !interacted; i++) {
+          for (let i = 0; i < 24 && !interacted; i++) {
             if (currentId() === target.videoId) break;
-            await new Promise((resolve) => setTimeout(resolve, 500));
+            await new Promise((resolve) => setTimeout(resolve, 250));
           }
         }
         seekAndPlay();
-        await new Promise((resolve) => setTimeout(resolve, 3000));
+        await new Promise((resolve) => setTimeout(resolve, 1500));
         if (isApplied()) break;
       }
 

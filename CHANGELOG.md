@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Resume playback now starts about a second after the page is usable (the
+  settle wait was cut from 1.2 s + 2 s to 0.5 s + 0.3 s; if YouTube
+  Music restores no video at all it loads the saved track immediately
+  instead of waiting).
 - A dark window background now backs the player (and the settings window) so
   YouTube Music's startup reloads do not flash white.
 - Closing the window now hides Mirlo to the tray (Quit from the tray menu

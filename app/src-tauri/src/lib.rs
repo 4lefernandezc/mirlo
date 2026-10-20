@@ -280,7 +280,8 @@ fn open_settings_window(app: &AppHandle) {
     )
     .title("Mirlo - Settings")
     .inner_size(960.0, 700.0)
-    .min_inner_size(640.0, 480.0);
+    .min_inner_size(640.0, 480.0)
+    .background_color(tauri::window::Color(18, 18, 18, 255));
 
     #[cfg(target_os = "windows")]
     {
@@ -320,6 +321,9 @@ fn create_main_window(
         .title("Mirlo")
         .inner_size(1280.0, 800.0)
         .min_inner_size(900.0, 600.0)
+        // YouTube Music reloads the page during boot; a dark window
+        // background avoids white flashes between those loads.
+        .background_color(tauri::window::Color(3, 3, 3, 255))
         .initialization_script(script);
     if let Some(saved) = &saved {
         builder = builder.inner_size(saved.width.max(900.0), saved.height.max(600.0));

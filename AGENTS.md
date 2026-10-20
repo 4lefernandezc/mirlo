@@ -537,8 +537,13 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     live).
   - **Fast start**: the shell fires 0.5 s after each bridge-ready and the
     bridge waits at most ~2 s for a restored video before loading the saved
-    track (it used to wait 15 s), with a 0.3 s settle; verified 5.1-5.8 s
-    from process launch to playback (the app boot is ~3.5-4 s of that).
+    track (it used to wait 15 s), with a 0.3 s settle; the router URL
+    carries `&t=<position>` so the watch page starts at the saved second,
+    and a navigation attempt that the still-booting SPA ignored is retried
+    after 3 s. Verified 5.1-5.8 s from process launch to playback (the app
+    boot is ~3.5-4 s of that). The bridge reports the elapsed time in
+    `resume-done`; the shell logs `playback: resume finished (..., <ms> ms)`
+    for field diagnostics.
   - **Do not fight the user** (reported inconsistencies: opened with the
     saved track "playing silently", or after picking a new song the saved
     track's audio took over while the UI showed the selection): the resume

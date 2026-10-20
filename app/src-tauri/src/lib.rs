@@ -500,7 +500,7 @@ fn report_player_state(
             // Short settle: YouTube Music reloads during boot (the player
             // flicker); the target stays armed until the bridge confirms
             // with `resume-done`, so a reload simply re-applies it.
-            std::thread::sleep(std::time::Duration::from_millis(1200));
+            std::thread::sleep(std::time::Duration::from_millis(500));
             let app_state = app_handle.state::<AppState>();
             let still_latest = app_state
                 .bridge_ready_at

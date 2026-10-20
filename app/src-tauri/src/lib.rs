@@ -13,6 +13,7 @@ mod dialog;
 mod discord;
 mod logging;
 mod media_controls;
+mod mpris;
 mod notifications;
 mod playback;
 mod plugins;
@@ -45,6 +46,9 @@ struct AppState {
     /// Saved playback to apply once after launch (taken on the first
     /// `player-api-loaded` of this run).
     resume_target: Mutex<Option<playback::PlaybackState>>,
+    /// When the latest `bridge-ready` arrived (the resume waits for the
+    /// page to settle: YouTube Music can reload it during boot).
+    bridge_ready_at: Mutex<Option<std::time::Instant>>,
 }
 
 /// The MVP hotkey set (matches the validated PoC).
@@ -226,6 +230,7 @@ fn create_tray(app: &tauri::App) -> tauri::Result<()> {
             "toggle" => toggle_main_window(app),
             "quit" => {
                 window_state::persist();
+                save_playback(&app.state::<AppState>());
                 app.exit(0)
             }
             _ => {}
@@ -354,6 +359,8 @@ fn create_main_window(
     adblock::install(&window);
     // Windows media session (taskbar flyout, lock screen, media keys).
     media_controls::init(&window, app.handle().clone());
+    // Linux desktop media controls (MPRIS); no-op on Windows.
+    mpris::init(app.handle().clone());
     Ok(())
 }
 
@@ -442,6 +449,7 @@ fn report_player_state(
         other => log_info!("state: {other}"),
     }
     media_controls::on_player_state(&kind, &data);
+    mpris::on_player_state(&kind, &data);
     discord::on_player_state(&kind, &data);
 
     // Track-change toast, only while enabled and the player is in the
@@ -475,15 +483,36 @@ fn report_player_state(
         }
     }
 
-    // Apply the saved playback once per run, after the player API is ready
-    // (the bridge waits for YouTube Music's own queue restore to settle).
-    if kind == "player-api-loaded" {
-        let target = state
-            .resume_target
-            .lock()
-            .ok()
-            .and_then(|mut target| target.take());
-        if let Some(target) = target {
+    // Apply the saved playback once the page has settled: YouTube Music can
+    // reload the SPA during boot, and a resume started on a dying document
+    // is lost (observed live as "the restored track won"). Each
+    // `bridge-ready` schedules a check 8 s later that only fires if no
+    // newer bridge-ready arrived in the meantime.
+    if kind == "bridge-ready" {
+        let ready_at = std::time::Instant::now();
+        if let Ok(mut last) = state.bridge_ready_at.lock() {
+            *last = Some(ready_at);
+        }
+        let app_handle = app.clone();
+        std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_secs(8));
+            let app_state = app_handle.state::<AppState>();
+            let still_latest = app_state
+                .bridge_ready_at
+                .lock()
+                .map(|last| last.is_some_and(|instant| instant == ready_at))
+                .unwrap_or(false);
+            if !still_latest {
+                return;
+            }
+            let target = app_state
+                .resume_target
+                .lock()
+                .ok()
+                .and_then(|mut target| target.take());
+            let Some(target) = target else {
+                return;
+            };
             log_info!(
                 "playback: resuming {} at {:.0}s (paused={})",
                 target.title.as_deref().unwrap_or("track"),
@@ -492,11 +521,11 @@ fn report_player_state(
             );
             if let Ok(json) = serde_json::to_string(&target) {
                 eval_in_player(
-                    &app,
+                    &app_handle,
                     &format!("window.__mirlo && window.__mirlo.resumePlayback({json})"),
                 );
             }
-        }
+        });
     }
 
     let _ = app.emit(
@@ -597,6 +626,7 @@ pub fn run() {
                 config: Mutex::new(config.clone()),
                 last_player_state: Mutex::new(None),
                 resume_target: Mutex::new(resume_target),
+                bridge_ready_at: Mutex::new(None),
             });
 
             create_main_window(app, &config, &config::profile_dir())?;
@@ -665,11 +695,25 @@ pub fn run() {
             // Graceful shutdown when the *player* window closes (Phase 0
             // note: WebView2 trees tear down slowly after force kills). The
             // settings window just closes/destroys itself.
-            if let tauri::WindowEvent::CloseRequested { .. } = event {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 if window.label() == MAIN_WINDOW {
-                    window_state::persist();
-                    save_playback(&window.app_handle().state::<AppState>());
-                    window.app_handle().exit(0);
+                    let app_state = window.app_handle().state::<AppState>();
+                    let close_to_tray = app_state
+                        .config
+                        .lock()
+                        .map(|c| c.close_to_tray)
+                        .unwrap_or(false);
+                    if close_to_tray {
+                        // Closing hides to the tray; quitting goes through
+                        // the tray menu (or `restart_app`), which persist
+                        // everything explicitly.
+                        api.prevent_close();
+                        let _ = window.hide();
+                    } else {
+                        window_state::persist();
+                        save_playback(&app_state);
+                        window.app_handle().exit(0);
+                    }
                 }
             }
         })

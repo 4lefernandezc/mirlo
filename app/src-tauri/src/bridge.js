@@ -689,9 +689,27 @@
         return false;
       }
 
+      // Any real user input takes over: never fight the user's choice.
+      // Only trusted (real) events count — page scripts dispatch synthetic
+      // pointer/key events during their own boot.
+      let interacted = false;
+      const onInput = (event) => {
+        if (!event.isTrusted) return;
+        interacted = true;
+      };
+      const inputTypes = ['pointerdown', 'keydown', 'wheel', 'touchstart'];
+      for (const type of inputTypes) {
+        document.addEventListener(type, onInput, { capture: true, passive: true });
+      }
+      const cleanup = () => {
+        for (const type of inputTypes) {
+          document.removeEventListener(type, onInput, { capture: true });
+        }
+      };
+
       // The player element can be re-created during YouTube Music's boot
       // and its API is not necessarily attached when the event fires, so
-      // resolve it freshly on every use and wait for it instead of bailing.
+      // resolve it freshly on every use.
       const player = () => {
         const el = q('#movie_player');
         return el && typeof el.getVideoData === 'function' ? el : null;
@@ -706,71 +724,79 @@
           return null;
         }
       };
-      const apply = () => {
-        const el = player();
-        if (!el) return;
-        try {
-          if (currentId() !== target.videoId) {
-            // Load through the app router (a synthetic click on a watch
-            // link, like the user picking a song) so YouTube Music's own
-            // UI follows the track: the raw loadVideoById() switches the
-            // audio without updating the player bar/cover (verified live).
-            const a = document.createElement('a');
-            a.href = `/watch?v=${encodeURIComponent(target.videoId)}`;
-            a.style.display = 'none';
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-          } else if (typeof el.seekTo === 'function') {
-            el.seekTo(Math.max(0, target.position || 0), true);
-          }
-          setTimeout(() => {
-            const el2 = player();
-            if (!el2) return;
-            try {
-              // A router navigation loads the track from 0: seek once it
-              // has become the current video, then set the play state.
-              if (currentId() === target.videoId && (target.position || 0) > 1) {
-                el2.seekTo(Math.max(0, target.position || 0), true);
-              }
-              if (target.paused) el2.pauseVideo && el2.pauseVideo();
-              else el2.playVideo && el2.playVideo();
-            } catch (_) {}
-          }, 1500);
-        } catch (err) {
-          console.log('[mirlo] resumePlayback apply failed:', err);
-        }
-      };
       const isApplied = () => {
         if (currentId() !== target.videoId) return false;
         const v = findVideo();
         if (!v) return false;
-        if (target.paused && !v.paused) return false;
-        if (!target.paused && v.paused) return false;
-        // The position matters too: a fresh router load starts at 0.
+        if (v.paused !== target.paused) return false;
         return Math.abs(v.currentTime - (target.position || 0)) < 15;
       };
+      const seekAndPlay = () => {
+        const el = player();
+        if (!el) return;
+        try {
+          if ((target.position || 0) > 1 && typeof el.seekTo === 'function') {
+            el.seekTo(target.position, true);
+          }
+          if (target.paused) el.pauseVideo && el.pauseVideo();
+          else el.playVideo && el.playVideo();
+        } catch (err) {
+          console.log('[mirlo] resumePlayback apply failed:', err);
+        }
+      };
+      const navigateToTarget = () => {
+        // Load through the app router (a synthetic watch-link click, like
+        // the user picking a song): the raw loadVideoById() switches the
+        // audio while YouTube Music's UI keeps showing the previous track.
+        const a = document.createElement('a');
+        a.href = `/watch?v=${encodeURIComponent(target.videoId)}`;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      };
 
-      // Wait for the player API and a loaded video (or ~20 s) — YouTube
-      // Music restores its own queue around this time and can still
-      // override the load while finishing, so apply and verify a few times.
-      for (let i = 0; i < 40 && !currentId(); i++) {
+      // 1) Wait for the player API and a loaded video, then give YouTube
+      //    Music's own queue restore a moment to settle before deciding.
+      for (let i = 0; i < 30 && !currentId() && !interacted; i++) {
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
-      for (let attempt = 0; attempt < 4; attempt++) {
-        apply();
+      if (!interacted) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+      if (interacted) {
+        console.log('[mirlo] resumePlayback: user interacted, aborting');
+        cleanup();
+        return false;
+      }
+
+      // 2) Restore the position and the play/pause state, then keep a
+      //    longer verification window: YouTube Music's own queue restore
+      //    can finish late (seconds after boot) and override the state —
+      //    it may resume playback on a paused target. Each iteration
+      //    re-navigates if the restored track differs, re-applies the
+      //    state and stops as soon as the target is in place. Real user
+      //    input aborts at any point, so this never fights the user.
+      for (let check = 0; check < 6 && !interacted; check++) {
+        if (currentId() !== target.videoId) {
+          navigateToTarget();
+          for (let i = 0; i < 16 && !interacted; i++) {
+            if (currentId() === target.videoId) break;
+            await new Promise((resolve) => setTimeout(resolve, 500));
+          }
+        }
+        seekAndPlay();
         await new Promise((resolve) => setTimeout(resolve, 3000));
         if (isApplied()) break;
       }
-      // Late safety net: YouTube Music's own queue restore can finish
-      // after the attempts above and override the state (it may resume
-      // playback); re-check once and correct.
-      await new Promise((resolve) => setTimeout(resolve, 15000));
-      if (!isApplied()) {
-        apply();
-        await new Promise((resolve) => setTimeout(resolve, 3000));
-      }
-      console.log('[mirlo] resumePlayback done:', target.videoId, isApplied());
+
+      console.log(
+        '[mirlo] resumePlayback done:',
+        target.videoId,
+        isApplied(),
+        interacted ? 'user-interrupted' : 'ok'
+      );
+      cleanup();
       return true;
     },
   };

@@ -551,7 +551,8 @@ fn report_player_state(
         }
         let ok = data.get("ok").and_then(Value::as_bool).unwrap_or(false);
         let reason = data.get("reason").and_then(Value::as_str).unwrap_or("?");
-        log_info!("playback: resume finished (ok={ok}, reason={reason})");
+        let ms = data.get("ms").and_then(Value::as_u64).unwrap_or(0);
+        log_info!("playback: resume finished (ok={ok}, reason={reason}, {ms} ms)");
     }
 
     let _ = app.emit(

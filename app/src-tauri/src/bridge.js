@@ -683,6 +683,7 @@
     // "Continue where you left off": called once by the shell after the
     // player API is ready, with the state saved at the last close.
     async resumePlayback(target) {
+      const startedAt = performance.now();
       console.log('[mirlo] resumePlayback:', JSON.stringify(target));
       if (!target || !target.videoId) {
         console.log('[mirlo] resumePlayback: no usable target');
@@ -748,8 +749,12 @@
         // Load through the app router (a synthetic watch-link click, like
         // the user picking a song): the raw loadVideoById() switches the
         // audio while YouTube Music's UI keeps showing the previous track.
+        // `t=` makes the watch page start at the saved position directly.
+        const position = Math.floor(target.position || 0);
         const a = document.createElement('a');
-        a.href = `/watch?v=${encodeURIComponent(target.videoId)}`;
+        a.href =
+          `/watch?v=${encodeURIComponent(target.videoId)}` +
+          (position > 1 ? `&t=${position}` : '');
         a.style.display = 'none';
         document.body.appendChild(a);
         a.click();
@@ -782,7 +787,9 @@
       for (let check = 0; check < 6 && !interacted; check++) {
         if (currentId() !== target.videoId) {
           navigateToTarget();
-          for (let i = 0; i < 24 && !interacted; i++) {
+          // 3 s per attempt: if the router was still booting the click is
+          // ignored, and the next iteration retries promptly.
+          for (let i = 0; i < 12 && !interacted; i++) {
             if (currentId() === target.videoId) break;
             await new Promise((resolve) => setTimeout(resolve, 250));
           }
@@ -796,7 +803,8 @@
         '[mirlo] resumePlayback done:',
         target.videoId,
         isApplied(),
-        interacted ? 'user-interrupted' : 'ok'
+        interacted ? 'user-interrupted' : 'ok',
+        Math.round(performance.now() - startedAt) + 'ms'
       );
       // Confirm to the shell (it stops re-arming the resume on page loads).
       try {
@@ -804,6 +812,7 @@
           ok: isApplied(),
           reason: interacted ? 'input' : 'done',
           videoId: target.videoId,
+          ms: Math.round(performance.now() - startedAt),
         });
       } catch (_) {}
       cleanup();

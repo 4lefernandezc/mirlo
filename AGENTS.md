@@ -539,21 +539,19 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
     saved track "playing silently", or after picking a new song the saved
     track's audio took over while the UI showed the selection): the resume
     **aborts on the first real (`isTrusted`) input event**
-    (pointerdown/keydown/wheel/touchstart) and is scheduled from
-    `bridge-ready` with an **8 s settle debounce** — YouTube Music can
-    reload the SPA during boot and a resume started on a dying document is
-    lost (observed live: the restored track won). It then verifies the
-    state in a user-safe window (up to 6 × 3 s): re-navigates only when the
+    (pointerdown/keydown/wheel/touchstart). The shell fires it **1.2 s
+    after each `bridge-ready`** and keeps the target armed until the
+    bridge confirms with `resume-done` â€” YouTube Music reloads the SPA
+    during boot (the player flicker), so a reload simply re-applies the
+    resume (max 5 attempts). The bridge then verifies the state in a
+    user-safe window (up to 6 x 3 s): re-navigates only when the
     restored track differs, re-applies seek/play-state, and stops when
     applied.
   - Verified live: playing case (resumed at 40 s, t~97 after ~1 min);
     router-load case (target differs from the restored queue: bar/cover
-    follow the track - resumed at 30 s, t=100). The paused case verified
-    exactly (11.9 s, paused) before the settle-debounce change; the
-    extended verification now re-applies after YouTube Music's late queue
-    restore (which can resume playback on a paused target) - the last live
-    run was inconclusive because the owner was actively using the app
-    (input aborts the resume by design).
+    follow the track - resumed at 30 s, t=100); paused case with the
+    1.2 s protocol (exact at 30 s, paused: one page reload re-armed the
+    resume and `resume-done` stopped it - attempt=1, attempt=2, ok=true).
 - **Minimize-to-tray option — DONE (2026-10-17)**: minimizing the player
   hides it from the taskbar (like the tray "Show / Hide"); new config field
   `minimize_to_tray` (**default true**) with a General checkbox in Settings.

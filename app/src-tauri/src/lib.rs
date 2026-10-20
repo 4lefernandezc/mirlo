@@ -49,6 +49,9 @@ struct AppState {
     /// When the latest `bridge-ready` arrived (the resume waits for the
     /// page to settle: YouTube Music can reload it during boot).
     bridge_ready_at: Mutex<Option<std::time::Instant>>,
+    /// How many times the resume was handed to the page this run (cap so a
+    /// broken page cannot loop forever).
+    resume_attempts: Mutex<u32>,
 }
 
 /// The MVP hotkey set (matches the validated PoC).
@@ -483,11 +486,6 @@ fn report_player_state(
         }
     }
 
-    // Apply the saved playback once the page has settled: YouTube Music can
-    // reload the SPA during boot, and a resume started on a dying document
-    // is lost (observed live as "the restored track won"). Each
-    // `bridge-ready` schedules a check 8 s later that only fires if no
-    // newer bridge-ready arrived in the meantime.
     if kind == "bridge-ready" {
         let ready_at = std::time::Instant::now();
         if let Ok(mut last) = state.bridge_ready_at.lock() {
@@ -495,7 +493,10 @@ fn report_player_state(
         }
         let app_handle = app.clone();
         std::thread::spawn(move || {
-            std::thread::sleep(std::time::Duration::from_secs(8));
+            // Short settle: YouTube Music reloads during boot (the player
+            // flicker); the target stays armed until the bridge confirms
+            // with `resume-done`, so a reload simply re-applies it.
+            std::thread::sleep(std::time::Duration::from_millis(1200));
             let app_state = app_handle.state::<AppState>();
             let still_latest = app_state
                 .bridge_ready_at
@@ -505,16 +506,26 @@ fn report_player_state(
             if !still_latest {
                 return;
             }
+            let attempt = match app_state.resume_attempts.lock() {
+                Ok(mut attempts) => {
+                    if *attempts >= 5 {
+                        return;
+                    }
+                    *attempts += 1;
+                    *attempts
+                }
+                Err(_) => return,
+            };
             let target = app_state
                 .resume_target
                 .lock()
                 .ok()
-                .and_then(|mut target| target.take());
+                .and_then(|target| target.clone());
             let Some(target) = target else {
                 return;
             };
             log_info!(
-                "playback: resuming {} at {:.0}s (paused={})",
+                "playback: resuming {} at {:.0}s (paused={}, attempt={attempt})",
                 target.title.as_deref().unwrap_or("track"),
                 target.position,
                 target.paused
@@ -526,6 +537,17 @@ fn report_player_state(
                 );
             }
         });
+    }
+
+    if kind == "resume-done" {
+        // The bridge applied (or gave up on) the saved playback: stop
+        // re-arming it on future page loads.
+        if let Ok(mut target) = state.resume_target.lock() {
+            *target = None;
+        }
+        let ok = data.get("ok").and_then(Value::as_bool).unwrap_or(false);
+        let reason = data.get("reason").and_then(Value::as_str).unwrap_or("?");
+        log_info!("playback: resume finished (ok={ok}, reason={reason})");
     }
 
     let _ = app.emit(
@@ -627,6 +649,7 @@ pub fn run() {
                 last_player_state: Mutex::new(None),
                 resume_target: Mutex::new(resume_target),
                 bridge_ready_at: Mutex::new(None),
+                resume_attempts: Mutex::new(0),
             });
 
             create_main_window(app, &config, &config::profile_dir())?;

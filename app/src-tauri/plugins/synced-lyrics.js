@@ -44,6 +44,57 @@ __MIRLO_PLUGINS__.register('synced-lyrics', {
   display: block;
   fill: currentColor;
 }
+
+/* Lyrics lines — shared by the overlay panel and the native "Letra" tab. */
+#mirlo-lyrics-panel {
+  animation: mirlo-lyrics-in 0.18s ease both;
+}
+@keyframes mirlo-lyrics-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+}
+.mirlo-lyrics-line {
+  padding: 5px 10px;
+  min-height: 1.2em;
+  border-left: 2px solid transparent;
+  border-radius: 6px;
+  color: #9aa0a6;
+  opacity: 0.55;
+  cursor: pointer;
+  transition:
+    color 0.25s ease,
+    opacity 0.25s ease,
+    transform 0.25s ease,
+    background-color 0.25s ease,
+    border-color 0.25s ease;
+  animation: mirlo-lyrics-line-in 0.3s ease both;
+}
+.mirlo-lyrics-line:hover {
+  opacity: 0.85;
+  background: rgba(255, 255, 255, 0.06);
+}
+.mirlo-lyrics-line.mirlo-active {
+  color: #f5a524;
+  opacity: 1;
+  font-weight: 600;
+  transform: translateX(3px);
+  background: rgba(245, 165, 36, 0.1);
+  border-left-color: #f5a524;
+}
+@keyframes mirlo-lyrics-line-in {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #mirlo-lyrics-panel,
+  .mirlo-lyrics-line {
+    animation: none;
+  }
+}
 `,
   ],
 
@@ -109,6 +160,15 @@ __MIRLO_PLUGINS__.register('synced-lyrics', {
 
       for (const line of lrc.lines) {
         line.timeInMs += offset;
+      }
+
+      // Some files list lines out of order or repeat a timestamp; the sync
+      // logic assumes ascending times. Array#sort is stable, so ties keep
+      // their file order, and durations are recomputed afterwards.
+      lrc.lines.sort((a, b) => a.timeInMs - b.timeInMs);
+      for (let i = 0; i < lrc.lines.length; i++) {
+        lrc.lines[i].duration =
+          i + 1 < lrc.lines.length ? lrc.lines[i + 1].timeInMs - lrc.lines[i].timeInMs : Infinity;
       }
 
       const first = lrc.lines.at(0);
@@ -285,6 +345,28 @@ __MIRLO_PLUGINS__.register('synced-lyrics', {
     };
   },
 
+  // --- Playback access ----------------------------------------------------
+  // The active playback video lives inside the player element; YouTube Music
+  // also keeps preloaded <video> elements in the DOM and their order flips
+  // during transitions, so never take "the first video" (same rule as the
+  // bridge): reading currentTime from a preloaded element desynchronises the
+  // highlight, and seeking it does nothing audible.
+  findVideo() {
+    return document.querySelector('#movie_player video') || document.querySelector('video');
+  },
+
+  seekTo(timeInMs) {
+    const seconds = timeInMs / 1000;
+    // seekTo keeps the player UI (progress bar, queue) in sync; the raw
+    // currentTime assignment is only the fallback.
+    if (this.api && typeof this.api.seekTo === 'function') {
+      this.api.seekTo(seconds, true);
+      return;
+    }
+    const video = this.findVideo();
+    if (video) video.currentTime = seconds;
+  },
+
   // --- Native "Letra" tab enhancement ------------------------------------
   // The native player lyrics tab renders the whole song as a single plain
   // text blob (ytmusic-description-shelf-renderer with a multiline
@@ -380,20 +462,15 @@ __MIRLO_PLUGINS__.register('synced-lyrics', {
       container.addEventListener('mouseleave', () => (this.hoverLock = false));
 
       const lines = [];
-      for (const line of this.lines) {
+      this.lines.forEach((line, i) => {
         const lineEl = document.createElement('div');
-        lineEl.dataset.mirloTab = '1';
-        lineEl.textContent = line.text || '♪';
-        lineEl.style.cssText =
-          'padding:1px 0;cursor:pointer;color:var(--yt-spec-text-secondary,#aaaaaa);' +
-          'transition:color .25s ease;';
-        lineEl.addEventListener('click', () => {
-          const video = document.querySelector('video');
-          if (video) video.currentTime = line.timeInMs / 1000;
-        });
+        lineEl.className = 'mirlo-lyrics-line';
+        lineEl.textContent = line.text;
+        lineEl.style.animationDelay = `${Math.min(i, 24) * 22}ms`;
+        lineEl.addEventListener('click', () => this.seekTo(line.timeInMs));
         container.appendChild(lineEl);
         lines.push(lineEl);
-      }
+      });
       parent.insertBefore(container, desc);
       this.nativeContainers.push({ el: container, lines });
     }
@@ -521,18 +598,15 @@ __MIRLO_PLUGINS__.register('synced-lyrics', {
     }
 
     if (this.lines?.length) {
-      for (const line of this.lines) {
+      this.lines.forEach((line, i) => {
         const lineEl = document.createElement('div');
-        lineEl.textContent = line.text || '♪';
-        lineEl.style.cssText =
-          'padding:2px 0;border-radius:6px;cursor:pointer;color:#9aa0a6;transition:color .2s;';
-        lineEl.addEventListener('click', () => {
-          const video = document.querySelector('video');
-          if (video) video.currentTime = line.timeInMs / 1000;
-        });
+        lineEl.className = 'mirlo-lyrics-line';
+        lineEl.textContent = line.text;
+        lineEl.style.animationDelay = `${Math.min(i, 24) * 22}ms`;
+        lineEl.addEventListener('click', () => this.seekTo(line.timeInMs));
         body.appendChild(lineEl);
         this.lineElements.push(lineEl);
-      }
+      });
       this.activeIndex = -1;
       this.updateActive();
     } else if (this.plainLyrics) {
@@ -546,9 +620,8 @@ __MIRLO_PLUGINS__.register('synced-lyrics', {
   },
 
   updateActive() {
-    if (!this.lines?.length) return;
-    const video = document.querySelector('video');
-    if (!video) return;
+    const video = this.findVideo();
+    if (!video || !this.lines?.length) return;
 
     const sets = [
       this.lineElements,
@@ -563,37 +636,33 @@ __MIRLO_PLUGINS__.register('synced-lyrics', {
       else break;
     }
 
-    if (index !== this.activeIndex) {
-      for (const set of sets) {
-        const previous = set[this.activeIndex];
-        if (previous) {
-          previous.style.color =
-            previous.dataset.mirloTab === '1'
-              ? 'var(--yt-spec-text-secondary,#aaaaaa)'
-              : '#9aa0a6';
-          previous.style.fontWeight = '';
-        }
-        const activeEl = set[index];
-        if (activeEl) {
-          activeEl.style.color =
-            activeEl.dataset.mirloTab === '1' ? 'var(--yt-spec-text-primary,#ffffff)' : '#f5a524';
-          activeEl.style.fontWeight = '600';
-        }
-      }
-      this.activeIndex = index;
+    // Empty lines are spacers (the injected intro line, or blank lines in the
+    // file): nothing is being sung, so nothing is highlighted.
+    const active = this.lines[index]?.text ? index : -1;
+    if (active === this.activeIndex) return;
+    for (const set of sets) {
+      set[this.activeIndex]?.classList.remove('mirlo-active');
+      set[active]?.classList.add('mirlo-active');
+    }
+    this.activeIndex = active;
 
-      if (!this.hoverLock) {
-        const panelEl = this.lineElements?.[index];
-        if (panelEl && this.panel?.style.display === 'flex') {
-          panelEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
-        }
-        for (const c of this.nativeContainers || []) {
-          if (c.el.isConnected && c.el.getBoundingClientRect().width > 0) {
-            c.lines[index]?.scrollIntoView({ block: 'center', behavior: 'smooth' });
-          }
-        }
+    if (active < 0 || this.hoverLock) return;
+
+    const panelEl = this.lineElements?.[active];
+    if (panelEl && this.panel?.style.display === 'flex') {
+      panelEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+    for (const c of this.nativeContainers || []) {
+      if (c.el.isConnected && c.el.getBoundingClientRect().width > 0) {
+        c.lines[active]?.scrollIntoView({ block: 'center', behavior: 'smooth' });
       }
     }
+  },
+
+  mediaEventListener() {
+    // play/pause/seeked fire when no timeupdate does (paused, or right after
+    // a seek): without them the highlight only caught up on resume.
+    this.updateActive();
   },
 
   timeUpdateListener() {
@@ -637,7 +706,15 @@ __MIRLO_PLUGINS__.register('synced-lyrics', {
       !details.title ||
       (currentId && details.videoId && details.videoId !== currentId)
     ) {
-      if (this.staleRetries >= 8) return;
+      if (this.staleRetries >= 8) {
+        // The player never produced a usable response (ad break, or a source
+        // swap we cannot follow). Giving up here while still in 'loading'
+        // left the native text hidden and the panel stuck on "Searching…".
+        this.state = 'notfound';
+        this.restoreNativePlain();
+        if (this.panel?.style.display === 'flex') this.renderBody();
+        return;
+      }
       this.staleRetries += 1;
       if (this.retryTimer) clearTimeout(this.retryTimer);
       this.retryTimer = setTimeout(() => {
@@ -696,6 +773,9 @@ __MIRLO_PLUGINS__.register('synced-lyrics', {
       // Plain-only / not found / error: give the native view its text back.
       this.restoreNativePlain();
     }
+    // The track may be paused (or the lyrics arrived after the last
+    // timeupdate): sync the highlight now instead of waiting for playback.
+    this.updateActive();
   },
 
   async start(ctx) {
@@ -714,11 +794,17 @@ __MIRLO_PLUGINS__.register('synced-lyrics', {
     this.button = this.buildButton();
     document.querySelector('#right-content')?.append(this.button);
 
-    const video = document.querySelector('video');
-    if (!video) return;
-
     document.addEventListener('videodatachange', this.videoDataChangeListener);
-    video.addEventListener('timeupdate', this.timeUpdateListener);
+    // `timeupdate`, `play`, `pause` and `seeked` do not bubble, but capture
+    // listeners on document still see them from any <video> descendant —
+    // YouTube Music replaces the player/video element during navigation, and
+    // a listener bound to the old element silently stopped the sync. The
+    // non-timeupdate events cover the paused/seek cases, where no timeupdate
+    // fires at all.
+    document.addEventListener('timeupdate', this.timeUpdateListener, true);
+    for (const type of ['play', 'pause', 'seeked', 'loadedmetadata']) {
+      document.addEventListener(type, this.mediaEventListener, true);
+    }
     this.attachNativeObserver();
     await this.fetchLyrics();
   },
@@ -729,7 +815,10 @@ __MIRLO_PLUGINS__.register('synced-lyrics', {
 
   stop() {
     document.removeEventListener('videodatachange', this.videoDataChangeListener);
-    document.querySelector('video')?.removeEventListener('timeupdate', this.timeUpdateListener);
+    document.removeEventListener('timeupdate', this.timeUpdateListener, true);
+    for (const type of ['play', 'pause', 'seeked', 'loadedmetadata']) {
+      document.removeEventListener(type, this.mediaEventListener, true);
+    }
     if (this.retryTimer) {
       clearTimeout(this.retryTimer);
       this.retryTimer = null;

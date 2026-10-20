@@ -29,8 +29,37 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 - If context runs out mid-task: commit WIP with a clear message and add a
   "Resume notes" bullet here before finishing.
 
-## Current state (2026-10-19)
+## Current state (2026-10-20)
 
+- **Synced lyrics fixed + animated (2026-10-20, unreleased)**: the highlight
+  now follows the song reliably and the rendering got CSS animations.
+  Root causes found: (1) the plugin read the position from
+  `document.querySelector('video')` — YT Music keeps preloaded `<video>`
+  elements and their DOM order flips during transitions, so the highlight
+  drifted and click-to-seek moved a video nobody was listening to; it now
+  resolves the active video exactly like the bridge does
+  (`#movie_player video` first) and seeks via the player API
+  (`api.seekTo(seconds, true)`, keeps the progress bar in sync, raw
+  `currentTime` only as fallback); (2) `timeupdate` was bound once to the
+  video element that existed at `onPlayerApiReady`, and YT Music replaces
+  that element during navigation — the sync silently died until a restart;
+  it is now registered on `document` **in the capture phase** (`timeupdate`
+  does not bubble, but capture listeners still see it from descendants —
+  verified in Chromium); (3) LRC lines out of order / with repeated
+  timestamps broke the "last line whose time <= now" scan — the parser now
+  sorts (stable) and recomputes durations; (4) a track the player never
+  reported properly (ad breaks, very fast swaps) left the state stuck in
+  `loading` after 8 stale retries — the native "Letra" tab stayed blank and
+  the panel showed "Searching lyrics…" forever; it now gives up and
+  restores the native text. Visuals: lines fade/slide in with a stagger,
+  the active line gets an amber accent bar + tinted background + slight
+  slide, the panel animates in on open, empty lines render as spacers
+  instead of "♪", everything is CSS (transitions + keyframes, off under
+  `prefers-reduced-motion`) and the inline styles were replaced by the
+  `.mirlo-lyrics-line` / `.mirlo-active` classes in the plugin `styles`
+  block (adoptedStyleSheets). Empty lines are never highlighted (during the
+  intro nothing is active), and `updateActive` also runs when the lyrics
+  resolve and on play/pause/seeked, so a paused track is in sync at once.
 - **v0.1.7 RELEASED (public, 2026-10-19)**: tag `v0.1.7` -> workflow green
   (Windows + Linux + the `checksums` job, now fixed) -> draft verified (11
   assets, every checksum OK, `latest.json` with `windows-*` and `linux-*`
@@ -848,6 +877,13 @@ for probes — pass a URL substring as 4th arg to target the settings window;
 - Never reuse YouTube's custom elements bare (`yt-icon-button` renders
   300×300 unstyled); build plain buttons with plugin styles
   (`.mirlo-icon-button`).
+- **synced-lyrics listener wiring**: `onPlayerApiReady` must register the
+  `videodatachange` listener (track changes) *and* the capture-phase media
+  listeners (`timeupdate` + `play`/`pause`/`seeked`/`loadedmetadata` on
+  `document`). Dropping any of them silently freezes the lyrics on the
+  previous track or on a stale line, and the old `if (!video) return` guard
+  at the top of that hook used to skip the whole registration when no
+  `<video>` existed yet — do not reintroduce it.
 - **Abrupt track transitions in the owner's install are a plugin symptom,
   not a shell bug** (2026-10-17): verification sessions left every plugin
   enabled in the owner's `config.json`. `skip-silences` fast-forwards

@@ -31,7 +31,18 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 
 ## Current state (2026-10-20)
 
-- **Synced lyrics fixed + animated (2026-10-20, unreleased)**: the highlight
+- **v0.1.8 RELEASED (public, 2026-10-20)**: tag `v0.1.8` -> CI green +
+  Release green (Windows 6m26s incl. portable ZIP, Linux, `checksums`) ->
+  draft verified (11 assets, 9/9 checksums OK, `latest.json` 0.1.8 with the
+  6 signed platform entries) -> published; updater endpoint anonymous 200
+  (0.1.8). The published `-setup.exe`/portable `mirlo.exe` report 0.1.8 and
+  the portable starts and logs `--- Mirlo 0.1.8 starting ---`. Contents: the
+  synced-lyrics work below (sync fixes, animated rendering, cached and
+  prefetched LRCLib lookups). The owner's installed 0.1.7 was running during
+  the release, so the portable check exited on the single-instance guard
+  (expected); the auto-update E2E was left for the owner (tray -> *Check for
+  updates…* or the next launch).
+- **Synced lyrics fixed + animated (2026-10-20)**: the highlight
   now follows the song reliably and the rendering got CSS animations.
   Root causes found: (1) the plugin read the position from
   `document.querySelector('video')` — YT Music keeps preloaded `<video>`

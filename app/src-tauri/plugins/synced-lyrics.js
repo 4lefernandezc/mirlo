@@ -249,7 +249,8 @@ __MIRLO_PLUGINS__.register('synced-lyrics', {
   async requestSearch(params) {
     const baseUrl = 'https://lrclib.net';
     const clientHeader = {
-      'Lrclib-Client': 'Mirlo v0.1.0 (https://github.com/4lefernandezc/mirlo)',
+      // Descriptive client header LRCLib asks for; no version so it cannot go stale.
+      'Lrclib-Client': 'Mirlo (https://github.com/4lefernandezc/mirlo)',
     };
     let lastError = null;
     // LRCLib answers 503 "ServerOverloaded ... retry in a moment" under

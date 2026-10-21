@@ -2267,7 +2267,7 @@ dependencies = [
 
 [[package]]
 name = "mirlo"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "async-channel 2.5.0",
  "async-std",

@@ -112,6 +112,7 @@ __MIRLO_PLUGINS__.register('synced-lyrics', {
   nativeShelf: null,
   nativeContainers: null,
   nativeObserver: null,
+  searchCache: new Map(),
 
   // --- parsers/lrc.ts (upstream) ----------------------------------------
   LRC: {
@@ -230,41 +231,55 @@ __MIRLO_PLUGINS__.register('synced-lyrics', {
   },
 
   // --- providers/LRCLib.ts (upstream, reduced) ---------------------------
-  async searchLrclib({ title, alternativeTitle, artist, album, songDuration }) {
+  // LRCLib takes 1–6 s per search, so the raw responses are cached (and
+  // in-flight requests shared) by query: the next queue track is prefetched
+  // while the current one plays, and a repeated track costs nothing.
+  cachedSearch(params) {
+    const key = params.toString();
+    if (!this.searchCache.has(key)) {
+      const request = this.requestSearch(params);
+      this.searchCache.set(key, request);
+      // Failures must not stick: the next attempt has to hit the network.
+      request.catch(() => this.searchCache.delete(key));
+      if (this.searchCache.size > 30) this.searchCache.delete(this.searchCache.keys().next().value);
+    }
+    return this.searchCache.get(key);
+  },
+
+  async requestSearch(params) {
     const baseUrl = 'https://lrclib.net';
     const clientHeader = {
       'Lrclib-Client': 'Mirlo v0.1.0 (https://github.com/4lefernandezc/mirlo)',
     };
-
-    const buildSearch = async (params) => {
-      let lastError = null;
-      // LRCLib answers 503 "ServerOverloaded ... retry in a moment" under
-      // load; retry briefly before giving up.
-      for (let attempt = 0; attempt < 3; attempt++) {
-        if (attempt) await new Promise((resolve) => setTimeout(resolve, attempt * 1500));
-        try {
-          const response = await fetch(`${baseUrl}/api/search?${params.toString()}`, {
-            headers: clientHeader,
-          });
-          if (response.status === 503) {
-            lastError = new Error('ServerOverloaded (503)');
-            continue;
-          }
-          if (!response.ok) {
-            throw new Error(`bad HTTPStatus(${response.statusText})`);
-          }
-          return await response.json();
-        } catch (err) {
-          lastError = err;
+    let lastError = null;
+    // LRCLib answers 503 "ServerOverloaded ... retry in a moment" under
+    // load; retry briefly before giving up.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (attempt) await new Promise((resolve) => setTimeout(resolve, attempt * 1500));
+      try {
+        const response = await fetch(`${baseUrl}/api/search?${params.toString()}`, {
+          headers: clientHeader,
+        });
+        if (response.status === 503) {
+          lastError = new Error('ServerOverloaded (503)');
+          continue;
         }
+        if (!response.ok) {
+          throw new Error(`bad HTTPStatus(${response.statusText})`);
+        }
+        return await response.json();
+      } catch (err) {
+        lastError = err;
       }
-      throw lastError ?? new Error('LRCLib request failed');
-    };
+    }
+    throw lastError ?? new Error('LRCLib request failed');
+  },
 
+  async searchLrclib({ title, alternativeTitle, artist, album, songDuration }) {
     let query = new URLSearchParams({ artist_name: artist, track_name: title });
     if (album) query.set('album_name', album);
 
-    let data = await buildSearch(query);
+    let data = await this.cachedSearch(query);
     if (!Array.isArray(data)) {
       throw new Error(`Expected an array, instead got ${typeof data}`);
     }
@@ -276,14 +291,14 @@ __MIRLO_PLUGINS__.register('synced-lyrics', {
 
       // Try to search with the alternative title (original language)
       const trackName = alternativeTitle || title;
-      data = await buildSearch(new URLSearchParams({ q: trackName }));
+      data = await this.cachedSearch(new URLSearchParams({ q: trackName }));
       if (!Array.isArray(data)) {
         throw new Error(`Expected an array, instead got ${typeof data}`);
       }
 
       // If still no results, try with the original title as fallback
       if (data.length === 0 && alternativeTitle) {
-        data = await buildSearch(new URLSearchParams({ q: title }));
+        data = await this.cachedSearch(new URLSearchParams({ q: title }));
         if (!Array.isArray(data)) {
           throw new Error(`Expected an array, instead got ${typeof data}`);
         }
@@ -776,6 +791,21 @@ __MIRLO_PLUGINS__.register('synced-lyrics', {
     // The track may be paused (or the lyrics arrived after the last
     // timeupdate): sync the highlight now instead of waiting for playback.
     this.updateActive();
+    if (token === this.requestToken) this.prefetchNext(details.title);
+  },
+
+  // Warms the cache with the queue track that follows the current one; the
+  // queue DOM carries title and byline ("Artist • Album • Year").
+  prefetchNext(title) {
+    const items = [...document.querySelectorAll('ytmusic-player-queue-item')];
+    const songTitle = (item) => item.querySelector('.song-title')?.textContent?.trim();
+    const index = items.findIndex((item) => songTitle(item) === title);
+    const next = index >= 0 ? items[index + 1] : null;
+    const nextTitle = next && songTitle(next);
+    const nextArtist = next?.querySelector('.byline')?.textContent?.split('•')[0]?.trim();
+    if (!nextTitle || !nextArtist) return;
+    const query = new URLSearchParams({ artist_name: nextArtist, track_name: nextTitle });
+    this.cachedSearch(query).catch(() => {});
   },
 
   async start(ctx) {

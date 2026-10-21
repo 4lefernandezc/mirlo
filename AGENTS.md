@@ -60,6 +60,13 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
   block (adoptedStyleSheets). Empty lines are never highlighted (during the
   intro nothing is active), and `updateActive` also runs when the lyrics
   resolve and on play/pause/seeked, so a paused track is in sync at once.
+  Load latency: LRCLib search takes 1–6 s (`/api/get` answered 503 under
+  load, so it is not a faster path). `cachedSearch` caches the raw search
+  responses (in flight shared, failures evicted, 30 entries) and
+  `prefetchNext` warms the queue track that follows the current one from the
+  `ytmusic-player-queue-item` DOM, so sequential tracks show lyrics at once
+  (verified: ~25 ms after `dataloaded`). The first track after launch still
+  waits for its own lookup.
 - **v0.1.7 RELEASED (public, 2026-10-19)**: tag `v0.1.7` -> workflow green
   (Windows + Linux + the `checksums` job, now fixed) -> draft verified (11
   assets, every checksum OK, `latest.json` with `windows-*` and `linux-*`

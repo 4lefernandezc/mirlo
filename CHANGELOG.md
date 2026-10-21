@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Synced lyrics load sooner: the lookup for a track took 1–6 s after the
+  song started (LRCLib's search latency). Search responses are now cached
+  per query, and the lyrics of the next track in the queue are fetched
+  while the current one plays, so the lines are ready when that track
+  starts. The first track after launch still waits for its own lookup.
+
 ### Fixed
 
 - Synced lyrics lost the beat or stopped following the song: the plugin

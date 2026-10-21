@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.8] - 2026-10-20
 
 ### Changed
 
@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   per query, and the lyrics of the next track in the queue are fetched
   while the current one plays, so the lines are ready when that track
   starts. The first track after launch still waits for its own lookup.
+- Synced lyrics visuals: lines fade and slide in with a stagger, the active
+  line gets an accent bar, a tinted background and a small slide, and the
+  panel animates in when opened. All motion is CSS transitions/animations
+  (disabled under `prefers-reduced-motion`); empty lines now render as
+  spacers instead of a "♪" placeholder.
 
 ### Fixed
 
@@ -33,14 +38,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   swaps) left the plugin stuck on "Searching lyrics…" with the native
   lyrics tab blank; it now gives up after the retries and gives the native
   text back.
-
-### Changed
-
-- Synced lyrics visuals: lines fade and slide in with a stagger, the active
-  line gets an accent bar, a tinted background and a small slide, and the
-  panel animates in when opened. All motion is CSS transitions/animations
-  (disabled under `prefers-reduced-motion`); empty lines now render as
-  spacers instead of a "♪" placeholder.
 
 ## [0.1.7] - 2026-10-19
 

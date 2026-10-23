@@ -7,4 +7,4 @@ description = "PoC: YouTube Music en WebView2 - validacion de riesgos para clien
 [dependencies]
 wry = "0.53"
 tao = "0.34"
-global-hotkey = "0.7"
+global-hotkey = "0.9"

@@ -12,7 +12,7 @@ jobs:
     name: Release (Windows x64)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -76,7 +76,7 @@ jobs:
     name: Release (Linux x64)
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install Linux dependencies
         run: |
@@ -113,7 +113,7 @@ jobs:
     needs: [release-windows, release-linux]
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Generate SHA-256 checksums for every uploaded bundle
         env:

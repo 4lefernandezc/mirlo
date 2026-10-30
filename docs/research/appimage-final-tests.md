@@ -2,6 +2,11 @@
 
 ## Outcome
 
+**Follow-up:** the separate [sandbox-enabled candidate](appimage-sandbox-candidate.md)
+corrects the helper/relocation problem and passes active WebProcess
+isolation and playback/IPC checks. This report's failure identifies the
+earlier unchanged multimedia-only image, not that new candidate.
+
 The experimental candidate passes full-track playback, non-silent decoded
 audio, H.264 decoding, a second distribution's clean userspace and normal
 FUSE launch. **It is not ready for distribution:** the WebKit sandbox check
@@ -28,7 +33,8 @@ packaging, license, account, signing or release changes.
 | Hardware/zero-copy graphics | NOT VERIFIED | DRM access denied in isolation; GL video sink dependencies absent |
 | WSLg → Windows audio routing | PASS for routing | Active unmuted Mirlo stream → RDPSink, not a listening assertion |
 | Signed-in playback | NOT RUN | Owner must log in; no credentials or existing profile copied |
-| Physical listening/native PipeWire | NOT RUN | Agent cannot hear speakers; WSLg is not a native PipeWire desktop |
+| Physical listening through WSLg | PASS, owner-confirmed | Owner confirmed hearing the music during these tests |
+| Native PipeWire desktop | NOT RUN | WSLg is not a native PipeWire desktop |
 
 ## Full official track and audio
 
@@ -152,7 +158,9 @@ On the ordinary non-root Ubuntu 24.04 WSL host:
 
 This host has desktop/media packages, unlike the clean roots. The FUSE
 test proves the normal launch path, not a separate dependency-independence
-claim. Physical audibility still requires a human.
+claim. **Owner confirmation (2026-10-30): the music was audible during these
+tests.** This closes the physical-listening check for WSLg → Windows audio,
+not for other Linux hardware/PipeWire setups.
 
 ## Failed sandbox check — do not waive
 
@@ -203,8 +211,9 @@ Repository checks: 31 Rust tests and two recovery-screen Node tests pass;
 Windows fmt/Clippy clean. No product code or production workflow changed.
 
 Remaining **manual/environment** checks: owner signs in to the dedicated
-Linux test profile and confirms playback/account persistence; owner confirms
-physical audio. Native Linux/PipeWire and actual GPU hardware remain outside
+Linux test profile and confirms playback/account persistence. Physical
+listening through WSLg is now owner-confirmed. Native Linux/PipeWire and
+actual GPU hardware remain outside
 this WSL test boundary. No credentials/existing sessions were borrowed.
 
 Next engineering gate: repair/retest packaged WebKit sandbox; review the

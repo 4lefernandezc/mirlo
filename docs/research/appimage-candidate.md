@@ -8,6 +8,11 @@ and FUSE checks are complete, but the packaged WebKit sandbox check fails
 before considering distribution. Manual sign-in/listening and hardware GPU
 checks remain outside the automated results.
 
+**Sandbox follow-up:** a separate [sandbox-enabled candidate](appimage-sandbox-candidate.md)
+now passes WebProcess isolation, private-file denial, real playback and IPC.
+The owner has also confirmed listening during the WSLg tests. The artifact
+and findings below identify the earlier multimedia-only candidate.
+
 The experimental candidate plays generated AAC/MP4 and Opus/WebM samples
 without installed GTK, WebKit or GStreamer packages. The complete AppImage
 also plays a real track through the official YouTube Music player, seeks
@@ -159,7 +164,10 @@ recipes against the workstation's `/opt` or `/usr`. Do not run Python with
 1. Prepare a private Ubuntu 22.04 build root. Install `build-essential`,
    `pkg-config`, `nasm`, `python3`, `meson`, `ninja-build`, `patchelf`,
    `libgstreamer1.0-dev`, `libgstreamer-plugins-base1.0-dev` and
-   `gstreamer1.0-plugins-base/good/bad`. The build root may contain FAAD;
+   `gstreamer1.0-plugins-base/good/bad`. Current recipes also require
+   `bubblewrap`/`xdg-dbus-proxy` and the adjacent `bwrap` adapter for the
+   sandbox follow-up; use commit `27342e2` for the earlier assembly alone.
+   The build root may contain FAAD;
    the explicit assembly selection must not copy it.
 2. Mount a disposable results directory at `/results`, containing the two
    source archives above. Run `bash build-codecs.sh` **inside** that root.

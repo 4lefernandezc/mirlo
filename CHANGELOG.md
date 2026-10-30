@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Tests
 
+- Added a local sandbox-enabled AppImage experiment: bundled bubblewrap and
+  D-Bus proxy helpers, a relocation adapter, and kernel/private-file checks.
+  Verified WebProcess filters/namespaces, official playback/seek/next and
+  Tauri IPC; repeated long playback through MPRIS without the inspector.
+  Owner confirmed hearing the earlier WSLg playback. Production packaging
+  remains unchanged; distribution review and other-platform checks pending.
 - Added a packaged-WebKit multimedia probe and documented clean-room
   AppImage checks. Confirmed missing codec plugins and restricted plugin
   search paths; no production packaging changes yet.

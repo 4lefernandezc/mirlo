@@ -1,0 +1,20 @@
+#!/bin/bash
+set -eu
+bin_dir=$(dirname "$(readlink -f "$0")")
+appdir=$(readlink -f "$bin_dir/../..")
+if [ "${1:-}" != --args ]; then
+    exec "$bin_dir/bwrap.real" "$@"
+fi
+options=()
+while [ "$#" -gt 0 ] && [ "$1" != -- ]; do
+    options+=("$1")
+    shift
+done
+[ "$#" -gt 0 ]
+# linuxdeploy rewrites WebKit's bind paths; restore its original read-only dirs.
+for path in /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64 /lib /lib64 /usr/share /usr/local/share; do
+    if [ -d "$path" ]; then options+=(--ro-bind "$path" "$path"); fi
+done
+# Rebind after WebKit's /tmp mount; keep its seccomp and namespace arguments intact.
+exec "$appdir/usr/bin/bwrap.real" "${options[@]}" \
+    --ro-bind "$appdir" "$appdir" --chdir "$appdir/usr" "$@"

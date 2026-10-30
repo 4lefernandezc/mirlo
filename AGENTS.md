@@ -31,6 +31,37 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 
 ## Current state (2026-10-30)
 
+- **Sandbox-enabled local AppImage — VERIFIED (2026-10-30, not shipped)**:
+  separate candidate fixes the original/multimedia-only image's missing
+  helper and relocation failures. Ubuntu 22.04 bwrap + xdg-dbus-proxy
+  bundled as non-setuid helpers; thin adapter preserves WebKit's FD args,
+  seccomp and namespaces, restores upstream read-only library/share binds
+  after linuxdeploy's path rewriting, and binds only AppDir read-only after
+  the private /tmp mount. Launcher sets WEBKIT_FORCE_SANDBOX=1. Actual
+  WebProcess: Seccomp 2/NoNewPrivs 1, separate mount/PID/network namespaces,
+  private marker hidden; unfiltered UI reads it (positive control). Saved
+  recipe rebuilt fresh: Mirlo 0.1.8 and all previous 45 multimedia ELF hashes
+  unchanged, two helper ELFs added (47 total); still no offline recovery in
+  this experimental artifact. Clean Debian complete-image playback/seek/next
+  and remote get_config pass. Inspector-free MPRIS long test: Panama from
+  0 through 204.1 s, natural next track (282 s observation incl. startup/ads).
+  Normal non-root WSL-host FUSE run: Panama 10.4→22.4 s, sandbox/readonly
+  AppDir/private-file assertions pass. Owner confirmed hearing music in the
+  earlier WSLg tests, closing physical listening for that path. Candidate:
+  `$env:TEMP\opencode\appimage-clean-test\sandbox-relocated\Mirlo_multimedia_experimental_x86_64.AppImage`,
+  80,439,800 bytes, SHA-256
+  `0e1e50ee59fb8ffbde5edd10bfc6b8aa084bf30b5ea174077d87dfe2bc97cd30`.
+  Evidence: `docs/research/appimage-sandbox-candidate.md`; recipes + wrapper
+  unit check + kernel audit in `tools/tests/appimage-candidate/`. Product and
+  workflows unchanged, no push/release. Remaining: source/security/license
+  review before integration; owner sign-in/persistence; actual GPU/native
+  PipeWire/namespace-restricted policies. Standalone H.264 probes under
+  forced sandbox timed out; earlier unsandboxed H.264 pass must not be
+  claimed for this candidate. Inspector can lose its isolated-loopback link;
+  do not enable debug permissions or host networking to hide this. Runtime
+  dirs must live on Linux FS, not Windows-mounted results (Unix sockets).
+  Windows fmt/Clippy, 31 Rust + two Node tests, Linux wrapper test pass.
+
 - **Extended AppImage tests — AUTOMATED PASS / SANDBOX FAIL (2026-10-30)**:
   same candidate/hash below, no production changes. Full Panama from 0 to
   `ended` at 212.6545 s, rate 1, then natural next track; repeated with a

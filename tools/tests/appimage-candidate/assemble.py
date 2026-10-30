@@ -40,6 +40,10 @@ helpers = target / 'usr/lib/gstreamer1.0/gstreamer-1.0'
 helpers.mkdir(parents=True)
 copy(pathlib.Path('/usr/lib/x86_64-linux-gnu/gstreamer1.0/gstreamer-1.0/gst-plugin-scanner'),
      helpers / 'gst-plugin-scanner')
+for source, name in [('bwrap', 'bwrap.real'), ('xdg-dbus-proxy', 'xdg-dbus-proxy')]:
+    destination = target / 'usr/bin' / name
+    copy(pathlib.Path('/usr/bin') / source, destination)
+    destination.chmod(0o755)  # No setuid helper inside an AppImage.
 # Keep glibc and desktop/driver libraries on the test OS.
 excluded = re.compile(r'^(?:ld-linux.*|lib(?:c|m|dl|pthread|rt|resolv|util)\.so\..*|libnss_.*|lib(?:GL|EGL|GLX|GLdispatch|gbm|drm|X11|Xext|Xrender|xcb|wayland|fontconfig|freetype|harfbuzz|fribidi|expat).*\.so.*)$')
 env = dict(os.environ, LD_LIBRARY_PATH=str(prefix / 'lib'))
@@ -58,7 +62,8 @@ while queue:
 
 for record in records:
     dest = target / record['destination']
-    rpath = ('$ORIGIN/..:$ORIGIN' if dest.parent == plugin_dir else
+    rpath = ('$ORIGIN/../lib' if dest.parent == target / 'usr/bin' else
+             '$ORIGIN/..:$ORIGIN' if dest.parent == plugin_dir else
              '$ORIGIN/../..' if dest.parent == helpers else '$ORIGIN')
     subprocess.run(['patchelf', '--set-rpath', rpath, str(dest)], check=True)
     record['sha256'] = hashlib.sha256(dest.read_bytes()).hexdigest()
@@ -101,8 +106,11 @@ text = app_run.read_text()
 launch = 'exec "$this_dir"/AppRun.wrapped'
 assert text.count(launch) == 1, 'Unexpected original AppRun'
 app_run.write_text(text.replace(launch,
-    'source "$this_dir"/apprun-hooks/linuxdeploy-plugin-gstreamer.sh\n\n' + launch))
+    'source "$this_dir"/apprun-hooks/linuxdeploy-plugin-gstreamer.sh\n\n'
+    'export WEBKIT_FORCE_SANDBOX=1\n\n' + launch))
 app_run.chmod(0o755)
+shutil.copyfile(pathlib.Path(__file__).with_name('bwrap'), target / 'usr/bin/bwrap')
+(target / 'usr/bin/bwrap').chmod(0o755)
 assert not list(plugin_dir.glob('*faad*'))
 pathlib.Path('/results/candidate-added-files.json').write_text(json.dumps(records, indent=2))
 print(f'Candidate staged: {len(plugins) + 1} plugins; {len(records)} added ELF files')

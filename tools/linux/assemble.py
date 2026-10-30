@@ -1,4 +1,4 @@
-"""Local experiment, not production packaging. Run only inside the build root."""
+"""Add the reviewed multimedia/sandbox set to a freshly built Ubuntu 22.04 AppDir."""
 import hashlib
 import json
 import os
@@ -6,11 +6,13 @@ import pathlib
 import re
 import shutil
 import subprocess
+import sys
 
-target = pathlib.Path('/opt/mirlo-candidate.AppDir')
-prefix = pathlib.Path('/opt/mirlo-codecs')
+target = pathlib.Path(sys.argv[1]).resolve()
+work = pathlib.Path(sys.argv[2]).resolve()
+prefix = work / 'codecs'
 assert target.is_dir() and (target / 'usr/bin/mirlo').is_file()
-assert not (target / 'usr/lib/gstreamer-1.0').exists(), 'Use a fresh v0.1.8 AppDir copy'
+assert not (target / 'usr/lib/gstreamer-1.0').exists(), 'Use a fresh AppDir with media bundling disabled'
 plugins = '''coreelements app playback typefindfunctions autodetect audioconvert
 audiofx audioresample volume pulseaudio opus opusparse matroska isomp4
 audioparsers subparse subenc videoparsersbad debugutilsbad videoconvert
@@ -68,11 +70,11 @@ for record in records:
     subprocess.run(['patchelf', '--set-rpath', rpath, str(dest)], check=True)
     record['sha256'] = hashlib.sha256(dest.read_bytes()).hexdigest()
 
-notice = target / 'usr/share/mirlo-multimedia-experimental'
+notice = target / 'usr/share/mirlo-licenses'
 notice.mkdir(parents=True)
-for name, src in [('ffmpeg-LGPL-2.1.txt', '/opt/mirlo-codec-src/ffmpeg-5.1.10/COPYING.LGPLv2.1'),
-                  ('ffmpeg-LICENSE.md', '/opt/mirlo-codec-src/ffmpeg-5.1.10/LICENSE.md'),
-                  ('gst-libav-COPYING', '/opt/mirlo-codec-src/gst-libav-1.20.7/COPYING')]:
+for name, src in [('ffmpeg-LGPL-2.1.txt', work / 'src/ffmpeg-5.1.10/COPYING.LGPLv2.1'),
+                  ('ffmpeg-LICENSE.md', work / 'src/ffmpeg-5.1.10/LICENSE.md'),
+                  ('gst-libav-COPYING', work / 'src/gst-libav-1.20.7/COPYING')]:
     shutil.copy2(src, notice / name)
 for package in ['gstreamer1.0-plugins-base', 'gstreamer1.0-plugins-good',
                 'gstreamer1.0-plugins-bad', 'libgstreamer1.0-0']:
@@ -88,13 +90,13 @@ for record in records:
     src = pathlib.Path('/usr/share/doc') / package / 'copyright'
     assert src.is_file(), f'Missing notice for {package}'
     shutil.copy2(src, notice / (package + '-copyright'))
-shutil.copy2('/results/ffmpeg-config.h', notice / 'ffmpeg-config.h')
-shutil.copy2('/results/ffmpeg-config.mak', notice / 'ffmpeg-config.mak')
+shutil.copy2(work / 'ffmpeg-config.h', notice / 'ffmpeg-config.h')
+shutil.copy2(work / 'ffmpeg-config.mak', notice / 'ffmpeg-config.mak')
 (notice / 'README.txt').write_text(
-    'LOCAL EXPERIMENT ONLY. Not a release or legal distribution approval.\n'
-    'Mirlo executable and base libraries copied unchanged from v0.1.8.\n'
-    'Added selected GStreamer plugins, gst-libav 1.20.7 and LGPL-configured FFmpeg 5.1.10.\n'
-    'No FAAD. Further license/source, security and end-to-end playback review required.\n')
+    'Mirlo is MIT-licensed; bundled third-party libraries retain their own licenses.\n'
+    'Selected GStreamer plugins, gst-libav 1.20.7 and LGPL-configured FFmpeg 5.1.10; no FAAD.\n'
+    'Corresponding sources and rebuild instructions accompany this release in the Linux sources archive.\n'
+    'Extract the AppImage to replace/relink libraries and run AppRun; updater signatures do not prevent local modified copies.\n')
 (target / 'apprun-hooks/linuxdeploy-plugin-gstreamer.sh').write_text('''#!/bin/bash
 export GST_REGISTRY_REUSE_PLUGIN_SCANNER=no
 export GST_PLUGIN_SYSTEM_PATH_1_0="$APPDIR/usr/lib/gstreamer-1.0"
@@ -112,5 +114,5 @@ app_run.chmod(0o755)
 shutil.copyfile(pathlib.Path(__file__).with_name('bwrap'), target / 'usr/bin/bwrap')
 (target / 'usr/bin/bwrap').chmod(0o755)
 assert not list(plugin_dir.glob('*faad*'))
-pathlib.Path('/results/candidate-added-files.json').write_text(json.dumps(records, indent=2))
-print(f'Candidate staged: {len(plugins) + 1} plugins; {len(records)} added ELF files')
+(work / 'added-files.json').write_text(json.dumps(records, indent=2))
+print(f'AppDir staged: {len(plugins) + 1} plugins; {len(records)} added ELF files')

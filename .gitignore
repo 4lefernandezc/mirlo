@@ -7,6 +7,9 @@ node_modules/
 dist/
 *.tsbuildinfo
 
+# Python packaging checks
+__pycache__/
+
 # Tauri
 app/src-tauri/target/
 app/src-tauri/gen/

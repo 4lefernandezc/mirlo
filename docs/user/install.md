@@ -13,19 +13,27 @@ extracted from the service (see [terms and scope](terms.md)).
 
 ### Linux requirements
 
-- A 64-bit distribution with **webkit2gtk-4.1** (Ubuntu 22.04+, Debian 12+,
-  Arch, Fedora 39+…).
-- The **GStreamer** plugin packages — without them WebKitGTK cannot decode
-  YouTube Music's audio/video and playback fails:
+- A 64-bit desktop distribution with **glibc 2.35+** (Ubuntu 22.04+,
+  Debian 12+), working graphics/audio services and user namespaces.
+- **AppImage 0.1.9+:** includes WebKitGTK, selected AAC/Opus codec libraries
+  and sandbox helpers. Installing host WebKit/GStreamer is not required.
+- **`.deb` or source builds:** need **webkit2gtk-4.1**, GStreamer base/good/bad
+  and libav plugins, bubblewrap and xdg-dbus-proxy. `apt install ./Mirlo_*.deb`
+  resolves the declared dependencies. For source builds on other systems:
 
   | Distro | Packages |
   | --- | --- |
-  | Ubuntu/Debian | `gstreamer1.0-libav gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly` |
-  | Arch | `gst-libav gst-plugins-good gst-plugins-bad gst-plugins-ugly gst-plugins-base` |
-  | Fedora | `gstreamer1-libav gstreamer1-plugins-good gstreamer1-plugins-bad-free gstreamer1-plugins-ugly` |
+  | Ubuntu/Debian | `gstreamer1.0-libav gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad` |
+  | Arch | `gst-libav gst-plugins-base gst-plugins-good gst-plugins-bad` |
+  | Fedora | `gstreamer1-libav gstreamer1-plugins-base gstreamer1-plugins-good gstreamer1-plugins-bad-free` |
 
   Mirlo logs a warning at startup when the codecs are missing (see
   `logs/mirlo.log`).
+
+Linux starts with WebKit's sandbox enabled. If a distribution policy blocks
+unprivileged user namespaces, startup may fail; use a distribution-supported
+sandbox policy rather than disabling isolation. Native GPU/PipeWire and
+signed-in Linux persistence have not yet been verified; WSLg playback has.
 
 ## Download
 
@@ -44,7 +52,7 @@ Installers are published on the GitHub Releases page
 In PowerShell, compare the file hash with the one in `SHA256SUMS.txt`:
 
 ```powershell
-Get-FileHash .\Mirlo_0.1.1_x64-setup.exe -Algorithm SHA256
+Get-FileHash .\Mirlo_0.1.9_x64-setup.exe -Algorithm SHA256
 ```
 
 ## Install
@@ -89,7 +97,7 @@ the extracted folder moves or deletes the whole copy, including your session.
   Download the new ZIP from the releases page and replace `mirlo.exe`,
   keeping your `data\` folder.
 - Verify the ZIP the same way as the installers:
-  `Get-FileHash .\Mirlo_0.1.1_portable_x64.zip -Algorithm SHA256` and compare
+   `Get-FileHash .\Mirlo_0.1.9_portable_x64.zip -Algorithm SHA256` and compare
   with `SHA256SUMS.txt`.
 
 ## Linux (AppImage / .deb)
@@ -98,6 +106,7 @@ the extracted folder moves or deletes the whole copy, including your session.
 | --- | --- |
 | `Mirlo_<version>_amd64.AppImage` | **Recommended.** Portable single file; works with the built-in auto-updater. |
 | `Mirlo_<version>_amd64.deb` | Debian/Ubuntu package (updates are manual). |
+| `Mirlo_<version>_linux-sources.tar.zst` | Third-party sources, notices and rebuilding/relinking instructions; not needed to run the app. |
 
 1. AppImage: `chmod +x Mirlo_*_amd64.AppImage` and run it. If your system
    lacks FUSE, run it with `--appimage-extract-and-run` (or extract it).

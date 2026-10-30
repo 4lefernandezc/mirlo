@@ -37,7 +37,7 @@ the dependency walk still checks for missing entries. Helpers use
 `$ORIGIN/../lib`, mode **0755**, no setuid, and preserve package copyright
 notices. The AppRun launcher sets `WEBKIT_FORCE_SANDBOX=1`.
 
-`tools/tests/appimage-candidate/bwrap` is a narrow relocation adapter:
+`tools/linux/bwrap` (promoted from the experiment for 0.1.9) is a narrow relocation adapter:
 
 - Passes non-serialized calls (e.g. container capability checks) directly
   to the real helper.

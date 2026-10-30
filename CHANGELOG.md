@@ -7,30 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.9] - 2026-10-30
+
+### Fixed
+
+- Linux AppImage now includes a selected multimedia stack for AAC/Opus
+  playback and the helpers needed for WebKit's sandbox. Linux starts with
+  the WebKit sandbox enabled; namespace restrictions fail startup rather
+  than silently running an unisolated renderer.
+
 ### Tests
 
 - Added a local sandbox-enabled AppImage experiment: bundled bubblewrap and
   D-Bus proxy helpers, a relocation adapter, and kernel/private-file checks.
   Verified WebProcess filters/namespaces, official playback/seek/next and
   Tauri IPC; repeated long playback through MPRIS without the inspector.
-  Owner confirmed hearing the earlier WSLg playback. Production packaging
-  remains unchanged; distribution review and other-platform checks pending.
+  Owner confirmed hearing the earlier WSLg playback. The production recipe
+  carries this verified path; native hardware/sign-in checks remain pending.
 - Added a packaged-WebKit multimedia probe and documented clean-room
   AppImage checks. Confirmed missing codec plugins and restricted plugin
-  search paths; no production packaging changes yet.
+  search paths, now addressed by the selected packaging recipe.
 - Built and validated a local experimental AppImage with selected GStreamer
   plugins and LGPL-configured FFmpeg instead of FAAD. Generated AAC/Opus
   samples and official-player playback, seek and next-track checks pass
   without host GTK/WebKit/GStreamer packages. Saved reconstruction recipes;
-  distribution/license review and production integration remain pending.
+  corresponding-source collection is now part of production packaging.
 - Extended the optional packaged-engine probe to verify H.264 decoded pixels
   (with a corrupt-video negative control). Completed full official-track,
   non-silent PCM, Debian clean-userspace and normal FUSE-launch checks.
-  Found missing packaged WebKit sandbox helper (`bin/bwrap`); forcing the
-  sandbox fails. Candidate remains experimental; no production packaging fix.
+  Found the original missing WebKit sandbox helper (`bin/bwrap`), addressed
+  by the later sandbox-enabled recipe. H.264 under forced sandbox remains
+  unverified; do not transfer the earlier unsandboxed result to that build.
 
 ### Added
 
+- Linux corresponding-source archive, native notices/inventory and library
+  replacement/rebuilding instructions. Final AppImage bytes are signed only
+  after assembly; Mirlo remains MIT-licensed.
 - A local connection-recovery screen in English, with system light/dark
   colors, a "Try again" link and automatic reconnection checks. Main-frame
   player connection failures now show this screen instead of unreadable

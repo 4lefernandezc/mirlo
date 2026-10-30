@@ -31,6 +31,26 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 
 ## Current state (2026-10-30)
 
+- **0.1.9 local release candidate — PREPARED (not published)**: Windows
+  NSIS/MSI installers and portable ZIP built with Tauri CLI 2.12.3; the
+  updater signatures verify against the embedded public key and reject a
+  modified-byte control. The final ZIP launch passed IPC plus offline screen,
+  manual retry and automatic recovery. Linux AppImage and `.deb` were built
+  from the latest config, and final AppImage/`.deb` signatures verify. The
+  corresponding-source archive passes its 17,078 internal checksums and tar
+  validation; all 10 local release assets pass the outer `SHA256SUMS.txt`.
+  AppImage SHA-256:
+  `41edfcd0eea2879e9a8db61e5dcd11b45d326db55891f5a7cdba4f1d43bc6b00`.
+  Final WSLg FUSE smoke: `bridge-ready (ms=true aac=true opus=true)`, MPRIS
+  registered; WebProcesses Seccomp 2/NoNewPrivs 1, isolated user/mount/PID/
+  network namespaces, read-only AppDir and hidden private canary. The fresh
+  unauthenticated profile exposed no track metadata/position, so this is not
+  evidence of signed-in playback. Owner-confirmed listening is from the earlier
+  candidate, not this final 0.1.9 binary. Still unverified: Linux sign-in/
+  persistence, native hardware GPU/PipeWire, H.264 under forced sandbox and
+  namespace-restricted policies. No tag, push, draft or publication. Details:
+  `docs/research/release-0.1.9.md`; release artifacts stay in `$env:TEMP`.
+
 - **Sandbox-enabled local AppImage — VERIFIED (2026-10-30, not shipped)**:
   separate candidate fixes the original/multimedia-only image's missing
   helper and relocation failures. Ubuntu 22.04 bwrap + xdg-dbus-proxy
@@ -837,22 +857,15 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
   `CARGO_TARGET_DIR=$env:TEMP\mirlo-target`
   (or any temp dir) before cargo commands.
 
-## Next step — pending work / Phase C leftover
+## Next step — owner review, then 0.1.9 publication
 
-**v0.1.0 and v0.1.1 are published** (2026-10-17). v0.1.1 (portable build) was
-released end-to-end: tag → draft verified (installers + portable ZIP + all
-three checksums OK) → published → **auto-update E2E passed on the owner's
-machine** (`update available: 0.1.1 (current 0.1.0)` → confirm → passive
-install → restart → `--- Mirlo 0.1.1 starting ---`, session preserved). The
-signing key lives at `%USERPROFILE%\.tauri\mirlo.key` — keep it backed up
-(without it no future version can be signed).
-
-For the next release: follow `docs/release.md` (bump versions in
-`tauri.conf.json` + `Cargo.toml`, update `CHANGELOG.md`, tag `vX.Y.Z`, verify
-the draft — installers, portable ZIP, `SHA256SUMS.txt` — publish). The
-auto-update E2E procedure is now known-good: watch
-`%LOCALAPPDATA%\Mirlo\logs\mirlo.log` for `update available:` and
-`--- Mirlo <version> starting ---`.
+The 0.1.9 candidate is local only. No tag, push, GitHub draft or publication
+has been made. Before publishing, review the Linux notices/source archive and
+known test limits, run `docs/release.md` against the final asset set, verify
+outer checksums, and then request owner approval to publish. Public updater
+install E2E cannot run before publication. The signing key remains at
+`%USERPROFILE%\.tauri\mirlo.key`; keep it backed up and never include it in
+source snapshots or release assets.
 
 Related follow-ups (separate, not blockers): code signing (SignPath Foundation
 free OSS signing / Azure Trusted Signing) and winget submission

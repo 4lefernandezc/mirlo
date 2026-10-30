@@ -155,7 +155,8 @@ removed by OS temporary-file cleanup; essential results are recorded here.
 
 ## Reconstructing the experiment
 
-Preserved recipes: `tools/tests/appimage-candidate/{build-codecs.sh,assemble.py,pack.sh}`.
+Preserved recipes: `tools/linux/{build-codecs.sh,assemble.py}` (promoted and
+parameterized for 0.1.9), plus historical `tools/tests/appimage-candidate/pack.sh`.
 They are manual, version-specific experiments, **not CI hooks**. Use fresh
 disposable roots outside the repository; never run the build/assembly
 recipes against the workstation's `/opt` or `/usr`. Do not run Python with

@@ -43,6 +43,32 @@ deviations made for the Mirlo plugin host (no Electron/SolidJS; the host
 provides per-plugin config, style injection and a `videodatachange`
 compatibility layer).
 
+## Linux AppImage native components (0.1.9+)
+
+The AppImage contains GTK/GLib, WebKitGTK/JavaScriptCore, selected GStreamer
+plugins, a custom LGPL-configured FFmpeg 5.1.10 with gst-libav 1.20.7, and
+bubblewrap/xdg-dbus-proxy helpers. Their individual LGPL/BSD/MIT and other
+license terms remain in effect; Mirlo's MIT license does not replace them.
+FAAD is not included. FFmpeg GPL, nonfree and version3 options are disabled.
+
+Complete native package notices and an inventory are shipped at
+`usr/share/mirlo-licenses/` inside the AppImage. Each release also provides
+`Mirlo_<version>_linux-sources.tar.zst` with matching distribution sources,
+upstream sources/notices, configuration and rebuilding/relinking guidance;
+see `docs/linux-sources.md`. Extracted copies may use modified compatible
+libraries; updater signature verification does not restrict local modified
+copies. `.deb` installations obtain native libraries from their distribution.
+The statically linked Linux Rust crates are listed with license metadata in
+the source archive manifest; their source and license files are included too.
+
+The AppImage runtime and AppRun come from AppImage's projects (MIT, with
+their embedded third-party library terms); the runtime is pinned to
+`fedfad5`, and AppRun is byte-matched to AppImageKit commit `5735cc5`. Its
+libfuse LGPL source and patches and upstream license texts are included in
+the source archive. Generated bundler hooks are from Tauri (MIT/Apache-2.0).
+The native package inventory records exact Ubuntu source/binary versions
+rather than treating the whole AppImage as one MIT-licensed binary.
+
 ## Trademarks
 
 "YouTube Music", "Google" and related marks are trademarks of their respective

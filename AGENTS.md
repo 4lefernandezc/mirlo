@@ -31,6 +31,26 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 
 ## Current state (2026-10-29)
 
+- **AppImage clean-room investigation — DONE (2026-10-29, no packaging
+  changes)**: published 0.1.8 tested in an isolated Ubuntu Base 22.04.5 root
+  with desktop fundamentals but no installed GTK/WebKit. Bundled GTK,
+  WebKitGTK/JSC load correctly; host glibc 2.35 works. Missing GStreamer
+  plugins are real, and AppRun additionally overrides both
+  `GST_PLUGIN_SYSTEM_PATH*` variables with empty internal plugin folders,
+  so installing host plugins alone is not sufficient. Packaged-engine
+  playback probe: base+good decodes Opus but not AAC/MSE; adding bad makes
+  MSE AAC/Opus/H.264 true and both generated audio samples finish (>5 s).
+  No libav/ugly packages needed for those samples. Actual Mirlo reports
+  AAC/Opus true and player API loaded when `GST_PLUGIN_PATH_1_0` explicitly
+  points to the test root's plugins. Full official-track playback was NOT
+  verified: WebKit inspector evaluation repeatedly timed out. Loaded maps
+  show AAC decoding via libgstfaad/libfaad (GPL sections in libfaad2's
+  notices), so do not bundle all plugins or change licensing blindly.
+  Evidence, limits and next steps: `docs/research/appimage-clean-room.md`;
+  repeatable native harness: `tools/tests/appimage-media-probe.c`. Next:
+  a local reviewed multimedia-enabled candidate, rerun without host plugins
+  or path overrides, then real-track/audio-output tests. No push/release.
+
 - **Offline recovery screen — DONE (unreleased, 2026-10-29)**: `offline.rs`
   hooks main-frame player network failures on WebKitGTK and WebView2 and
   navigates to the local `ui/index.html`. English copy, bundled Mirlo icon,

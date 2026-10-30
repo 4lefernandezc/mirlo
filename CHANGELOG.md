@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Tests
+
+- Added a packaged-WebKit multimedia probe and documented clean-room
+  AppImage checks. Confirmed missing codec plugins and restricted plugin
+  search paths; no production packaging changes yet.
+
 ### Added
 
 - A local connection-recovery screen in English, with system light/dark

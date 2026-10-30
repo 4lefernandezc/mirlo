@@ -15,6 +15,7 @@ mod logging;
 mod media_controls;
 mod mpris;
 mod notifications;
+mod offline;
 mod playback;
 mod plugins;
 mod updates;
@@ -308,11 +309,12 @@ fn create_main_window(
     // Order: boot config → core bridge (defines the plugin host) → plugin
     // modules (register themselves) → host init (starts enabled plugins).
     let script = format!(
-        "window.__MIRLO_BOOT__ = {boot};\n{core}\n{plugins}\nwindow.__MIRLO_PLUGINS__.init();\n",
+        "if (location.hostname === 'music.youtube.com') {{\nwindow.__MIRLO_BOOT__ = {boot};\n{core}\n{plugins}\nwindow.__MIRLO_PLUGINS__.init();\n}}",
         core = BRIDGE_JS,
         plugins = plugins::combined_script(),
     );
-    let url = WebviewUrl::External(PLAYER_URL.parse()?);
+    // Register failure handlers before starting the network navigation.
+    let url = WebviewUrl::External("about:blank".parse()?);
 
     // Restore the geometry of the last session (fresh installs maximize).
     let saved = window_state::load();
@@ -364,6 +366,7 @@ fn create_main_window(
     // handler is always registered and gated by the live `config.adblock`
     // flag so the settings toggle applies without a reload (see adblock.rs).
     adblock::install(&window);
+    offline::install(&window);
     // Windows media session (taskbar flyout, lock screen, media keys).
     media_controls::init(&window, app.handle().clone());
     // Linux desktop media controls (MPRIS); no-op on Windows.

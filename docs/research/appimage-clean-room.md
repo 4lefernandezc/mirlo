@@ -156,3 +156,8 @@ steps are in [appimage-candidate.md](appimage-candidate.md).
 Signed-in playback, real speakers, full-track completion, H.264 decoding
 (rather than its capability flag), other distributions and final license
 compliance remain unverified. No new release or catalog re-test was triggered.
+
+Update 2026-10-30: [extended candidate tests](appimage-final-tests.md) now
+establish full-track/decoded-audio/H.264, Debian userspace and FUSE results.
+They also find a missing packaged WebKit sandbox helper; signed-in/physical
+listening, native hardware and distribution approval remain unresolved.

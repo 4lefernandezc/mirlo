@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   samples and official-player playback, seek and next-track checks pass
   without host GTK/WebKit/GStreamer packages. Saved reconstruction recipes;
   distribution/license review and production integration remain pending.
+- Extended the optional packaged-engine probe to verify H.264 decoded pixels
+  (with a corrupt-video negative control). Completed full official-track,
+  non-silent PCM, Debian clean-userspace and normal FUSE-launch checks.
+  Found missing packaged WebKit sandbox helper (`bin/bwrap`); forcing the
+  sandbox fails. Candidate remains experimental; no production packaging fix.
 
 ### Added
 

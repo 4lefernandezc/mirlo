@@ -2,6 +2,12 @@
 
 ## Outcome and scope
 
+**2026-10-30 follow-up:** full-track, decoded PCM, H.264, Debian userspace
+and FUSE checks are complete, but the packaged WebKit sandbox check fails
+(missing relative `bin/bwrap`). See [extended results](appimage-final-tests.md)
+before considering distribution. Manual sign-in/listening and hardware GPU
+checks remain outside the automated results.
+
 The experimental candidate plays generated AAC/MP4 and Opus/WebM samples
 without installed GTK, WebKit or GStreamer packages. The complete AppImage
 also plays a real track through the official YouTube Music player, seeks
@@ -220,7 +226,10 @@ Repository checks: Windows fmt/Clippy clean, 31 Rust tests pass.
   before choosing versions for a distributed bundle.
 - Still untested: physical speakers/PipeWire, signed-in playback, an entire
   official track to completion, H.264 decoding, FUSE launch, another Linux
-  distribution/hardware and normal sandbox/GPU operation outside WSL.
+  distribution/hardware and normal sandbox/GPU operation outside WSL. The
+  [extended tests](appimage-final-tests.md) supersede the full-track/H.264/
+  FUSE/second-userspace limitations and identify the sandbox failure; they
+  do not clear distribution.
 - Next implementation step, only after these gates: integrate a pinned,
   selected multimedia set into the normal Ubuntu 22.04 packaging pipeline
   and rebuild current Mirlo (including offline recovery). Do not just enable

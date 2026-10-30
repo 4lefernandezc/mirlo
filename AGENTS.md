@@ -29,7 +29,28 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 - If context runs out mid-task: commit WIP with a clear message and add a
   "Resume notes" bullet here before finishing.
 
-## Current state (2026-10-29)
+## Current state (2026-10-30)
+
+- **Extended AppImage tests — AUTOMATED PASS / SANDBOX FAIL (2026-10-30)**:
+  same candidate/hash below, no production changes. Full Panama from 0 to
+  `ended` at 212.6545 s, rate 1, then natural next track; repeated with a
+  working isolated audio server and 3.8814 s non-silent PCM (RMS 1056.76,
+  peak 4942). `tools/tests/appimage-media-probe.c` adds optional `--h264`:
+  generated 6 s baseline MP4 gives 25 distinct canvas frame hashes; corrupt
+  fixture correctly fails, legacy AAC/Opus still pass. Debian 12/bookworm
+  clean userspace (no GTK/WebKit/GStreamer) plays the real track. Normal
+  non-root WSL-host FUSE mount + launch/playback work; WSLg RDPSink receives
+  an active unmuted Mirlo stream. **Blocker found:** without disable flags
+  WebKit still has Seccomp 0/shared outer namespaces; forcing
+  `WEBKIT_FORCE_SANDBOX=1` aborts on missing `././/bin/bwrap`. Original and
+  candidate omit the relative helper; host `/usr/bin/bwrap` does not fix it.
+  Do not call sandbox verified or distribute this candidate as ready. GPU
+  falls back to software (DRM permissions/GL sink missing). Manual owner
+  sign-in/persistence and physical listening, native Linux/PipeWire/hardware,
+  plus security/license/source/relinking review remain pending. Next: reviewed
+  sandbox-enabled candidate and rerun, not wholesale media bundling. Evidence:
+  `docs/research/appimage-final-tests.md`. Windows fmt/Clippy, 31 Rust tests,
+  two Node recovery tests pass. No push/release/account changes.
 
 - **Local multimedia AppImage candidate — VALIDATED (2026-10-29, not a
   release)**: based on published 0.1.8, unchanged Mirlo executable (does NOT

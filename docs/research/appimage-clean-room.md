@@ -8,6 +8,12 @@ reliable fix: its launcher overrides GStreamer's system plugin search paths.
 
 No production packaging, license, release or GitHub changes were made.
 
+**Follow-up completed locally:** a selected-plugin candidate without FAAD
+passes generated AAC/Opus samples and actual official-player playback,
+seek and next-track checks in a second clean root. See
+[candidate evidence and recipes](appimage-candidate.md). The findings below
+describe the original published package and the first diagnostic controls.
+
 ## Artifacts and isolation
 
 - Target: `Mirlo_0.1.8_amd64.AppImage`, 82,106,872 bytes.
@@ -86,9 +92,10 @@ Observed final result:
 }
 ```
 
-The independent harness is necessary because attaching the WebKit inspector
-to the actual YouTube Music page repeatedly timed out on `Runtime.evaluate`.
-It does **not** establish that a full YouTube Music track played in Mirlo.
+At this stage, attaching the WebKit inspector repeatedly timed out on
+`Runtime.evaluate`. The independent harness did **not** establish that a
+full YouTube Music track played in Mirlo. The follow-up identified a missing
+desktop `libGLESv2.so.2`, then verified real playback in the candidate.
 
 ### Repeating the probe
 
@@ -138,21 +145,14 @@ GPL dependencies. Selecting components, their notices/source obligations
 and any alternative AAC decoder needs a deliberate licensing review before
 distribution. No project license decision was made here.
 
-## Recommended next step
+## Follow-up / remaining work
 
-1. Keep the Ubuntu 22.04 build baseline and host glibc.
-2. Build a **local experimental** AppImage with Tauri's
-   `bundle.linux.appimage.bundleMediaFramework` enabled and an explicitly
-   reviewed plugin/dependency set. Do not add `ugly`/`libav` automatically;
-   the tested engine did not require them for these samples, but the AAC
-   dependency above must be resolved deliberately.
-3. Repeat this probe against that candidate with no host GStreamer plugins
-   installed and **without** plugin-path overrides. Verify decoder/scanner
-   paths and all dynamically loaded dependencies are inside the AppDir.
-4. Verify real YouTube Music playback, seeks and track transitions in the
-   candidate, then test on another distribution and real audio output.
+The local candidate uses explicitly selected plugins and a custom
+LGPL-configured FFmpeg/gst-libav build instead of FAAD. It does **not** enable
+Tauri's wholesale media bundling in production. Its clean-root and
+official-player results, remaining distribution review and reconstruction
+steps are in [appimage-candidate.md](appimage-candidate.md).
 
-Unresolved: the repaired candidate has not been built; end-to-end official
-player playback, signed-in playback, real speakers, H.264 decoding (as
-opposed to its capability flag), other distributions and final license
+Signed-in playback, real speakers, full-track completion, H.264 decoding
+(rather than its capability flag), other distributions and final license
 compliance remain unverified. No new release or catalog re-test was triggered.

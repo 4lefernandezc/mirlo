@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a packaged-WebKit multimedia probe and documented clean-room
   AppImage checks. Confirmed missing codec plugins and restricted plugin
   search paths; no production packaging changes yet.
+- Built and validated a local experimental AppImage with selected GStreamer
+  plugins and LGPL-configured FFmpeg instead of FAAD. Generated AAC/Opus
+  samples and official-player playback, seek and next-track checks pass
+  without host GTK/WebKit/GStreamer packages. Saved reconstruction recipes;
+  distribution/license review and production integration remain pending.
 
 ### Added
 

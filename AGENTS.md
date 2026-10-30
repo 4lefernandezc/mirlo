@@ -31,6 +31,29 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 
 ## Current state (2026-10-29)
 
+- **Local multimedia AppImage candidate — VALIDATED (2026-10-29, not a
+  release)**: based on published 0.1.8, unchanged Mirlo executable (does NOT
+  include the later offline recovery screen). 23 selected GStreamer plugins,
+  scanner and dependency closure; custom FFmpeg 5.1.10 + gst-libav 1.20.7
+  built on Ubuntu 22.04 with GPL/nonfree/version3/autodetect disabled;
+  `avcodec_license()` reports LGPL 2.1-or-later, no FAAD. Second clean root
+  has no installed GTK/WebKit/GStreamer; isolated external PulseAudio null
+  sink supplies only a socket. Both >5 s generated AAC/Opus samples end;
+  complete AppImage `--appimage-extract-and-run` works without `/app` or
+  external plugin paths. Real official-player test: Panama 9.9→22.5 s,
+  seek→93.4 s, next real track Ain't Talkin' 'Bout Love (228 s, unpaused).
+  Corrected a false-positive next check that had accepted a short untitled
+  ad. Inspector timeouts resolved by desktop `libgles2` in the clean root.
+  Candidate 80,402,936 bytes, SHA-256
+  `aee29a5eb75e1c29cb89b77cff657aff58d3a18c402cb5e6538fd94ead2c5a4e`,
+  under `$env:TEMP\opencode\appimage-clean-test\`. Evidence and reconstruction:
+  `docs/research/appimage-candidate.md`,
+  `tools/tests/appimage-candidate/`. Production config/workflows unchanged.
+  Still pending: distribution/source/relinking and security review, physical
+  audio, signed-in/full-track/H.264 decoding, FUSE, another distro and normal
+  sandbox/GPU tests. Only then integrate a pinned selected set in normal
+  packaging and rebuild current Mirlo. No push, signing or release.
+
 - **AppImage clean-room investigation — DONE (2026-10-29, no packaging
   changes)**: published 0.1.8 tested in an isolated Ubuntu Base 22.04.5 root
   with desktop fundamentals but no installed GTK/WebKit. Bundled GTK,
@@ -47,9 +70,10 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
   show AAC decoding via libgstfaad/libfaad (GPL sections in libfaad2's
   notices), so do not bundle all plugins or change licensing blindly.
   Evidence, limits and next steps: `docs/research/appimage-clean-room.md`;
-  repeatable native harness: `tools/tests/appimage-media-probe.c`. Next:
-  a local reviewed multimedia-enabled candidate, rerun without host plugins
-  or path overrides, then real-track/audio-output tests. No push/release.
+  repeatable native harness: `tools/tests/appimage-media-probe.c`. The local
+  multimedia candidate follow-up above supersedes the initial inspector and
+  real-track limitations; physical audio/distribution review remain pending.
+  No push/release.
 
 - **Offline recovery screen — DONE (unreleased, 2026-10-29)**: `offline.rs`
   hooks main-frame player network failures on WebKitGTK and WebView2 and

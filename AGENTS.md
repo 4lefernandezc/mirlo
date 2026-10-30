@@ -29,7 +29,27 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 - If context runs out mid-task: commit WIP with a clear message and add a
   "Resume notes" bullet here before finishing.
 
-## Current state (2026-10-20)
+## Current state (2026-10-29)
+
+- **Offline recovery screen — DONE (unreleased, 2026-10-29)**: `offline.rs`
+  hooks main-frame player network failures on WebKitGTK and WebView2 and
+  navigates to the local `ui/index.html`. English copy, bundled Mirlo icon,
+  system light/dark colors, manual retry and an actual-player-host probe
+  every 15 s (8 s timeout, no overlapping requests); no new IPC permissions.
+  The player starts from `about:blank` so the handlers are installed before
+  the first request. Native callbacks must queue Tauri navigation from a
+  separate thread (calling it inline under the runtime lock froze startup).
+  The injected player bridge now runs only on music.youtube.com, never on
+  the recovery screen or Google sign-in pages. DNS/transport failures are
+  handled; certificate failures, HTTP errors and cancelled loads are not
+  relabeled as offline. Verified: Windows CDP offline -> manual retry ->
+  network restored -> real player/bridge; both themes legible. Linux/WSLg:
+  fresh cache + isolated network namespace -> DNS failure -> local light
+  screen, captured and reviewed. 31 Rust tests pass on both OSes; Windows
+  fmt/clippy clean; 2 Node recovery tests pass and run in CI. WSL clippy
+  is not installed (Linux build retains pre-existing unused-code warnings).
+  Details/limits: `docs/research/offline-screen.md`. Not pushed or released;
+  multimedia plugin packaging remains separate pending work.
 
 - **v0.1.8 RELEASED (public, 2026-10-20)**: tag `v0.1.8` -> CI green +
   Release green (Windows 6m26s incl. portable ZIP, Linux, `checksums`) ->

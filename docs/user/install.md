@@ -62,6 +62,9 @@ Get-FileHash .\Mirlo_0.1.1_x64-setup.exe -Algorithm SHA256
 - The player opens on `music.youtube.com`. Sign in with your Google account;
   the session is stored locally in Mirlo's private WebView2 profile and
   survives restarts.
+- If the player cannot connect, Mirlo shows a local screen with **Try again**
+  and automatically checks for reconnection. The screen follows the system's
+  light/dark preference; your saved session is kept.
 - Open **Settings** from the tray icon menu (right-click → *Settings…*) to
   toggle plugins, ad-block, notifications, hotkeys and automatic updates.
   Changes apply immediately or with the *Reload player* button; a few

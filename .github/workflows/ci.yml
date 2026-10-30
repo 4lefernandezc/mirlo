@@ -50,6 +50,11 @@ jobs:
         with:
           workspaces: app/src-tauri -> target
       - name: Test
+        working-directory: .
+        run: |
+          python3 tools/tests/test_linux_packaging.py
+          python3 tools/tests/appimage-candidate/test_wrapper.py
+      - name: Rust tests
         run: cargo test --lib
       - name: Build
         run: cargo build --release

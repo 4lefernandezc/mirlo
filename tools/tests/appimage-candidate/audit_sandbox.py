@@ -11,11 +11,11 @@ for process in pathlib.Path('/proc').iterdir():
     if not process.name.isdecimal():
         continue
     try:
-        env = dict(item.split(b'=', 1) for item in (process / 'environ').read_bytes().split(b'\0') if b'=' in item)
-        if env.get(b'MIRLO_DATA_DIR') != profile.encode():
-            continue
         name = (process / 'comm').read_text().strip()
         if name != 'mirlo' and not name.startswith('WebKitWeb'):
+            continue
+        env = dict(item.split(b'=', 1) for item in (process / 'environ').read_bytes().split(b'\0') if b'=' in item)
+        if env.get(b'MIRLO_DATA_DIR') != profile.encode():
             continue
         status = dict(line.split(':', 1) for line in (process / 'status').read_text().splitlines() if ':' in line)
         row = {'process': name, 'pid': int(process.name), 'seccomp': int(status['Seccomp']),
@@ -30,7 +30,7 @@ for process in pathlib.Path('/proc').iterdir():
         except FileNotFoundError:
             row['canaryVisible'] = False
         rows.append(row)
-    except (FileNotFoundError, ProcessLookupError):
+    except (FileNotFoundError, PermissionError, ProcessLookupError):
         continue
 pathlib.Path(output).write_text(json.dumps(rows, indent=2))
 ui = next(row for row in rows if row['process'] == 'mirlo')

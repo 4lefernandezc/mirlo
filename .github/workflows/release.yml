@@ -33,6 +33,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           projectPath: app
+          tauriScript: "npx --yes @tauri-apps/cli@2.12.3"
           tagName: ${{ github.ref_name }}
           releaseName: "Mirlo v__VERSION__"
           releaseBody: |
@@ -40,7 +41,7 @@ jobs:
 
             Windows: the `-setup.exe` (NSIS) is the recommended per-user installer; the `.msi` is intended for managed deployments (per-machine, administrator required). Both are signed for the built-in auto-updater.
 
-            Linux: `Mirlo_<version>_amd64.AppImage` (portable, works with the built-in auto-updater) and `Mirlo_<version>_amd64.deb`. Requirements: `webkit2gtk-4.1` and the GStreamer plugin packages (`gst-plugins-base/good/bad/ugly`, `gst-libav`) — see [install docs](https://github.com/4lefernandezc/mirlo/blob/main/docs/user/install.md).
+            Linux: `Mirlo_<version>_amd64.AppImage` includes WebKitGTK, selected AAC/Opus multimedia libraries and sandbox helpers; it works with the built-in auto-updater. A desktop with glibc 2.35+ and working user namespaces is required. The `.deb` uses distribution dependencies. Corresponding sources, notices and rebuilding instructions are in `Mirlo_<version>_linux-sources.tar.zst` — see [install docs](https://github.com/4lefernandezc/mirlo/blob/main/docs/user/install.md).
 
             `Mirlo_<version>_portable_x64.zip` is the portable Windows build: extract it anywhere and run `mirlo.exe`; all app data stays in a `data` folder next to the executable (`data\`) and updates are manual (download the new ZIP, see `README-PORTABLE.txt` inside). Not signed for the auto-updater.
           releaseDraft: true
@@ -80,8 +81,19 @@ jobs:
 
       - name: Install Linux dependencies
         run: |
+          printf '%s\n' \
+            'deb-src http://archive.ubuntu.com/ubuntu jammy main restricted universe multiverse' \
+            'deb-src http://archive.ubuntu.com/ubuntu jammy-updates main restricted universe multiverse' \
+            'deb-src http://security.ubuntu.com/ubuntu jammy-security main restricted universe multiverse' \
+            | sudo tee /etc/apt/sources.list.d/mirlo-sources.list
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libxdo-dev libssl-dev build-essential curl wget file
+          # Match installed runtime libraries to versions still in signed source indexes.
+          sudo apt-get upgrade -y
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libxdo-dev libssl-dev build-essential curl wget file nasm meson ninja-build pkg-config python3 dpkg-dev zstd squashfs-tools libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad bubblewrap xdg-dbus-proxy
+          npm install --global @tauri-apps/cli@2.12.3
+
+      - name: Build selected LGPL-configured codecs
+        run: bash tools/linux/build-codecs.sh /tmp/mirlo-linux
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -102,11 +114,17 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           projectPath: app
+          tauriScript: "bash ../tools/linux/release.sh"
           tagName: ${{ github.ref_name }}
           releaseName: "Mirlo v__VERSION__"
           releaseDraft: true
           prerelease: false
           args: "--bundles appimage,deb"
+
+      - name: Upload corresponding Linux sources
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ github.ref_name }}" app/src-tauri/target/release/bundle/Mirlo_*_linux-sources.tar.zst
 
   checksums:
     name: Checksums

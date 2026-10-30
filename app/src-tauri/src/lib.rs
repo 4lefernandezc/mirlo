@@ -602,6 +602,12 @@ fn save_playback(app_state: &AppState) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    #[cfg(target_os = "linux")]
+    {
+        // Set before GTK or worker threads; packaged and system WebKit must be sandboxed.
+        std::env::remove_var("WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS");
+        std::env::set_var("WEBKIT_FORCE_SANDBOX", "1");
+    }
     logging::init();
     // Resolved log path (installed vs portable), for the fatal-error boxes.
     let log_file = data_root::root().join("logs").join("mirlo.log");

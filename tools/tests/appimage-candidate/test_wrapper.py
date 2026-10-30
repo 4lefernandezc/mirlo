@@ -14,7 +14,7 @@ class WrapperTests(unittest.TestCase):
             bin_dir = root / 'usr/bin'
             bin_dir.mkdir(parents=True)
             wrapper = bin_dir / 'bwrap'
-            shutil.copyfile(pathlib.Path(__file__).with_name('bwrap'), wrapper)
+            shutil.copyfile(pathlib.Path(__file__).resolve().parents[2] / 'linux/bwrap', wrapper)
             wrapper.chmod(0o755)
             real = bin_dir / 'bwrap.real'
             real.write_text('#!/bin/sh\nprintf "%s\\0" "$@" > "$MIRLO_WRAPPER_TEST_OUTPUT"\n')

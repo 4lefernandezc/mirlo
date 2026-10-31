@@ -29,18 +29,20 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 - If context runs out mid-task: commit WIP with a clear message and add a
   "Resume notes" bullet here before finishing.
 
-## Current state (2026-10-30)
+## Current state (2026-10-31)
 
 - **0.1.9 local release candidate — PREPARED (not published)**: Windows
   NSIS/MSI installers and portable ZIP built with Tauri CLI 2.12.3; the
   updater signatures verify against the embedded public key and reject a
   modified-byte control. The final ZIP launch passed IPC plus offline screen,
-  manual retry and automatic recovery. Linux AppImage and `.deb` were built
-  from the latest config, and final AppImage/`.deb` signatures verify. The
-  corresponding-source archive passes its 17,078 internal checksums and tar
+  manual retry, automatic recovery and a WebView2 CDP volume check (40→41 by
+  the hotkey method, then 42 by a captured synthetic slider wheel event).
+  Linux AppImage and `.deb` were built from the latest config, and final
+  AppImage/`.deb` signatures verify. The corresponding-source archive passes
+  its 17,079 internal checksums and tar
   validation; all 10 local release assets pass the outer `SHA256SUMS.txt`.
   AppImage SHA-256:
-  `41edfcd0eea2879e9a8db61e5dcd11b45d326db55891f5a7cdba4f1d43bc6b00`.
+  `1d486e8f1e76b1034b516c87917bab2cee0135fa46bac2d30f90e8cfcb7d61ad`.
   Final WSLg FUSE smoke: `bridge-ready (ms=true aac=true opus=true)`, MPRIS
   registered; WebProcesses Seccomp 2/NoNewPrivs 1, isolated user/mount/PID/
   network namespaces, read-only AppDir and hidden private canary. The fresh

@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.1.9] - 2026-10-30
+## [0.1.9] - 2026-10-31
 
 ### Fixed
 
@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   playback and the helpers needed for WebKit's sandbox. Linux starts with
   the WebKit sandbox enabled; namespace restrictions fail startup rather
   than silently running an unisolated renderer.
+- Precise-volume wheel input over the YouTube Music slider now applies only
+  Mirlo's configured step; the native slider handler no longer applies a
+  second, larger change to the same wheel event after using global hotkeys.
 
 ### Tests
 

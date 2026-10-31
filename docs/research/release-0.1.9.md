@@ -1,6 +1,6 @@
 # Mirlo 0.1.9 local release preparation
 
-Date: 2026-10-30. Owner scope: Windows and Linux, including corresponding
+Date: 2026-10-31. Owner scope: Windows and Linux, including corresponding
 sources/notices. No push, tag, GitHub draft or publication is authorized.
 
 ## Packaging changes
@@ -31,8 +31,24 @@ sources/notices. No push, tag, GitHub draft or publication is authorized.
   local recovery screen, manual retry stays local while disconnected,
   restoring connectivity automatically returns to the player and bridge.
   The player bridge is absent on the recovery page. Graceful close passes.
-- Windows fmt, Clippy (`-D warnings`), all 31 Rust unit tests and both Node
-  recovery tests pass. Packaging Python/wrapper tests run under Linux.
+- Windows fmt, Clippy (`-D warnings`), all 31 Rust unit tests and all three
+  Node renderer tests across the offline-recovery and volume suites pass.
+  Packaging Python/wrapper tests run under Linux.
+
+## Volume regression review
+
+- `precise-volume` global hotkeys and its wheel handler call the same
+  `changeVolume` method, but the wheel handler was on the player-bar bubble
+  path. YouTube Music's native volume slider could process that same wheel
+  event first, producing a larger second change. Mirlo now captures wheel
+  events that pass through either volume slider, applies one precise step and
+  stops propagation before the native handler. A Node regression test simulates
+  a global-key step followed by slider wheel and verifies one step per action.
+- WebView2 CDP on the fresh portable ZIP set volume to 40, invoked the
+  hotkey's `changeVolume` path to reach 41, then dispatched a composed wheel
+  event to the live slider. It reached 42 with `defaultPrevented=true` (not
+  47+), so the native second step was suppressed. This is a synthetic wheel
+  event, not a physical-mouse test; the profile was signed out.
 
 ## Linux evidence
 
@@ -40,7 +56,7 @@ sources/notices. No push, tag, GitHub draft or publication is authorized.
   system WebKit, GStreamer base/good/bad/libav and non-setuid sandbox helper
   dependencies without duplicates.
 - Final AppImage: 81,508,856 bytes, SHA-256
-  `41edfcd0eea2879e9a8db61e5dcd11b45d326db55891f5a7cdba4f1d43bc6b00`.
+  `1d486e8f1e76b1034b516c87917bab2cee0135fa46bac2d30f90e8cfcb7d61ad`.
   Its Tauri updater signature and the `.deb` signature both verify with the
   embedded key and trusted version 0.1.9; tampered-byte negative controls are
   included in the local verification pass.
@@ -51,7 +67,7 @@ sources/notices. No push, tag, GitHub draft or publication is authorized.
   control can read it. No inspector or unsafe sandbox flags were used.
 - The `.deb` dependency list has no duplicate entries. All 10
   binary/portable/source assets pass the outer
-  `SHA256SUMS.txt`; the source tar's Zstandard stream and 17,078 inner file
+  `SHA256SUMS.txt`; the source tar's Zstandard stream and 17,079 inner file
   checksums also verify.
 - This fresh unauthenticated profile exposed no track metadata or playback
   position, so it is not evidence of signed-in playback or physical audio.

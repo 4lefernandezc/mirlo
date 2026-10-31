@@ -22,9 +22,9 @@ jobs:
           workspaces: app/src-tauri -> target
       - name: Format
         run: cargo fmt --all --check
-      - name: Offline screen tests
+      - name: Renderer tests
         working-directory: .
-        run: node --test tools/tests/offline.test.mjs
+        run: node --test tools/tests/offline.test.mjs tools/tests/precise-volume.test.mjs
       - name: Clippy
         run: cargo clippy --all-targets -- -D warnings
       - name: Test

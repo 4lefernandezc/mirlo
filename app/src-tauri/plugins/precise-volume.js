@@ -161,6 +161,8 @@ ytmusic-player[player-ui-state_='MINIPLAYER'] #volumeHud {
     const playerbar = document.querySelector('ytmusic-player-bar');
     if (!playerbar) return;
 
+    this.setupSliderWheelCapture();
+
     this.handlers.playerbarWheel = (event) => {
       event.preventDefault();
       // Event.deltaY < 0 means wheel-up
@@ -179,6 +181,24 @@ ytmusic-player[player-ui-state_='MINIPLAYER'] #volumeHud {
     playerbar.addEventListener('mouseleave', this.handlers.playerbarLeave);
 
     this.setupSliderObserver();
+  },
+
+  setupSliderWheelCapture() {
+    this.handlers.sliderWheelCapture = (event) => {
+      const overVolumeSlider = event.composedPath().some(
+        (element) => element?.id === 'volume-slider' || element?.id === 'expand-volume-slider'
+      );
+      if (!overVolumeSlider) return;
+
+      // Mirlo owns this slider gesture; don't also let YT Music apply a step.
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      this.changeVolume(event.deltaY < 0);
+    };
+    document.addEventListener('wheel', this.handlers.sliderWheelCapture, {
+      capture: true,
+      passive: false,
+    });
   },
 
   /** Save volume + Update the volume tooltip when volume-slider is manually changed */
@@ -318,7 +338,7 @@ ytmusic-player[player-ui-state_='MINIPLAYER'] #volumeHud {
   overrideListener() {
     const ignored = {
       id: ['volume-slider', 'expand-volume-slider'],
-      types: ['mousewheel', 'keydown', 'keyup'],
+      types: ['wheel', 'mousewheel', 'keydown', 'keyup'],
     };
 
     Element.prototype._mirloAddEventListener = Element.prototype.addEventListener;
@@ -377,6 +397,8 @@ ytmusic-player[player-ui-state_='MINIPLAYER'] #volumeHud {
     if (handlers.playerbarLeave)
       playerbar?.removeEventListener('mouseleave', handlers.playerbarLeave);
     if (handlers.panelWheel) panel?.removeEventListener('wheel', handlers.panelWheel);
+    if (handlers.sliderWheelCapture)
+      document.removeEventListener('wheel', handlers.sliderWheelCapture, true);
 
     this.observers?.slider?.disconnect();
     document.querySelector('#volumeHud')?.remove();

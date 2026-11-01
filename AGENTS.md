@@ -38,7 +38,10 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
   with the same percentage mask and hover/focus states. They are injected
   only on pages that expose per-track like/dislike buttons, so album pages
   (which have none) no longer show dead controls; a fully loaded list without
-  `#continuations` applies immediately instead of doing nothing. The first
+  `#continuations` applies immediately instead of doing nothing. Each action
+  is shown only while there is work for it (`Like all` when unliked tracks
+  exist, `Remove like` only when some are liked, same for dislike), and the
+  icon fill is the remaining work. The first
   version removed and re-inserted the container on every `#browse-page`
   mutation, which looped through the plugin's own MutationObserver and froze
   the UI on playlist/album pages; removal now happens only on the

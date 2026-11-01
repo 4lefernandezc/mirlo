@@ -11,7 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Album/playlist bulk like buttons: proper Mirlo styling instead of unstyled
   browser buttons, hidden on album pages (no per-track like buttons to act
-  on), and actions apply immediately on fully loaded lists.
+  on), and the visible actions now follow the work to do (`Like all` /
+  `Dislike all` when tracks can be liked/disliked instead of only the
+  "remove" variants). A click applies to every matching track button and the
+  icons refresh when their state changes.
 - Opening a playlist or album no longer freezes the UI: the bulk-action
   plugin's observer no longer re-inserts its own container on every page
   mutation.

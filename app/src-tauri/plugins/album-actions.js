@@ -61,7 +61,6 @@ __MIRLO_PLUGINS__.register('album-actions', {
   ],
 
   observer: null,
-  loadObserver: null,
   changeObserver: null,
   waiting: false,
   maskSetters: null,
@@ -235,29 +234,29 @@ __MIRLO_PLUGINS__.register('album-actions', {
       this.changeObserver.observe(btn, {
         attributes: true,
         childList: false,
-        subtree: false,
+        subtree: true,
       });
     }
-    // Determine if button is needed and colors the percentage
-    const counts = {
-      alldislike: playlist?.querySelectorAll(
-        '#button-shape-dislike > button[aria-pressed=true]'
-      ).length,
-      allundislike: playlist?.querySelectorAll(
-        '#button-shape-dislike > button[aria-pressed=false]'
-      ).length,
-      allunlike: playlist?.querySelectorAll(
-        '#button-shape-like > button[aria-pressed=false]'
-      ).length,
-      alllike: playlist?.querySelectorAll(
-        '#button-shape-like > button[aria-pressed=true]'
-      ).length,
+    const liked = playlist.querySelectorAll(
+      '#button-shape-like > button[aria-pressed=true]'
+    ).length;
+    const disliked = playlist.querySelectorAll(
+      '#button-shape-dislike > button[aria-pressed=true]'
+    ).length;
+    // Each button acts on the tracks that are not yet in its target state, so
+    // it is shown only while there is work to do. The fill shows how much
+    // work remains.
+    const pending = {
+      alllike: listsLength - liked,
+      allunlike: liked,
+      alldislike: listsLength - disliked,
+      allundislike: disliked,
     };
-    for (const [id, size] of Object.entries(counts)) {
+    for (const [id, count] of Object.entries(pending)) {
       const button = buttonContainer.querySelector(`#${id}`);
       if (!button) continue;
-      if (size > 0) {
-        this.maskSetters?.[id]?.(`100% ${100 - (size / listsLength) * 100}%`);
+      if (count > 0) {
+        this.maskSetters?.[id]?.(`100% ${(count / listsLength) * 100}%`);
       } else {
         button.style.display = 'none';
       }
@@ -278,72 +277,31 @@ __MIRLO_PLUGINS__.register('album-actions', {
   },
 
   loadFullList(event) {
-    if (event.target instanceof Element) {
-      event.stopPropagation();
-      const button = event.target.closest('button');
-      if (!button?.id) return;
-      const id = button.id;
-      const loader = document.getElementById('continuations');
-      if (!loader) {
-        // Fully loaded list (e.g. a local playlist): apply right away.
-        this.applyToList(id, null);
-        return;
-      }
-      this.loadObserver = new MutationObserver(() => {
-        this.applyToList(id, loader);
-      });
-      this.applyToList(id, loader);
-      this.loadObserver.observe(loader, {
-        attributes: true,
-        childList: true,
-        subtree: true,
-      });
-      loader?.style.setProperty('top', '0');
-      loader?.style.setProperty('left', '50%');
-      loader?.style.setProperty('position', 'absolute');
-    }
+    if (!(event.target instanceof Element)) return;
+    event.stopPropagation();
+    const button = event.target.closest('button');
+    if (button?.id) this.applyToList(button.id);
   },
 
-  applyToList(id, loader) {
-    if (loader && loader.children.length != 0) return;
-    this.loadObserver?.disconnect();
-    let playlistButtons;
+  applyToList(id) {
+    const selectors = {
+      allundislike: '#button-shape-dislike > button[aria-pressed=true]',
+      alldislike: '#button-shape-dislike > button[aria-pressed=false]',
+      alllike: '#button-shape-like > button[aria-pressed=false]',
+      allunlike: '#button-shape-like > button[aria-pressed=true]',
+    };
+    if (!selectors[id]) return;
     const playlist =
       document.querySelector('ytmusic-playlist-shelf-renderer') ??
       document.querySelector(':nth-last-child(1 of ytmusic-shelf-renderer)');
-    switch (id) {
-      case 'allundislike':
-        playlistButtons = playlist?.querySelectorAll(
-          '#button-shape-dislike > button[aria-pressed=true]'
-        );
-        break;
-      case 'alldislike':
-        playlistButtons = playlist?.querySelectorAll(
-          '#button-shape-dislike > button[aria-pressed=false]'
-        );
-        break;
-      case 'alllike':
-        playlistButtons = playlist?.querySelectorAll(
-          '#button-shape-like > button[aria-pressed=false]'
-        );
-        break;
-      case 'allunlike':
-        playlistButtons = playlist?.querySelectorAll(
-          '#button-shape-like > button[aria-pressed=true]'
-        );
-        break;
-      default:
-    }
-    playlistButtons?.forEach((elem) => elem.click());
+    playlist?.querySelectorAll(selectors[id]).forEach((elem) => elem.click());
   },
 
   stop() {
     this.observer?.disconnect();
     this.changeObserver?.disconnect();
-    this.loadObserver?.disconnect();
     this.observer = null;
     this.changeObserver = null;
-    this.loadObserver = null;
     for (const button of document.querySelectorAll('.mirlo-bulk-button')) {
       button.remove();
     }

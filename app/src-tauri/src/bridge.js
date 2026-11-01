@@ -241,6 +241,27 @@
       configurable: true,
     });
   } catch (_) {}
+  // Listeners registered before this script (or through a saved reference)
+  // can still cancel the event; neuter the cancel paths so a programmatic
+  // reload never shows Chromium's confirmation.
+  try {
+    const origPreventDefault = Event.prototype.preventDefault;
+    Event.prototype.preventDefault = function () {
+      if (this.type === 'beforeunload') return;
+      return origPreventDefault.call(this);
+    };
+    const returnValue = Object.getOwnPropertyDescriptor(Event.prototype, 'returnValue');
+    if (returnValue?.set) {
+      Object.defineProperty(Event.prototype, 'returnValue', {
+        configurable: true,
+        get: returnValue.get,
+        set(value) {
+          if (this.type === 'beforeunload') return;
+          returnValue.set.call(this, value);
+        },
+      });
+    }
+  } catch (_) {}
 
   // --- inactivity-prompt blocker -----------------------------------------
   // YouTube Music pops "Are you still there?" after a long stretch without

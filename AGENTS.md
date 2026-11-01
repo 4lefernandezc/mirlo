@@ -31,6 +31,20 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 
 ## Current state (2026-11-01)
 
+- **Album actions + reload-dialog fixes (unreleased, 2026-11-01)**: the bulk
+  like/dislike buttons no longer use YouTube's `yt-spec-button-shape-next`
+  classes (a bare `<button>` fell back to browser styling and the custom
+  feedback element painted a white box); they are 36 px Mirlo round buttons
+  with the same percentage mask and hover/focus states. They are injected
+  only on pages that expose per-track like/dislike buttons, so album pages
+  (which have none) no longer show dead controls; a fully loaded list without
+  `#continuations` applies immediately instead of doing nothing. The
+  "Reload site?" prompt is handled at two layers: the bridge now also neuters
+  `Event.prototype.preventDefault`/`returnValue` for `beforeunload` (the
+  existing addEventListener/onbeforeunload blockers only covered new
+  registrations), and WebView2's default script dialogs are disabled on the
+  main webview (`disable_script_dialogs`).
+
 - **In-app settings button — DONE (unreleased, 2026-11-01)**: original plugin
   `settings-button` (20th) appends a sliders icon to `#right-content` and
   calls `window.__mirlo.openSettings()`, which invokes the new

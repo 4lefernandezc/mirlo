@@ -1,7 +1,7 @@
 # Mirlo 0.1.9 local release preparation
 
-Date: 2026-10-31. Owner scope: Windows and Linux, including corresponding
-sources/notices. No push, tag, GitHub draft or publication is authorized.
+Date: 2026-11-01. Owner scope: Windows and Linux, including corresponding
+sources/notices. Published as `v0.1.9` after draft verification.
 
 ## Packaging changes
 
@@ -21,11 +21,11 @@ sources/notices. No push, tag, GitHub draft or publication is authorized.
 
 ## Windows evidence
 
-- Final NSIS: 3,979,257 bytes; MSI: 4,943,872 bytes; portable ZIP:
-  2,748,686 bytes. `minisign-verify` 0.3.0 validates both installer
+- Published NSIS: 4,002,175 bytes; MSI: 4,947,968 bytes; portable ZIP:
+  2,833,774 bytes. `minisign-verify` 0.3.0 validates both installer
   signatures with the embedded public key and trusted version 0.1.9; flipping
   one byte of each artifact correctly fails verification.
-- The final portable ZIP was extracted into a fresh directory and launched
+- The published portable ZIP was extracted into a fresh directory and launched
   with a clean profile (no owner's session copied). `get_config` IPC works.
 - WebView2 CDP network emulation: offline player navigation reaches the
   local recovery screen, manual retry stays local while disconnected,
@@ -55,13 +55,15 @@ sources/notices. No push, tag, GitHub draft or publication is authorized.
 - Ubuntu 22.04 AppImage and `.deb` build successfully. The `.deb` declares the
   system WebKit, GStreamer base/good/bad/libav and non-setuid sandbox helper
   dependencies without duplicates.
-- Final AppImage: 81,508,856 bytes, SHA-256
-  `1d486e8f1e76b1034b516c87917bab2cee0135fa46bac2d30f90e8cfcb7d61ad`.
-  Its Tauri updater signature and the `.deb` signature both verify with the
-  embedded key and trusted version 0.1.9; tampered-byte negative controls are
-  included in the local verification pass.
-- Normal non-root WSLg FUSE launch: Tauri IPC and the bridge initialize
-  (`ms=true aac=true opus=true`); MPRIS registers. WebProcesses report
+- Published AppImage: 81,562,104 bytes, SHA-256
+  `f5da402a236c2b24b17cf2293e0b7fab73010db437709a4d3c9971134d4ee36c`;
+  `.deb`: 3,521,212 bytes; corresponding sources: 526,509,124 bytes, SHA-256
+  `481257b3775f720c5aa944089e2def8bfab83b1d34572ca6f569426ac9eff0c9`.
+  Both bundle signatures verify with the embedded key and trusted version
+  0.1.9; tampered-byte negative controls pass.
+- The published CI AppImage in a normal non-root WSLg FUSE launch: Tauri IPC
+  and the bridge initialize (`ms=true aac=true opus=true`); MPRIS registers.
+  WebProcesses report
   Seccomp 2/NoNewPrivs 1, distinct user/mount/PID/network namespaces, a
   read-only AppDir and no visibility of the private canary; the UI positive
   control can read it. No inspector or unsafe sandbox flags were used.

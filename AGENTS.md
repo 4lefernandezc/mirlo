@@ -29,29 +29,30 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 - If context runs out mid-task: commit WIP with a clear message and add a
   "Resume notes" bullet here before finishing.
 
-## Current state (2026-10-31)
+## Current state (2026-11-01)
 
-- **0.1.9 local release candidate — PREPARED (not published)**: Windows
-  NSIS/MSI installers and portable ZIP built with Tauri CLI 2.12.3; the
-  updater signatures verify against the embedded public key and reject a
-  modified-byte control. The final ZIP launch passed IPC plus offline screen,
-  manual retry, automatic recovery and a WebView2 CDP volume check (40→41 by
-  the hotkey method, then 42 by a captured synthetic slider wheel event).
-  Linux AppImage and `.deb` were built from the latest config, and final
-  AppImage/`.deb` signatures verify. The corresponding-source archive passes
-  its 17,079 internal checksums and tar
-  validation; all 10 local release assets pass the outer `SHA256SUMS.txt`.
-  AppImage SHA-256:
-  `1d486e8f1e76b1034b516c87917bab2cee0135fa46bac2d30f90e8cfcb7d61ad`.
-  Final WSLg FUSE smoke: `bridge-ready (ms=true aac=true opus=true)`, MPRIS
-  registered; WebProcesses Seccomp 2/NoNewPrivs 1, isolated user/mount/PID/
-  network namespaces, read-only AppDir and hidden private canary. The fresh
-  unauthenticated profile exposed no track metadata/position, so this is not
-  evidence of signed-in playback. Owner-confirmed listening is from the earlier
-  candidate, not this final 0.1.9 binary. Still unverified: Linux sign-in/
-  persistence, native hardware GPU/PipeWire, H.264 under forced sandbox and
-  namespace-restricted policies. No tag, push, draft or publication. Details:
-  `docs/research/release-0.1.9.md`; release artifacts stay in `$env:TEMP`.
+- **v0.1.9 RELEASED (public, 2026-11-01)**: tag `v0.1.9` -> workflow
+  `41269569642` green (Windows 3m17s, Linux 17m53s, checksums 15s) -> draft
+  verified (12 assets; four updater signatures valid against the embedded key
+  with tamper rejection; all 10 binary/portable/source checksums OK; source
+  archive 17,079 inner checksums OK) -> published. Anonymous updater endpoint
+  HTTP 200; `latest.json` 0.1.9 with Windows NSIS/MSI and Linux
+  AppImage/deb entries. Published AppImage 81,562,104 bytes, SHA-256
+  `f5da402a236c2b24b17cf2293e0b7fab73010db437709a4d3c9971134d4ee36c`;
+  Linux sources 526,509,124 bytes, SHA-256
+  `481257b3775f720c5aa944089e2def8bfab83b1d34572ca6f569426ac9eff0c9`;
+  NSIS 4,002,175; MSI 4,947,968; portable ZIP 2,833,774; deb 3,521,212.
+  CI needed removal of the runner's LLVM `libunwind` dev conflict (`07f81a7`).
+  Downloaded CI artifacts were smoke-tested: the AppImage passed sandbox,
+  bridge and MPRIS registration in WSLg; the portable ZIP passed offline
+  recovery and the volume sequence (40→41 hotkey method, 42 captured slider
+  wheel). WebProcesses: Seccomp 2/NoNewPrivs 1, isolated user/mount/PID/network
+  namespaces, read-only AppDir, private canary hidden. The test profiles were
+  signed out and exposed no track metadata; this is not signed-in playback
+  evidence. Owner-confirmed listening is from the earlier candidate. Still
+  unverified: Linux sign-in/persistence, native hardware GPU/PipeWire, H.264
+  under forced sandbox, namespace-restricted policies, and auto-update E2E
+  from an installed 0.1.8. Details: `docs/research/release-0.1.9.md`.
 
 - **Sandbox-enabled local AppImage — VERIFIED (2026-10-30, not shipped)**:
   separate candidate fixes the original/multimedia-only image's missing
@@ -859,15 +860,15 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
   `CARGO_TARGET_DIR=$env:TEMP\mirlo-target`
   (or any temp dir) before cargo commands.
 
-## Next step — owner review, then 0.1.9 publication
+## Next step — post-release verification
 
-The 0.1.9 candidate is local only. No tag, push, GitHub draft or publication
-has been made. Before publishing, review the Linux notices/source archive and
-known test limits, run `docs/release.md` against the final asset set, verify
-outer checksums, and then request owner approval to publish. Public updater
-install E2E cannot run before publication. The signing key remains at
-`%USERPROFILE%\.tauri\mirlo.key`; keep it backed up and never include it in
-source snapshots or release assets.
+v0.1.9 is public. Remaining owner/hardware checks: auto-update E2E from an
+installed 0.1.8 (tray *Check for updates…* or next launch; watch for
+`update available:` and `--- Mirlo 0.1.9 starting ---`), Linux sign-in and
+persistence, native GPU/PipeWire, H.264 under forced sandbox, and namespace-
+restricted desktop policies. Future releases follow `docs/release.md`. The
+signing key remains at `%USERPROFILE%\.tauri\mirlo.key`; keep it backed up and
+never include it in source snapshots or release assets.
 
 Related follow-ups (separate, not blockers): code signing (SignPath Foundation
 free OSS signing / Azure Trusted Signing) and winget submission

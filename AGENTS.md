@@ -31,7 +31,22 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 
 ## Current state (2026-11-01)
 
-- **Settings defaults tuned (unreleased, 2026-11-01)**: video-toggle defaults
+- **v0.1.10 RELEASED (public, 2026-11-01)**: tag `v0.1.10` -> workflow
+  `41353189275` green (Windows 5m10s, Linux 16m23s, checksums 15s) -> draft
+  verified (12 assets; four updater signatures valid at version 0.1.10 with
+  tamper rejection; 9 binary checksums + sources; sources 17,083 inner
+  checksums; `latest.json` 0.1.10 with all six platform entries) -> published
+  as latest (2026-11-01T22:00:46Z); anonymous updater endpoint HTTP 200.
+  Contents: custom themes + album-gradient suppression, in-app settings
+  button, album-actions fixes (styling, work-based labels, live refresh,
+  observer-loop freeze, snackbar suppression), reload-dialog suppression,
+  and the settings defaults/cleanup below. AppImage 81,562,104 bytes,
+  SHA-256 `167b29374d720507f9c305862eb9506247d2a0e2a901a28215ba6281bcffa324`;
+  Linux sources 526,520,516 bytes, SHA-256
+  `e13ff4e0bbab63d4affc50885ab1a163e5b00e1c25b7ec6885c4dad6a36787c7`.
+  No fresh device smoke of these exact binaries (renderer/settings changes,
+  packaging unchanged from 0.1.9). Evidence: `docs/research/release-0.1.10.md`.
+- **Settings defaults tuned (released in 0.1.10, 2026-11-01)**: video-toggle defaults
   to `mode: native` with `hideVideo: true` (label "Prefer audio when
   available"; native mode also sets `playback-mode=ATV_PREFERRED` once),
   disable-autoplay and synced-lyrics default on, navigation defaults off,
@@ -42,7 +57,7 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
   (`native` is a no-op). The optional Discord client-id input was removed
   from Settings; the `discord_client_id` config key is still honored.
 
-- **Album actions + reload-dialog fixes (unreleased, 2026-11-01)**: the bulk
+- **Album actions + reload-dialog fixes (released in 0.1.10, 2026-11-01)**: the bulk
   like/dislike buttons no longer use YouTube's `yt-spec-button-shape-next`
   classes (a bare `<button>` fell back to browser styling and the custom
   feedback element painted a white box); they are 36 px Mirlo round buttons
@@ -66,7 +81,7 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
   registrations), and WebView2's default script dialogs are disabled on the
   main webview (`disable_script_dialogs`).
 
-- **In-app settings button — DONE (unreleased, 2026-11-01)**: original plugin
+- **In-app settings button — DONE (released in 0.1.10, 2026-11-01)**: original plugin
   `settings-button` (20th) appends a sliders icon to `#right-content` and
   calls `window.__mirlo.openSettings()`, which invokes the new
   `open_settings` command. That command is registered in
@@ -77,7 +92,7 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
   40 px layout in the top bar, clicking it opens
   `http://tauri.localhost/settings.html`, and the page renders the full
   settings UI. Enabled by default; the tray item and `--settings` still work.
-- **Custom themes — DONE (unreleased, 2026-11-01)**: original plugin
+- **Custom themes — DONE (released in 0.1.10, 2026-11-01)**: original plugin
   `user-theme` (19th) with presets `native`/`midnight`/`amoled`/`warm`/`forest`
   plus a Custom CSS box. It overrides only variables YouTube Music defines
   (`--yt-spec-*`, `--ytmusic-color-*`) through a constructed stylesheet; user
@@ -936,9 +951,9 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 
 ## Next step — post-release verification
 
-v0.1.9 is public. Remaining owner/hardware checks: auto-update E2E from an
-installed 0.1.8 (tray *Check for updates…* or next launch; watch for
-`update available:` and `--- Mirlo 0.1.9 starting ---`), Linux sign-in and
+v0.1.10 is public. Remaining owner/hardware checks: auto-update E2E from an
+installed 0.1.9 (tray *Check for updates…* or next launch; watch for
+`update available:` and `--- Mirlo 0.1.10 starting ---`), Linux sign-in and
 persistence, native GPU/PipeWire, H.264 under forced sandbox, and namespace-
 restricted desktop policies. Future releases follow `docs/release.md`. The
 signing key remains at `%USERPROFILE%\.tauri\mirlo.key`; keep it backed up and

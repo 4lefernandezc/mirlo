@@ -187,16 +187,17 @@ __MIRLO_PLUGINS__.register('album-actions', {
     });
   },
 
-  async onPageChange() {
-    if (this.waiting) {
-      return;
-    } else {
-      this.waiting = true;
+  onPageChange() {
+    if (this.waiting) return;
+    this.waiting = true;
+    try {
+      this.mountButtons();
+    } finally {
+      this.waiting = false;
     }
-    const continuations = await __MIRLO_PLUGINS__.waitForElement('#continuations');
-    this.waiting = false;
-    if (!continuations) return;
+  },
 
+  mountButtons() {
     // Finds the playlist
     const playlist =
       document.querySelector('ytmusic-playlist-shelf-renderer') ??
@@ -207,12 +208,16 @@ __MIRLO_PLUGINS__.register('album-actions', {
     }
 
     // Bulk actions only make sense where tracks expose like/dislike buttons;
-    // album pages do not, so do not inject dead buttons there.
+    // album pages do not, so do not inject dead buttons there. Removing the
+    // container re-triggers the page observer once, so this must not run on
+    // the insert path (that would loop forever and freeze the UI).
     const listsLength = playlist.querySelectorAll(
       '#button-shape-dislike > button'
     ).length;
-    document.querySelector('#mirlo-album-action-buttons')?.remove();
-    if (listsLength === 0) return;
+    if (listsLength === 0) {
+      document.querySelector('#mirlo-album-action-buttons')?.remove();
+      return;
+    }
 
     const buttonContainer = this.buildButtonContainer();
 

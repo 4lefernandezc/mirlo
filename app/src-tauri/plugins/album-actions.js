@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Mirlo plugin: album-actions
  *
  * Ported from pear-desktop v3.11.0 (MIT, Â© 2021-2024 th-ch and pear-devs):

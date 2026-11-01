@@ -38,7 +38,12 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
   with the same percentage mask and hover/focus states. They are injected
   only on pages that expose per-track like/dislike buttons, so album pages
   (which have none) no longer show dead controls; a fully loaded list without
-  `#continuations` applies immediately instead of doing nothing. The
+  `#continuations` applies immediately instead of doing nothing. The first
+  version removed and re-inserted the container on every `#browse-page`
+  mutation, which looped through the plugin's own MutationObserver and froze
+  the UI on playlist/album pages; removal now happens only on the
+  no-like-buttons path, and the 15 s `#continuations` wait (unused after the
+  restructure) is gone. The
   "Reload site?" prompt is handled at two layers: the bridge now also neuters
   `Event.prototype.preventDefault`/`returnValue` for `beforeunload` (the
   existing addEventListener/onbeforeunload blockers only covered new

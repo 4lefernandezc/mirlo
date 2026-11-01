@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Album/playlist bulk like buttons: proper Mirlo styling instead of unstyled
   browser buttons, hidden on album pages (no per-track like buttons to act
   on), and actions apply immediately on fully loaded lists.
+- Opening a playlist or album no longer freezes the UI: the bulk-action
+  plugin's observer no longer re-inserts its own container on every page
+  mutation.
 - "Reload player" no longer triggers Chromium's reload confirmation.
 
 ### Added

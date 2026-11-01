@@ -14,11 +14,40 @@ class FakeSheet {
   }
 }
 
+function fakeStyle(initial = []) {
+  const props = new Set(initial);
+  return {
+    *[Symbol.iterator]() {
+      yield* props;
+    },
+    removeProperty(name) {
+      props.delete(name);
+    },
+    setProperty(name) {
+      props.add(name);
+    },
+    has(name) {
+      return props.has(name);
+    },
+  };
+}
+
 function load(extra = {}) {
   let definition;
-  const document = { adoptedStyleSheets: [] };
+  const rootStyle = fakeStyle([
+    '--yt-spec-base-background',
+    '--ytmusic-color-black1',
+    '--ytmusic-player-page-inner-height',
+  ]);
+  const bodyStyle = fakeStyle(['background']);
+  const document = {
+    adoptedStyleSheets: [],
+    documentElement: { style: rootStyle },
+    body: extra.body === null ? null : { style: bodyStyle },
+  };
   const context = {
     document,
+    window: {},
     CSSStyleSheet: FakeSheet,
     __MIRLO_PLUGINS__: {
       register(id, plugin) {
@@ -29,7 +58,7 @@ function load(extra = {}) {
     ...extra,
   };
   vm.runInNewContext(source, context);
-  return { definition, document };
+  return { definition, document, rootStyle, bodyStyle, window: context.window };
 }
 
 test('remote imports and url() references are stripped', () => {
@@ -45,12 +74,19 @@ test('remote imports and url() references are stripped', () => {
 });
 
 test('start applies the palette then the user css, and stop removes the sheet', async () => {
-  const { definition, document } = load();
+  const { definition, document, rootStyle, bodyStyle, window } = load();
   await definition.start({
     getConfig: async () => ({ preset: 'midnight', customCss: 'body { color: red; }' }),
   });
 
   assert.equal(document.adoptedStyleSheets.length, 1);
+  // A flat preset also disables the album-color inline overrides.
+  assert.equal(window.__MIRLO_FLAT_THEME__, true);
+  assert.equal(rootStyle.has('--yt-spec-base-background'), false);
+  assert.equal(rootStyle.has('--ytmusic-color-black1'), false);
+  assert.equal(rootStyle.has('--ytmusic-player-page-inner-height'), true);
+  assert.equal(bodyStyle.has('background'), false);
+
   const css = document.adoptedStyleSheets[0].css;
   assert.ok(css.includes('--yt-spec-base-background: #0b1220 !important;'));
   assert.ok(css.indexOf('body { color: red; }') > css.indexOf('--yt-spec-base-background'));
@@ -58,14 +94,32 @@ test('start applies the palette then the user css, and stop removes the sheet', 
   definition.stop();
   assert.equal(document.adoptedStyleSheets.length, 0);
   assert.equal(document.adoptedStyleSheets[0], undefined);
+  assert.equal(window.__MIRLO_FLAT_THEME__, false);
+});
+
+test('the native palette leaves the album-color plugin alone', async () => {
+  const { definition, window, rootStyle } = load();
+  await definition.start({ getConfig: async () => ({ preset: 'native', customCss: '' }) });
+  assert.equal(window.__MIRLO_FLAT_THEME__, false);
+  assert.equal(rootStyle.has('--yt-spec-base-background'), true);
+  definition.stop();
 });
 
 test('the boot config applies the theme before the host starts plugins', () => {
-  const { document } = load({
+  const { document, window } = load({
     window: { __MIRLO_BOOT__: { config: { plugins: { 'user-theme': { preset: 'amoled' } } } } },
   });
   assert.equal(document.adoptedStyleSheets.length, 1);
   assert.ok(document.adoptedStyleSheets[0].css.includes('#000000'));
+  assert.equal(window.__MIRLO_FLAT_THEME__, true);
+});
+
+test('the boot apply tolerates a missing <body>', () => {
+  const { document } = load({
+    body: null,
+    window: { __MIRLO_BOOT__: { config: { plugins: { 'user-theme': { preset: 'midnight' } } } } },
+  });
+  assert.equal(document.adoptedStyleSheets.length, 1);
 });
 
 test('a disabled theme is not applied at boot', () => {

@@ -13,8 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   settings window without leaving the app.
 - Custom themes: four dark palettes (midnight, amoled, warm, forest) and a
   Custom CSS box in Settings. Themes are applied through YouTube Music's own
-  CSS variables; changes apply with "Reload player". Ships enabled but is a
-  no-op until a palette or CSS is configured.
+  CSS variables; changes apply with "Reload player". Presets remove the
+  per-track hero gradient (album color) and its seam against the background;
+  `native` leaves it on. Ships enabled but is a no-op until a palette or CSS
+  is configured.
 
 ## [0.1.9] - 2026-11-01
 

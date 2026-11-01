@@ -46,20 +46,30 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
   `user-theme` (19th) with presets `native`/`midnight`/`amoled`/`warm`/`forest`
   plus a Custom CSS box. It overrides only variables YouTube Music defines
   (`--yt-spec-*`, `--ytmusic-color-*`) through a constructed stylesheet; user
-  CSS is appended after the palette. Ships enabled but is a no-op until
+  CSS is appended after the palette. A non-native preset also sets
+  `window.__MIRLO_FLAT_THEME__`, removes `album-color-theme`'s inline
+  overrides (inline `!important` beats any sheet) and hides
+  `ytmusic-fullbleed-thumbnail-renderer`, so the per-track hero gradient and
+  its seam disappear; `album-color-theme` bails while the flag is set and the
+  native palette restores it. Ships enabled but is a no-op until
   configured. The synchronous boot config applies the sheet before first
   paint and `start()` re-applies the fresh config; `@import` and remote
-  `url()` are stripped best effort. Settings gained a `textarea` option type
-  (full width). Verified live with CDP on a temp profile: midnight applied
-  from config, the card rendered 5 palettes + an 8-row textarea, switching to
-  forest persisted to `config.json` and applied after `Page.reload`. 32 Rust
-  + 7 Node tests pass; `tools/tests/user-theme.test.mjs` runs in CI.
-  `docs/user/themes.md` documents the variables and limits.
+  `url()` are stripped best effort. `clearAlbumInline` must tolerate a missing
+  `<body>` (initialization scripts run before it exists). Settings gained a
+  `textarea` option type (full width). Verified live with CDP on a temp
+  profile: midnight applied from config, the card rendered 5 palettes + an
+  8-row textarea, switching to forest persisted to `config.json` and applied
+  after `Page.reload`; with amoled, the hero is `display:none`, no inline
+  album vars remain and the page is flat black. 32 Rust + 8 Node tests pass;
+  `tools/tests/user-theme.test.mjs` runs in CI. `docs/user/themes.md`
+  documents the variables and limits.
 - **Renderer dev loader — DONE (unreleased, 2026-11-01)**: `MIRLO_DEV_SRC`
   makes the shell read `plugins/*.js` and `src/bridge.js` from disk instead of
-  the `include_str!` copies, so renderer edits apply after *Reload player*
-  with no Rust rebuild. Measured before it: ~22 s debug / ~581 s release per
-  plugin edit. Env-only; release/CI never set it. Commit `58fceab`.
+  the `include_str!` copies, so renderer edits apply after an **app restart**
+  with no Rust rebuild (the initialization script is templated at window
+  creation, so *Reload player* reuses the old copy). Measured before it:
+  ~22 s debug / ~581 s release per plugin edit. Env-only; release/CI never
+  set it. Commit `58fceab`.
 - **v0.1.9 RELEASED (public, 2026-11-01)**: tag `v0.1.9` -> workflow
   `41269569642` green (Windows 3m17s, Linux 17m53s, checksums 15s) -> draft
   verified (12 assets; four updater signatures valid against the embedded key
@@ -1093,8 +1103,9 @@ for probes — pass a URL substring as 4th arg to target the settings window;
   release, because every renderer source is an `include_str!` and release adds
   `lto` + `codegen-units = 1`. Set `MIRLO_DEV_SRC=<repo>\app\src-tauri` and run
   a debug build to read `plugins/*.js` and `src/bridge.js` from disk: edits
-  then apply on the next page load (`Reload player`), no Rust rebuild. The
-  override is env-only; never set it for release/CI, where the embedded
+  then apply on the next app start, no Rust rebuild (the initialization
+  script is fixed at window creation, so *Reload player* keeps the old copy).
+  The override is env-only; never set it for release/CI, where the embedded
   sources remain the shipped ones.
 - `PrintWindow` captures of WebView2 (composited surfaces) may clip content
   at some window sizes/positions; use CDP layout numbers (scrollWidth vs
@@ -1242,7 +1253,8 @@ cargo run --manifest-path app/src-tauri/Cargo.toml --release
 # Unset in normal runs/releases; the embedded sources are the shipped ones.
 $env:MIRLO_DEV_SRC = "$PWD\app\src-tauri"
 cargo run --manifest-path app/src-tauri/Cargo.toml   # debug build for speed
-# edit plugins/*.js or src/bridge.js, then tray/settings -> Reload player
+# edit plugins/*.js or src/bridge.js, then restart the app (Reload player
+# reuses the script injected at window creation)
 
 # Checks (run before every commit)
 cargo fmt --manifest-path app/src-tauri/Cargo.toml

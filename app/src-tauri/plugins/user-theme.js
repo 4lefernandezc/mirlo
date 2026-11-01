@@ -56,6 +56,31 @@
       .replace(/url\(\s*(['"]?)(?:https?:)?\/\/[^)]*\)/gi, 'none');
   }
 
+  // Variables `album-color-theme` writes inline with !important; inline rules
+  // beat any stylesheet, so a flat preset has to remove them outright.
+  const ALBUM_VARS = [
+    '--dark-theme-background-color',
+    '--ytmusic-background',
+    '--ytmusic-album-color',
+    '--ytmusic-album-color-dark',
+    '--ytmusic-album-color-ratio',
+  ];
+
+  function clearAlbumInline() {
+    const root = document.documentElement;
+    if (root) {
+      for (const prop of [...root.style]) {
+        if (prop.startsWith('--yt-spec-') || prop.startsWith('--ytmusic-color-')) {
+          root.style.removeProperty(prop);
+        } else if (ALBUM_VARS.includes(prop)) {
+          root.style.removeProperty(prop);
+        }
+      }
+    }
+    // Initialization scripts run before <body> exists.
+    document.body?.style.removeProperty('background');
+  }
+
   function presetCss(name) {
     const p = PALETTES[name];
     if (!p) return '';
@@ -85,7 +110,7 @@
     const decls = Object.entries(vars)
       .map(([key, value]) => `  ${key}: ${value} !important;`)
       .join('\n');
-    return `:root {\n${decls}\n}\n\nhtml, body {\n  background-color: ${p.bg} !important;\n}\n`;
+    return `:root {\n${decls}\n}\n\nhtml, body {\n  background-color: ${p.bg} !important;\n}\n\n/* A flat preset drops YouTube Music's per-track hero gradient. */\nytmusic-fullbleed-thumbnail-renderer {\n  display: none !important;\n}\n`;
   }
 
   let sheet = null;
@@ -93,6 +118,9 @@
   function applyTheme(config) {
     const preset = presetCss(config && config.preset);
     const custom = stripRemoteRefs(config && config.customCss);
+    const flat = !!(config && config.preset && config.preset !== 'native');
+    window.__MIRLO_FLAT_THEME__ = flat;
+    if (flat) clearAlbumInline();
     const css = [preset, custom].filter(Boolean).join('\n');
     if (!sheet) sheet = new CSSStyleSheet();
     sheet.replaceSync(css);
@@ -128,6 +156,7 @@
     },
 
     stop() {
+      window.__MIRLO_FLAT_THEME__ = false;
       if (!sheet) return;
       document.adoptedStyleSheets = document.adoptedStyleSheets.filter((s) => s !== sheet);
       sheet.replaceSync('');

@@ -17,6 +17,9 @@ nothing until you pick a palette or write CSS, and changes apply with the
 
 Presets assume YouTube Music is using its **dark** theme. They only set CSS
 variables the player already defines, so they survive most YouTube updates.
+A preset also removes the per-track hero image/gradient at the top of the
+page (the one whose colors follow the current song) and its visible seam
+against the page background; `native` leaves that behavior untouched.
 
 ## Your own CSS
 
@@ -49,7 +52,8 @@ names, so those themes can break after an update.
 - `@import` and remote `url(...)` are removed before the CSS is applied, so a
   pasted theme cannot pull remote files. That filter is best effort, not a
   sanitizer: read themes you copy from strangers.
-- The plugin cannot beat `album-color-theme`: when that plugin is enabled its
-  inline variables take priority. Use one or the other.
+- The *album color* plugin (per-track gradient) is suppressed while a
+  non-native palette is active: its inline colors are removed and it stops
+  reapplying. Switch back to `native` to let it run again.
 - A palette is one setting for the whole player; per-page themes are not
   supported.

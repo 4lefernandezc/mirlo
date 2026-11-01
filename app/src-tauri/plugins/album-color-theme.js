@@ -5,6 +5,10 @@
  *   src/plugins/album-color-theme/index.ts + style.css
  * Adapted to the Mirlo plugin host. Deviations:
  *   - no `fast-average-color` / `color` dependencies: average color and HSL
+ *     helpers are local (same math, no packages);
+ *   - a flat `user-theme` preset suppresses the album gradient: the track
+ *     handler and `updateColor` bail while `window.__MIRLO_FLAT_THEME__` is
+ *     set (Mirlo-specific, upstream has no such interaction).
  *     darkening are computed locally with a canvas (~equivalent behavior);
  *   - the `transparent-player` interaction uses the host's `isEnabled`.
  */
@@ -208,6 +212,8 @@ ytmusic-browse-response[has-background]:not([disable-gradient]) .background-grad
   },
 
   updateColor(alpha) {
+    // A flat Mirlo theme preset suppresses the album gradient.
+    if (window.__MIRLO_FLAT_THEME__) return;
     const variableMap = {
       '--ytmusic-color-black1': '#212121',
       '--ytmusic-color-black2': '#181818',
@@ -275,6 +281,7 @@ ytmusic-browse-response[has-background]:not([disable-gradient]) .background-grad
 
   onPlayerApiReady(playerApi) {
     document.addEventListener('videodatachange', async (event) => {
+      if (window.__MIRLO_FLAT_THEME__) return;
       if (event.detail.name !== 'dataloaded') return;
 
       const playerResponse = playerApi.getPlayerResponse();

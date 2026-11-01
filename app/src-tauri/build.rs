@@ -12,6 +12,7 @@ fn main() {
             "get_plugin_manifest",
             "report_player_state",
             "reload_player",
+            "open_settings",
             "restart_app",
         ]),
     ))

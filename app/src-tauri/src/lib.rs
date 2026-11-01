@@ -322,6 +322,26 @@ fn open_settings_detached(app: &AppHandle) {
     std::thread::spawn(move || open_settings_window(&handle));
 }
 
+/// WebView2 script dialogs (alert/confirm/prompt, and Chromium's reload
+/// confirmation) have no place in the wrapper and a pending one blocks page
+/// scripts. The bridge neutralizes `beforeunload` in JS; this is the WebView2
+/// layer's belt and braces.
+#[cfg(target_os = "windows")]
+fn disable_script_dialogs(window: &tauri::WebviewWindow) {
+    use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2Controller;
+    let _ = window.with_webview(|platform| {
+        let controller: ICoreWebView2Controller = platform.controller();
+        // SAFETY: COM calls on the controller created for this webview.
+        unsafe {
+            if let Ok(core) = controller.CoreWebView2() {
+                if let Ok(settings) = core.Settings() {
+                    let _ = settings.SetAreDefaultScriptDialogsEnabled(false);
+                }
+            }
+        }
+    });
+}
+
 fn create_main_window(
     app: &tauri::App,
     config: &Config,
@@ -394,6 +414,8 @@ fn create_main_window(
     // handler is always registered and gated by the live `config.adblock`
     // flag so the settings toggle applies without a reload (see adblock.rs).
     adblock::install(&window);
+    #[cfg(target_os = "windows")]
+    disable_script_dialogs(&window);
     offline::install(&window);
     // Windows media session (taskbar flyout, lock screen, media keys).
     media_controls::init(&window, app.handle().clone());

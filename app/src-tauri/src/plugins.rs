@@ -120,9 +120,11 @@ pub fn combined_script() -> String {
 
 /// UI metadata for the settings window (names, descriptions and editable
 /// option paths). The runtime source of truth for option *defaults* is the
-/// plugin JS (`defaults` in each register call); the `default` values here
-/// only prefill the UI. `options[].path` addresses nested config values.
-/// `manifest_ids_match_plugin_sources` keeps this list in sync with PLUGINS.
+/// plugin JS (`defaults` in each register call); the values here only prefill
+/// the UI, including `enabled` for plugins whose config has no explicit
+/// toggle yet. `always` plugins have no toggle. `options[].path` addresses
+/// nested config values. `manifest_ids_match_plugin_sources` keeps this list
+/// in sync with PLUGINS.
 pub fn manifest() -> serde_json::Value {
     use serde_json::json;
 
@@ -131,16 +133,19 @@ pub fn manifest() -> serde_json::Value {
             "id": "blur-nav-bar",
             "name": "Blur nav bar",
             "description": "Blurs the navigation bar background (glass effect).",
+            "enabled": false,
         },
         {
             "id": "compact-sidebar",
             "name": "Compact sidebar",
             "description": "Switches the guide to the compact (icon-only) sidebar.",
+            "enabled": true,
         },
         {
             "id": "album-color-theme",
             "name": "Album color theme",
             "description": "Tints the interface with the colors of the current album art.",
+            "enabled": false,
             "options": [
                 { "path": ["ratio"], "type": "number", "label": "Color mix (0–1)", "min": 0, "max": 1, "step": 0.1, "default": 0.5 },
             ],
@@ -149,23 +154,26 @@ pub fn manifest() -> serde_json::Value {
             "id": "video-toggle",
             "name": "Video toggle",
             "description": "Song/video switch button for tracks that have a music video.",
+            "enabled": true,
             "reloadNeeded": true,
             "options": [
-                { "path": ["mode"], "type": "select", "label": "Mode", "choices": ["custom", "native", "disabled"], "default": "custom" },
+                { "path": ["mode"], "type": "select", "label": "Mode", "choices": ["custom", "native", "disabled"], "default": "native" },
                 { "path": ["align"], "type": "select", "label": "Button alignment", "choices": ["left", "middle", "right"], "default": "left" },
                 { "path": ["forceHide"], "type": "boolean", "label": "Force hide the video player", "default": false },
-                { "path": ["hideVideo"], "type": "boolean", "label": "Prefer video when available", "default": false },
+                { "path": ["hideVideo"], "type": "boolean", "label": "Prefer audio when available", "default": true },
             ],
         },
         {
             "id": "unobtrusive-player",
             "name": "Unobtrusive player",
             "description": "Hides the player page while browsing; reopens it when a song starts.",
+            "enabled": false,
         },
         {
             "id": "disable-autoplay",
             "name": "Disable autoplay",
             "description": "Pauses playback when a new track loads.",
+            "enabled": true,
             "options": [
                 { "path": ["applyOnce"], "type": "boolean", "label": "Only apply on the first track", "default": false },
             ],
@@ -174,16 +182,19 @@ pub fn manifest() -> serde_json::Value {
             "id": "exponential-volume",
             "name": "Exponential volume",
             "description": "PulseAudio-style volume curve for finer control at low levels.",
+            "enabled": false,
         },
         {
             "id": "playback-speed",
             "name": "Playback speed",
             "description": "Adds a speed slider to the song menu (0.07×–16×).",
+            "enabled": false,
         },
         {
             "id": "skip-silences",
             "name": "Skip silences",
             "description": "Skips silent parts of a track (analyser-based).",
+            "enabled": false,
             "options": [
                 { "path": ["onlySkipBeginning"], "type": "boolean", "label": "Only skip before playback starts", "default": false },
             ],
@@ -192,6 +203,7 @@ pub fn manifest() -> serde_json::Value {
             "id": "equalizer",
             "name": "Equalizer",
             "description": "Applies BiquadFilters to the audio graph (custom filters + bass booster).",
+            "enabled": false,
             "reloadNeeded": true,
             "options": [
                 { "path": ["presets", "bass-booster"], "type": "boolean", "label": "Bass booster preset (+12 dB low shelf)", "default": false },
@@ -201,6 +213,7 @@ pub fn manifest() -> serde_json::Value {
             "id": "precise-volume",
             "name": "Precise volume",
             "description": "Volume HUD, precise steps, wheel/arrow shortcuts and global volume hotkeys.",
+            "enabled": true,
             "reloadNeeded": true,
             "options": [
                 { "path": ["steps"], "type": "number", "label": "Step size (%)", "min": 0, "max": 100, "step": 1, "default": 1 },
@@ -213,11 +226,13 @@ pub fn manifest() -> serde_json::Value {
             "id": "skip-disliked-songs",
             "name": "Skip disliked songs",
             "description": "Skips to the next track when the current one is disliked.",
+            "enabled": false,
         },
         {
             "id": "captions-selector",
             "name": "Captions selector",
             "description": "Subtitles button to pick a caption track, with optional autoload of the last language.",
+            "enabled": true,
             "options": [
                 { "path": ["disableCaptions"], "type": "boolean", "label": "Disable captions entirely", "default": false },
                 { "path": ["autoload"], "type": "boolean", "label": "Autoload the last used language", "default": false },
@@ -227,16 +242,19 @@ pub fn manifest() -> serde_json::Value {
             "id": "quality-changer",
             "name": "Quality changer",
             "description": "Gear button in the player to pick the streaming quality.",
+            "enabled": true,
         },
         {
             "id": "navigation",
             "name": "Navigation buttons",
             "description": "Back/forward buttons in the top bar.",
+            "enabled": false,
         },
         {
             "id": "sponsorblock",
             "name": "SponsorBlock",
             "description": "Skips sponsor segments using the SponsorBlock API (third-party network calls only while enabled).",
+            "enabled": false,
             "options": [
                 { "path": ["apiURL"], "type": "string", "label": "API base URL", "default": "https://sponsor.ajay.app" },
             ],
@@ -245,11 +263,13 @@ pub fn manifest() -> serde_json::Value {
             "id": "album-actions",
             "name": "Album actions",
             "description": "Bulk like/dislike buttons for album and playlist pages, with a fill percentage.",
+            "enabled": false,
         },
         {
             "id": "synced-lyrics",
             "name": "Synced lyrics",
             "description": "Lyrics panel with synced highlighting and click-to-seek (LRCLib provider; third-party calls only while enabled).",
+            "enabled": true,
             "options": [
                 { "path": ["showLyricsEvenIfInexact"], "type": "boolean", "label": "Show approximate matches", "default": false },
             ],
@@ -258,6 +278,8 @@ pub fn manifest() -> serde_json::Value {
             "id": "user-theme",
             "name": "Custom theme",
             "description": "Preset palette or your own CSS. Use \"Reload player\" to apply changes. Presets assume YouTube Music's dark theme.",
+            "enabled": true,
+            "always": true,
             "options": [
                 { "path": ["preset"], "type": "select", "label": "Palette", "choices": ["native", "midnight", "amoled", "warm", "forest"], "default": "native" },
                 { "path": ["customCss"], "type": "textarea", "label": "Custom CSS (appended after the palette)", "rows": 8, "default": "" },
@@ -267,6 +289,7 @@ pub fn manifest() -> serde_json::Value {
             "id": "settings-button",
             "name": "Settings button",
             "description": "Gear button in the top bar that opens this settings window.",
+            "enabled": true,
         },
     ])
 }

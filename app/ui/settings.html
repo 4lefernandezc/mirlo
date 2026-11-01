@@ -219,9 +219,6 @@
             <input type="checkbox" id="resume-playback" />
             Resume playback where you left off (on app start)
           </label>
-          <label class="field inline">
-            <input type="text" id="discord-client-id" placeholder="Optional: your own Discord client id" size="24" />
-          </label>
         </div>
       </section>
 
@@ -270,7 +267,6 @@
           const hotkeys = document.getElementById('hotkeys');
           const notifications = document.getElementById('notifications');
           const discordRpc = document.getElementById('discord-rpc');
-          const discordClientId = document.getElementById('discord-client-id');
           const updateCheck = document.getElementById('update-check');
           const minimizeToTray = document.getElementById('minimize-to-tray');
           const closeToTray = document.getElementById('close-to-tray');
@@ -279,7 +275,6 @@
           hotkeys.checked = !!fullConfig.hotkeys_enabled;
           notifications.checked = !!fullConfig.notifications;
           discordRpc.checked = !!fullConfig.discord_rpc;
-          discordClientId.value = fullConfig.discord_client_id || '';
           updateCheck.checked = fullConfig.update_check !== false;
           minimizeToTray.checked = !!fullConfig.minimize_to_tray;
           closeToTray.checked = fullConfig.close_to_tray !== false;
@@ -294,7 +289,6 @@
                   hotkeys_enabled: hotkeys.checked,
                   notifications: notifications.checked,
                   discord_rpc: discordRpc.checked,
-                  discord_client_id: discordClientId.value.trim(),
                   update_check: updateCheck.checked,
                   minimize_to_tray: minimizeToTray.checked,
                   close_to_tray: closeToTray.checked,
@@ -310,7 +304,6 @@
           hotkeys.addEventListener('change', save);
           notifications.addEventListener('change', save);
           discordRpc.addEventListener('change', save);
-          discordClientId.addEventListener('change', save);
           updateCheck.addEventListener('change', save);
           minimizeToTray.addEventListener('change', save);
           closeToTray.addEventListener('change', save);
@@ -430,14 +423,19 @@
           article.appendChild(options);
 
           let state = Object.assign({}, fullConfig.plugins[plugin.id] || {});
-          toggle.checked = !!state.enabled;
-          toggle.addEventListener('change', () => {
-            const next = JSON.parse(JSON.stringify(state));
-            next.enabled = toggle.checked;
-            savePlugin(plugin.id, next).then(() => {
-              state = next;
+          if (plugin.always) {
+            toggle.remove();
+          } else {
+            toggle.checked =
+              state.enabled !== undefined ? !!state.enabled : plugin.enabled !== false;
+            toggle.addEventListener('change', () => {
+              const next = JSON.parse(JSON.stringify(state));
+              next.enabled = toggle.checked;
+              savePlugin(plugin.id, next).then(() => {
+                state = next;
+              });
             });
-          });
+          }
 
           for (const option of plugin.options || []) {
             options.appendChild(renderOption(plugin, state, option));

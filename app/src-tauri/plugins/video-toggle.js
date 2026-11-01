@@ -12,11 +12,11 @@
  *     `restartNeeded` too).
  */
 __MIRLO_PLUGINS__.register('video-toggle', {
-  // Mirlo default: enabled (additive song/video switch button).
+  // Mirlo default: enabled, native switch, audio preferred over video.
   defaults: {
     enabled: true,
-    hideVideo: false,
-    mode: 'custom',
+    hideVideo: true,
+    mode: 'native',
     forceHide: false,
     align: 'left',
   },
@@ -164,6 +164,12 @@ __MIRLO_PLUGINS__.register('video-toggle', {
         document
           .querySelector('ytmusic-av-toggle')
           ?.removeAttribute('toggle-disabled');
+        // "Prefer audio" also applies in native mode: start in song view.
+        if (config.hideVideo) {
+          document
+            .querySelector('ytmusic-player')
+            ?.setAttribute('playback-mode', 'ATV_PREFERRED');
+        }
         return;
       }
 

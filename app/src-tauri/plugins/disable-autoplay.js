@@ -8,7 +8,7 @@
  * `applyOnce` will be exposed by the Mirlo settings UI.
  */
 __MIRLO_PLUGINS__.register('disable-autoplay', {
-  defaults: { enabled: false, applyOnce: false },
+  defaults: { enabled: true, applyOnce: false },
 
   config: null,
   api: null,

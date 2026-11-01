@@ -18,7 +18,8 @@
  *     auto-scroll) inside the native view itself.
  */
 __MIRLO_PLUGINS__.register('synced-lyrics', {
-  defaults: { enabled: false, showLyricsEvenIfInexact: false },
+  // Mirlo default: enabled (lyrics panel + native Lyrics tab).
+  defaults: { enabled: true, showLyricsEvenIfInexact: false },
   styles: [
     `
 .mirlo-icon-button {

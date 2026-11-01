@@ -8,9 +8,10 @@ of bundling an entire browser like Electron-based alternatives. Measurements:
 **371 MB vs 1179 MB** private memory (Mirlo vs the Electron v3.11.0 build of
 pear-desktop, idle, same machine).
 
-> **Status: v0.1.6 released** (Windows + Linux). Features: player, 18 plugins,
-> media keys, notifications, Discord presence, ad-block, resume playback and
-> signed auto-update. See [docs/roadmap.md](docs/roadmap.md).
+> **Status: v0.1.9 released** (Windows + Linux). Features: player, 19 plugins
+> (including custom themes), media keys, notifications, Discord presence,
+> ad-block, resume playback and signed auto-update. See
+> [docs/roadmap.md](docs/roadmap.md).
 
 ## Install
 
@@ -72,10 +73,11 @@ Windows portable ZIP and the Linux `.deb` are updated manually.
 
 - **Light**: reuses the system web engine (WebView2 / WebKitGTK); no bundled
   browser, no background Node runtime.
-- **18 plugins** (opt-in), ported from pear-desktop with attribution:
+- **19 plugins** (opt-in): 18 ported from pear-desktop with attribution —
   navigation, video toggle, precise volume, compact sidebar, equalizer,
   synced lyrics (with animation inside the native "Lyrics" tab),
-  SponsorBlock, captions/quality pickers and more.
+  SponsorBlock, captions/quality pickers and more — plus custom themes
+  (preset palettes or your own CSS).
 - **Media controls**: SMTC on Windows (taskbar, lock screen, media keys) and
   MPRIS on Linux.
 - Track-change notifications (Windows).

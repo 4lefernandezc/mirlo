@@ -126,6 +126,7 @@
       }
       input[type="text"],
       input[type="number"],
+      textarea,
       select {
         background: #0d0f13;
         border: 1px solid var(--card-border);
@@ -134,8 +135,16 @@
         font: inherit;
         padding: 6px 8px;
       }
-      input[type="text"] {
+      input[type="text"],
+      textarea {
         font-family: Consolas, monospace;
+      }
+      textarea {
+        resize: vertical;
+        min-height: 90px;
+      }
+      .options label.wide {
+        grid-column: 1 / -1;
       }
       input[type="checkbox"] {
         accent-color: var(--accent);
@@ -347,6 +356,17 @@
             }
             select.addEventListener('change', () => apply(select.value));
             label.appendChild(select);
+            return label;
+          }
+
+          if (option.type === 'textarea') {
+            label.className = 'field wide';
+            const textarea = document.createElement('textarea');
+            textarea.rows = option.rows || 6;
+            textarea.spellcheck = false;
+            textarea.value = value ?? '';
+            textarea.addEventListener('change', () => apply(textarea.value));
+            label.appendChild(textarea);
             return label;
           }
 

@@ -42,12 +42,18 @@ with the new ZIP's copy). See
 ## Which plugins ship enabled?
 
 Stable additive plugins are enabled out of the box: navigation buttons,
-video toggle, precise volume, captions selector, quality changer and compact
-sidebar. Behavioral or opinionated plugins (ad-block, sponsorblock,
+video toggle, precise volume, captions selector, quality changer, compact
+sidebar and the custom-theme plugin (a no-op until you pick a palette or write
+CSS). Behavioral or opinionated plugins (ad-block, sponsorblock,
 skip-disliked-songs, album-actions, synced lyrics, equalizer, …) ship **off**;
-enable them per plugin in Settings. All are ported from
+enable them per plugin in Settings. All ports come from
 [pear-desktop](https://github.com/pear-devs/pear-desktop) (MIT) with
 attribution.
+
+## Can I change the colors?
+
+Yes: **Settings → Custom theme** has four dark palettes and a CSS box for your
+own rules. See [Custom themes](themes.md). Changes apply with *Reload player*.
 
 ## What are the global hotkeys?
 

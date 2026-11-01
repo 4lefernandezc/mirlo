@@ -31,6 +31,24 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 
 ## Current state (2026-11-01)
 
+- **Custom themes — DONE (unreleased, 2026-11-01)**: original plugin
+  `user-theme` (19th) with presets `native`/`midnight`/`amoled`/`warm`/`forest`
+  plus a Custom CSS box. It overrides only variables YouTube Music defines
+  (`--yt-spec-*`, `--ytmusic-color-*`) through a constructed stylesheet; user
+  CSS is appended after the palette. Ships enabled but is a no-op until
+  configured. The synchronous boot config applies the sheet before first
+  paint and `start()` re-applies the fresh config; `@import` and remote
+  `url()` are stripped best effort. Settings gained a `textarea` option type
+  (full width). Verified live with CDP on a temp profile: midnight applied
+  from config, the card rendered 5 palettes + an 8-row textarea, switching to
+  forest persisted to `config.json` and applied after `Page.reload`. 32 Rust
+  + 7 Node tests pass; `tools/tests/user-theme.test.mjs` runs in CI.
+  `docs/user/themes.md` documents the variables and limits.
+- **Renderer dev loader — DONE (unreleased, 2026-11-01)**: `MIRLO_DEV_SRC`
+  makes the shell read `plugins/*.js` and `src/bridge.js` from disk instead of
+  the `include_str!` copies, so renderer edits apply after *Reload player*
+  with no Rust rebuild. Measured before it: ~22 s debug / ~581 s release per
+  plugin edit. Env-only; release/CI never set it. Commit `58fceab`.
 - **v0.1.9 RELEASED (public, 2026-11-01)**: tag `v0.1.9` -> workflow
   `41269569642` green (Windows 3m17s, Linux 17m53s, checksums 15s) -> draft
   verified (12 assets; four updater signatures valid against the embedded key

@@ -41,7 +41,9 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
   `#continuations` applies immediately instead of doing nothing. Each action
   is shown only while there is work for it (`Like all` when unliked tracks
   exist, `Remove like` only when some are liked, same for dislike), and the
-  icon fill is the remaining work. The first
+  icon fill is the remaining work. A bulk click adds
+  `body.mirlo-bulk-action` for 2.5 s, whose CSS hides the per-track
+  "saved to liked music" snackbars (`tp-yt-paper-toast` and friends). The first
   version removed and re-inserted the container on every `#browse-page`
   mutation, which looped through the plugin's own MutationObserver and froze
   the UI on playlist/album pages; removal now happens only on the

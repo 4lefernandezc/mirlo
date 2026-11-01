@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Dislike all` when tracks can be liked/disliked instead of only the
   "remove" variants). A click applies to every matching track button and the
   icons refresh when their state changes.
+- Bulk like/dislike actions no longer show the "saved to liked music"
+  snackbar once per track.
 - Opening a playlist or album no longer freezes the UI: the bulk-action
   plugin's observer no longer re-inserts its own container on every page
   mutation.

@@ -57,6 +57,15 @@ __MIRLO_PLUGINS__.register('album-actions', {
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
 }
+/* Bulk actions fire one like per row; YouTube shows the same "saved to liked
+   music" snackbar for every click. Suppress the snackbars while applying. */
+body.mirlo-bulk-action tp-yt-paper-toast,
+body.mirlo-bulk-action paper-toast,
+body.mirlo-bulk-action ytmusic-toast,
+body.mirlo-bulk-action ytmusic-notification-action-renderer,
+body.mirlo-bulk-action #toast {
+  display: none !important;
+}
 `,
   ],
 
@@ -64,6 +73,7 @@ __MIRLO_PLUGINS__.register('album-actions', {
   changeObserver: null,
   waiting: false,
   maskSetters: null,
+  toastTimer: null,
 
   // upstream templates/like-button.tsx, unlike-button.tsx,
   // dislike-button.tsx, undislike-button.tsx (render order: un-dislike,
@@ -309,6 +319,15 @@ __MIRLO_PLUGINS__.register('album-actions', {
     const playlist =
       document.querySelector('ytmusic-playlist-shelf-renderer') ??
       document.querySelector(':nth-last-child(1 of ytmusic-shelf-renderer)');
+
+    // One like per row means one snackbar per row; hide them for the burst.
+    document.body.classList.add('mirlo-bulk-action');
+    clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => {
+      document.body.classList.remove('mirlo-bulk-action');
+      this.toastTimer = null;
+    }, 2500);
+
     playlist?.querySelectorAll(selectors[id]).forEach((elem) => elem.click());
     // YouTube flips aria-pressed asynchronously; refresh once it settles.
     setTimeout(() => this.refresh(), 300);
@@ -319,6 +338,9 @@ __MIRLO_PLUGINS__.register('album-actions', {
     this.changeObserver?.disconnect();
     this.observer = null;
     this.changeObserver = null;
+    clearTimeout(this.toastTimer);
+    this.toastTimer = null;
+    document.body.classList.remove('mirlo-bulk-action');
     for (const button of document.querySelectorAll('.mirlo-bulk-button')) {
       button.remove();
     }

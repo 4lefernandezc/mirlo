@@ -677,6 +677,9 @@
     reload() {
       return invoke('reload_player');
     },
+    openSettings() {
+      return invoke('open_settings');
+    },
     restart() {
       return invoke('restart_app');
     },

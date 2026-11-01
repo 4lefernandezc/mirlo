@@ -90,6 +90,10 @@ pub const PLUGINS: &[PluginSource] = &[
         id: "user-theme",
         source: include_str!("../plugins/user-theme.js"),
     },
+    PluginSource {
+        id: "settings-button",
+        source: include_str!("../plugins/settings-button.js"),
+    },
 ];
 
 /// Development-only source override: when `MIRLO_DEV_SRC` points at
@@ -258,6 +262,11 @@ pub fn manifest() -> serde_json::Value {
                 { "path": ["preset"], "type": "select", "label": "Palette", "choices": ["native", "midnight", "amoled", "warm", "forest"], "default": "native" },
                 { "path": ["customCss"], "type": "textarea", "label": "Custom CSS (appended after the palette)", "rows": 8, "default": "" },
             ],
+        },
+        {
+            "id": "settings-button",
+            "name": "Settings button",
+            "description": "Gear button in the top bar that opens this settings window.",
         },
     ])
 }

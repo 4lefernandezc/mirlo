@@ -33,6 +33,8 @@ with the new ZIP's copy). See
 ## Where are the settings?
 
 - Tray icon → **Settings…** (or run `mirlo.exe --settings`).
+- The **sliders button in the player's top bar** (next to the other header
+  icons) opens the same window.
 - The settings file itself: `%LOCALAPPDATA%\Mirlo\config.json` for installed
   copies (`data\config.json` next to the executable for portable ones); close
   the app before editing it by hand.
@@ -43,9 +45,10 @@ with the new ZIP's copy). See
 
 Stable additive plugins are enabled out of the box: navigation buttons,
 video toggle, precise volume, captions selector, quality changer, compact
-sidebar and the custom-theme plugin (a no-op until you pick a palette or write
-CSS). Behavioral or opinionated plugins (ad-block, sponsorblock,
-skip-disliked-songs, album-actions, synced lyrics, equalizer, …) ship **off**;
+sidebar, the settings button (top bar → this window) and the custom-theme
+plugin (a no-op until you pick a palette or write CSS). Behavioral or
+opinionated plugins (ad-block, sponsorblock, skip-disliked-songs,
+album-actions, synced lyrics, equalizer, …) ship **off**;
 enable them per plugin in Settings. All ports come from
 [pear-desktop](https://github.com/pear-devs/pear-desktop) (MIT) with
 attribution.

@@ -14,6 +14,7 @@
     "allow-get-path",
     "allow-report-player-state",
     "allow-reload-player",
+    "allow-open-settings",
     "allow-restart-app"
   ]
 }

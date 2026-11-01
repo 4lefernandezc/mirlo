@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Settings button in the player's top bar (sliders icon) that opens the
+  settings window without leaving the app.
 - Custom themes: four dark palettes (midnight, amoled, warm, forest) and a
   Custom CSS box in Settings. Themes are applied through YouTube Music's own
   CSS variables; changes apply with "Reload player". Ships enabled but is a

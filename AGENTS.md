@@ -31,6 +31,17 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 
 ## Current state (2026-11-01)
 
+- **In-app settings button — DONE (unreleased, 2026-11-01)**: original plugin
+  `settings-button` (20th) appends a sliders icon to `#right-content` and
+  calls `window.__mirlo.openSettings()`, which invokes the new
+  `open_settings` command. That command is registered in
+  `generate_handler!`, `build.rs` and the `main-capability`
+  (`allow-open-settings`); it only opens the local window, no new privilege.
+  Runtime window creation needed the thread + explicit-navigate workarounds
+  recorded in "Traps". Verified live (CDP + screenshot): the button has
+  40 px layout in the top bar, clicking it opens
+  `http://tauri.localhost/settings.html`, and the page renders the full
+  settings UI. Enabled by default; the tray item and `--settings` still work.
 - **Custom themes — DONE (unreleased, 2026-11-01)**: original plugin
   `user-theme` (19th) with presets `native`/`midnight`/`amoled`/`warm`/`forest`
   plus a Custom CSS box. It overrides only variables YouTube Music defines
@@ -1064,8 +1075,17 @@ for probes — pass a URL substring as 4th arg to target the settings window;
   `ServerOverloaded` under load; retry briefly (see synced-lyrics.js).
 - Extra windows must share the WebView2 environment with the player (same
   `data_directory` and browser args) or WebView2 spawns a separate browser
-  process — that also splits the CDP endpoint (the settings window was
+  process - that also splits the CDP endpoint (the settings window was
   invisible to debugging until it matched; see `open_settings_window`).
+- **Creating a webview window at runtime needs two workarounds**
+  (2026-11-01, Tauri 2.12/Windows): `WebviewWindowBuilder::build()` must run
+  off the event-loop thread (`open_settings_detached` spawns a thread) or it
+  blocks forever from a command/menu handler; and the builder's
+  `WebviewUrl::App` is not applied in that path, so the window stays on
+  `about:blank` until `window.navigate()` points it at the app URL
+  (`http://tauri.localhost/<page>` on Windows, `tauri://localhost/<page>`
+  elsewhere). Windows created inside `setup` (e.g. `--settings`) are not
+  affected.
 - Frontend assets under `app/ui/` are embedded at compile time: HTML/CSS
   changes need a rebuild, not just an app restart.
 - Build cost measured with a warm `%TEMP%\mirlo-target` (2026-11-01): touching

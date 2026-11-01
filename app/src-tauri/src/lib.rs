@@ -229,7 +229,7 @@ fn create_tray(app: &tauri::App) -> tauri::Result<()> {
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id().as_ref() {
-            "settings" => open_settings_window(app),
+            "settings" => open_settings_detached(app),
             "check-updates" => updates::check_now(app),
             "toggle" => toggle_main_window(app),
             "quit" => {
@@ -292,9 +292,34 @@ fn open_settings_window(app: &AppHandle) {
         builder = builder.additional_browser_args(&args);
     }
 
-    if let Err(err) = builder.build() {
-        log_error!("could not open the settings window: {err}");
+    match builder.build() {
+        Ok(window) => {
+            // WebviewUrl::App is not applied when the window is created off
+            // the event loop; navigating explicitly loads the embedded page.
+            let base = if cfg!(windows) {
+                "http://tauri.localhost"
+            } else {
+                "tauri://localhost"
+            };
+            match tauri::Url::parse(&format!("{base}/settings.html")) {
+                Ok(url) => {
+                    if let Err(err) = window.navigate(url) {
+                        log_error!("could not load the settings window: {err}");
+                    }
+                }
+                Err(err) => log_error!("invalid settings url: {err}"),
+            }
+        }
+        Err(err) => log_error!("could not open the settings window: {err}"),
     }
+}
+
+/// Creates the settings window off the event-loop thread. `build()` posts the
+/// creation to the loop and waits for the result, so calling it inline from a
+/// command/menu handler deadlocks and leaves the window on about:blank.
+fn open_settings_detached(app: &AppHandle) {
+    let handle = app.clone();
+    std::thread::spawn(move || open_settings_window(&handle));
 }
 
 fn create_main_window(
@@ -575,6 +600,12 @@ fn reload_player(app: AppHandle) -> Result<(), String> {
         .map_err(|e| e.to_string())
 }
 
+/// Opens the local settings window from the player page (top-bar button).
+#[tauri::command]
+fn open_settings(app: AppHandle) {
+    open_settings_detached(&app);
+}
+
 #[tauri::command]
 fn restart_app(app: AppHandle) {
     save_playback(&app.state::<AppState>());
@@ -704,6 +735,7 @@ pub fn run() {
             get_plugin_manifest,
             report_player_state,
             reload_player,
+            open_settings,
             restart_app
         ])
         .on_window_event(|window, event| {

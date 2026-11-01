@@ -73,11 +73,11 @@ Windows portable ZIP and the Linux `.deb` are updated manually.
 
 - **Light**: reuses the system web engine (WebView2 / WebKitGTK); no bundled
   browser, no background Node runtime.
-- **19 plugins** (opt-in): 18 ported from pear-desktop with attribution —
+- **20 plugins** (opt-in): 18 ported from pear-desktop with attribution —
   navigation, video toggle, precise volume, compact sidebar, equalizer,
   synced lyrics (with animation inside the native "Lyrics" tab),
   SponsorBlock, captions/quality pickers and more — plus custom themes
-  (preset palettes or your own CSS).
+  (preset palettes or your own CSS) and a settings button in the top bar.
 - **Media controls**: SMTC on Windows (taskbar, lock screen, media keys) and
   MPRIS on Linux.
 - Track-change notifications (Windows).

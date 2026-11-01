@@ -220,47 +220,20 @@ __MIRLO_PLUGINS__.register('album-actions', {
 
     const buttonContainer = this.buildButtonContainer();
 
-    // Adds an observer for every button, so it gets updated when one is clicked
+    // The like/dislike buttons change aria-pressed after an action; refresh
+    // the bulk rows from that instead of rebuilding the whole menu.
     this.changeObserver?.disconnect();
-
-    this.changeObserver = new MutationObserver(() => {
-      this.stop();
-      this.start();
-    });
-    const allButtons = playlist.querySelectorAll(
-      'yt-button-shape.ytmusic-like-button-renderer'
-    );
-    for (const btn of allButtons) {
+    this.changeObserver = new MutationObserver(() => this.refresh());
+    for (const btn of playlist.querySelectorAll(
+      '#button-shape-like, #button-shape-dislike'
+    )) {
       this.changeObserver.observe(btn, {
         attributes: true,
         childList: false,
         subtree: true,
       });
     }
-    const liked = playlist.querySelectorAll(
-      '#button-shape-like > button[aria-pressed=true]'
-    ).length;
-    const disliked = playlist.querySelectorAll(
-      '#button-shape-dislike > button[aria-pressed=true]'
-    ).length;
-    // Each button acts on the tracks that are not yet in its target state, so
-    // it is shown only while there is work to do. The fill shows how much
-    // work remains.
-    const pending = {
-      alllike: listsLength - liked,
-      allunlike: liked,
-      alldislike: listsLength - disliked,
-      allundislike: disliked,
-    };
-    for (const [id, count] of Object.entries(pending)) {
-      const button = buttonContainer.querySelector(`#${id}`);
-      if (!button) continue;
-      if (count > 0) {
-        this.maskSetters?.[id]?.(`100% ${(count / listsLength) * 100}%`);
-      } else {
-        button.style.display = 'none';
-      }
-    }
+    this.updateCounts(playlist, buttonContainer);
     const menuParent = document.querySelector('#action-buttons')?.parentElement;
     if (menuParent && !document.querySelector('#mirlo-album-action-buttons')) {
       const menu = document.createElement('div');
@@ -273,6 +246,48 @@ __MIRLO_PLUGINS__.register('album-actions', {
         menuParent.children[menuParent.children.length - 1]
       );
       menu.appendChild(buttonContainer);
+    }
+  },
+
+  refresh() {
+    const playlist =
+      document.querySelector('ytmusic-playlist-shelf-renderer') ??
+      document.querySelector(':nth-last-child(1 of ytmusic-shelf-renderer)');
+    const buttonContainer = document.querySelector(
+      '#mirlo-album-action-buttons > div'
+    );
+    if (playlist && buttonContainer) this.updateCounts(playlist, buttonContainer);
+  },
+
+  updateCounts(playlist, buttonContainer) {
+    const total = playlist.querySelectorAll(
+      '#button-shape-dislike > button'
+    ).length;
+    if (!total) return;
+    const liked = playlist.querySelectorAll(
+      '#button-shape-like > button[aria-pressed=true]'
+    ).length;
+    const disliked = playlist.querySelectorAll(
+      '#button-shape-dislike > button[aria-pressed=true]'
+    ).length;
+    // Each button acts on the tracks that are not yet in its target state, so
+    // it is shown only while there is work to do. The fill shows how much
+    // work remains.
+    const pending = {
+      alllike: total - liked,
+      allunlike: liked,
+      alldislike: total - disliked,
+      allundislike: disliked,
+    };
+    for (const [id, count] of Object.entries(pending)) {
+      const button = buttonContainer.querySelector(`#${id}`);
+      if (!button) continue;
+      if (count > 0) {
+        button.style.display = '';
+        this.maskSetters?.[id]?.(`100% ${(count / total) * 100}%`);
+      } else {
+        button.style.display = 'none';
+      }
     }
   },
 
@@ -295,6 +310,8 @@ __MIRLO_PLUGINS__.register('album-actions', {
       document.querySelector('ytmusic-playlist-shelf-renderer') ??
       document.querySelector(':nth-last-child(1 of ytmusic-shelf-renderer)');
     playlist?.querySelectorAll(selectors[id]).forEach((elem) => elem.click());
+    // YouTube flips aria-pressed asynchronously; refresh once it settles.
+    setTimeout(() => this.refresh(), 300);
   },
 
   stop() {

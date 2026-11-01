@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Plugin defaults: disable-autoplay and synced lyrics now start enabled;
+  navigation buttons start disabled; video toggle defaults to the native
+  switch with "Prefer audio when available" on.
+- Settings: the custom-theme card has no enable toggle (the theme always
+  applies; `native` is a no-op) and the optional Discord client id field was
+  removed.
+
 ### Fixed
 
 - Album/playlist bulk like buttons: proper Mirlo styling instead of unstyled

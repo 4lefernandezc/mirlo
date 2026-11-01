@@ -43,14 +43,14 @@ with the new ZIP's copy). See
 
 ## Which plugins ship enabled?
 
-Stable additive plugins are enabled out of the box: navigation buttons,
-video toggle, precise volume, captions selector, quality changer, compact
-sidebar, the settings button (top bar → this window) and the custom-theme
-plugin (a no-op until you pick a palette or write CSS). Behavioral or
-opinionated plugins (ad-block, sponsorblock, skip-disliked-songs,
-album-actions, synced lyrics, equalizer, …) ship **off**;
-enable them per plugin in Settings. All ports come from
-[pear-desktop](https://github.com/pear-devs/pear-desktop) (MIT) with
+Stable additive plugins are enabled out of the box: video toggle (native
+switch, audio preferred by default), precise volume, captions selector,
+quality changer, compact sidebar, disable autoplay, synced lyrics, the
+settings button (top bar → this window) and custom themes (a no-op until you
+pick a palette or write CSS). Behavioral or opinionated plugins (sponsorblock,
+skip-disliked-songs, album-actions, equalizer, skip silences, navigation
+buttons, …) ship **off**; enable them per plugin in Settings. All ports come
+from [pear-desktop](https://github.com/pear-devs/pear-desktop) (MIT) with
 attribution.
 
 ## Can I change the colors?

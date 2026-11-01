@@ -7,8 +7,9 @@
  * (Trusted Types) instead of SolidJS.
  */
 __MIRLO_PLUGINS__.register('navigation', {
-  // Mirlo default: enabled (upstream also ships navigation enabled).
-  defaults: { enabled: true },
+  // Mirlo default: off (kept opt-in; the in-app settings button is the
+  // primary navigation aid).
+  defaults: { enabled: false },
   styles: [
     `
 .navigation-item {

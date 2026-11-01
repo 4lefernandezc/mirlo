@@ -31,6 +31,17 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 
 ## Current state (2026-11-01)
 
+- **Settings defaults tuned (unreleased, 2026-11-01)**: video-toggle defaults
+  to `mode: native` with `hideVideo: true` (label "Prefer audio when
+  available"; native mode also sets `playback-mode=ATV_PREFERRED` once),
+  disable-autoplay and synced-lyrics default on, navigation defaults off,
+  skip-silences stays off. The manifest now carries each plugin's `enabled`
+  default: the settings toggle used to show unchecked whenever
+  `config.plugins[id].enabled` was absent even though the plugin ran (the
+  theme case). `user-theme` is marked `always`, so its card has no toggle
+  (`native` is a no-op). The optional Discord client-id input was removed
+  from Settings; the `discord_client_id` config key is still honored.
+
 - **Album actions + reload-dialog fixes (unreleased, 2026-11-01)**: the bulk
   like/dislike buttons no longer use YouTube's `yt-spec-button-shape-next`
   classes (a bare `<button>` fell back to browser styling and the custom

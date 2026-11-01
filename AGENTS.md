@@ -1050,6 +1050,14 @@ for probes — pass a URL substring as 4th arg to target the settings window;
   invisible to debugging until it matched; see `open_settings_window`).
 - Frontend assets under `app/ui/` are embedded at compile time: HTML/CSS
   changes need a rebuild, not just an app restart.
+- Build cost measured with a warm `%TEMP%\mirlo-target` (2026-11-01): touching
+  one plugin JS and rebuilding takes ~22 s in debug (1 s no-op) and ~581 s in
+  release, because every renderer source is an `include_str!` and release adds
+  `lto` + `codegen-units = 1`. Set `MIRLO_DEV_SRC=<repo>\app\src-tauri` and run
+  a debug build to read `plugins/*.js` and `src/bridge.js` from disk: edits
+  then apply on the next page load (`Reload player`), no Rust rebuild. The
+  override is env-only; never set it for release/CI, where the embedded
+  sources remain the shipped ones.
 - `PrintWindow` captures of WebView2 (composited surfaces) may clip content
   at some window sizes/positions; use CDP layout numbers (scrollWidth vs
   innerWidth) as the source of truth for layout checks.
@@ -1191,6 +1199,12 @@ cargo build --manifest-path app/src-tauri/Cargo.toml --release
 
 # Run the app
 cargo run --manifest-path app/src-tauri/Cargo.toml --release
+
+# Renderer dev loop (plugins/bridge): read JS from disk, no Rust rebuild.
+# Unset in normal runs/releases; the embedded sources are the shipped ones.
+$env:MIRLO_DEV_SRC = "$PWD\app\src-tauri"
+cargo run --manifest-path app/src-tauri/Cargo.toml   # debug build for speed
+# edit plugins/*.js or src/bridge.js, then tray/settings -> Reload player
 
 # Checks (run before every commit)
 cargo fmt --manifest-path app/src-tauri/Cargo.toml

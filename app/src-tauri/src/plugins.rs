@@ -88,12 +88,24 @@ pub const PLUGINS: &[PluginSource] = &[
     },
 ];
 
+/// Development-only source override: when `MIRLO_DEV_SRC` points at
+/// `app/src-tauri`, renderer sources are read from disk so edits apply on a
+/// page reload instead of a Rust rebuild. Unset in release and CI.
+pub fn dev_read(rel: &str) -> Option<String> {
+    let root = std::env::var("MIRLO_DEV_SRC").ok()?;
+    std::fs::read_to_string(std::path::Path::new(&root).join(rel)).ok()
+}
+
 /// All plugin sources concatenated in registration order, each with a
 /// `/* mirlo-plugin: <id> */` marker so the injected script stays traceable.
 pub fn combined_script() -> String {
     PLUGINS
         .iter()
-        .map(|plugin| format!("/* mirlo-plugin: {} */\n{}", plugin.id, plugin.source))
+        .map(|plugin| {
+            let source = dev_read(&format!("plugins/{}.js", plugin.id))
+                .unwrap_or_else(|| plugin.source.to_string());
+            format!("/* mirlo-plugin: {} */\n{}", plugin.id, source)
+        })
         .collect::<Vec<_>>()
         .join("\n")
 }
@@ -271,5 +283,17 @@ mod tests {
             .collect();
         let source_ids: Vec<&str> = PLUGINS.iter().map(|plugin| plugin.id).collect();
         assert_eq!(manifest_ids, source_ids, "settings manifest out of sync");
+    }
+
+    #[test]
+    fn dev_source_override_reads_from_disk() {
+        let dir = std::env::temp_dir().join(format!("mirlo-dev-src-{}", std::process::id()));
+        std::fs::create_dir_all(dir.join("plugins")).unwrap();
+        std::fs::write(dir.join("plugins/blur-nav-bar.js"), "// disk copy").unwrap();
+        std::env::set_var("MIRLO_DEV_SRC", &dir);
+        let script = combined_script();
+        std::env::remove_var("MIRLO_DEV_SRC");
+        std::fs::remove_dir_all(&dir).ok();
+        assert!(script.contains("/* mirlo-plugin: blur-nav-bar */\n// disk copy"));
     }
 }

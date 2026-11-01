@@ -308,9 +308,12 @@ fn create_main_window(
     });
     // Order: boot config → core bridge (defines the plugin host) → plugin
     // modules (register themselves) → host init (starts enabled plugins).
+    if let Ok(root) = std::env::var("MIRLO_DEV_SRC") {
+        log_info!("dev: reading renderer sources from {root}");
+    }
     let script = format!(
         "if (location.hostname === 'music.youtube.com') {{\nwindow.__MIRLO_BOOT__ = {boot};\n{core}\n{plugins}\nwindow.__MIRLO_PLUGINS__.init();\n}}",
-        core = BRIDGE_JS,
+        core = plugins::dev_read("src/bridge.js").unwrap_or_else(|| BRIDGE_JS.to_string()),
         plugins = plugins::combined_script(),
     );
     // Register failure handlers before starting the network navigation.

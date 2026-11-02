@@ -31,7 +31,17 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 
 ## Current state (2026-11-01)
 
-- **Disable-autoplay fix (unreleased, 2026-11-02)**: the upstream port paused
+- **v0.1.11 RELEASED (public, 2026-11-02)**: tag `v0.1.11` -> workflow
+  `41485837763` green (Windows 8m43s, Linux 16m28s, checksums 29s) -> draft
+  verified (12 assets; four signatures valid at 0.1.11 with tamper rejection;
+  9 binary checksums + sources; sources 17,085 inner checksums; `latest.json`
+  0.1.11 with all six entries; the published AppRun contains the bwrap
+  probe/fallback) -> published as latest (2026-11-02T17:13:53Z); anonymous
+  updater HTTP 200. Contents: disable-autoplay intent fix and the AppImage
+  sandbox fallback that unblocks `appimage.github.io` PR 10937. AppImage
+  81,562,104 bytes; deb 3,528,846; sources 526,522,337. Evidence:
+  `docs/research/release-0.1.11.md`.
+- **Disable-autoplay fix (released in 0.1.11, 2026-11-02)**: the upstream port paused
   on the first `timeupdate` after a load; when the track was paused that
   one-shot listener stayed armed and paused the next user play. The port now
   pauses at `dataloaded`, catches a late auto-start with a 4 s `play`
@@ -39,7 +49,7 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
   `mirlo:user-intent` event (shell hotkeys, SMTC, MPRIS) within 1.5 s as an
   explicit choice, so clicking or hotkey-changing a track plays it. 5 Node
   tests in `tools/tests/disable-autoplay.test.mjs` (wired into CI).
-- **AppImage sandbox fallback (unreleased, 2026-11-02)**: the AppRun now
+- **AppImage sandbox fallback (released in 0.1.11, 2026-11-02)**: the AppRun now
   probes `bwrap --unshare-user --unshare-pid --ro-bind / / --proc /proc true`
   and only exports `WEBKIT_FORCE_SANDBOX=1` when it succeeds; otherwise it
   logs `WebKit sandbox unavailable here; continuing without it` and starts
@@ -48,7 +58,7 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
   with `readPIDFromPeer`, and the app exited without a window. Probe checked
   in WSL (real bwrap -> sandbox, failing stub -> fallback); packaging tests
   pass. Trade-off: restricted hosts lose renderer isolation instead of
-  failing to start. Needs a new release for the catalog `/retest`.
+  failing to start. Released in 0.1.11; comment `/retest` on the catalog PR.
 
 - **v0.1.10 RELEASED (public, 2026-11-01)**: tag `v0.1.10` -> workflow
   `41353189275` green (Windows 5m10s, Linux 16m23s, checksums 15s) -> draft
@@ -970,13 +980,15 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 
 ## Next step — post-release verification
 
-v0.1.10 is public. Remaining owner/hardware checks: auto-update E2E from an
-installed 0.1.9 (tray *Check for updates…* or next launch; watch for
-`update available:` and `--- Mirlo 0.1.10 starting ---`), Linux sign-in and
+v0.1.11 is public. Remaining owner/hardware checks: auto-update E2E from an
+installed 0.1.10 (tray *Check for updates…* or next launch; watch for
+`update available:` and `--- Mirlo 0.1.11 starting ---`), Linux sign-in and
 persistence, native GPU/PipeWire, H.264 under forced sandbox, and namespace-
-restricted desktop policies. Future releases follow `docs/release.md`. The
-signing key remains at `%USERPROFILE%\.tauri\mirlo.key`; keep it backed up and
-never include it in source snapshots or release assets.
+restricted desktop policies. The AppImage catalog PR 10937 needs `/retest`
+(and a screenshot review) after 0.1.11. Future releases follow
+`docs/release.md`. The signing key remains at
+`%USERPROFILE%\.tauri\mirlo.key`; keep it backed up and never include it in
+source snapshots or release assets.
 
 Related follow-ups (separate, not blockers): code signing (SignPath Foundation
 free OSS signing / Azure Trusted Signing) and winget submission

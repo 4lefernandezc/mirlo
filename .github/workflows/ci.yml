@@ -24,7 +24,7 @@ jobs:
         run: cargo fmt --all --check
       - name: Renderer tests
         working-directory: .
-        run: node --test tools/tests/offline.test.mjs tools/tests/precise-volume.test.mjs tools/tests/user-theme.test.mjs
+        run: node --test tools/tests/offline.test.mjs tools/tests/precise-volume.test.mjs tools/tests/user-theme.test.mjs tools/tests/disable-autoplay.test.mjs
       - name: Clippy
         run: cargo clippy --all-targets -- -D warnings
       - name: Test

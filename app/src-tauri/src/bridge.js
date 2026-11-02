@@ -139,8 +139,15 @@
   // take "the first video" (the DOM order can flip during transitions).
   const findVideo = () => q('#movie_player video') || q('video');
 
+  // Shell-driven controls (global hotkeys, SMTC, MPRS) are user intent too;
+  // renderer plugins that react to page input listen for this.
+  const noteUserIntent = () => {
+    document.dispatchEvent(new Event('mirlo:user-intent'));
+  };
+
   const player = {
     playPause() {
+      noteUserIntent();
       const b = q('#play-pause-button');
       if (b) {
         b.click();
@@ -159,6 +166,7 @@
       return true;
     },
     next() {
+      noteUserIntent();
       const b = q('.next-button');
       if (b) {
         b.click();
@@ -167,6 +175,7 @@
       return false;
     },
     previous() {
+      noteUserIntent();
       const b = q('.previous-button');
       if (b) {
         b.click();

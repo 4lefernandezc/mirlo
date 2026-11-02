@@ -109,7 +109,16 @@ launch = 'exec "$this_dir"/AppRun.wrapped'
 assert text.count(launch) == 1, 'Unexpected original AppRun'
 app_run.write_text(text.replace(launch,
     'source "$this_dir"/apprun-hooks/linuxdeploy-plugin-gstreamer.sh\n\n'
-    'export WEBKIT_FORCE_SANDBOX=1\n\n' + launch))
+    # Containers (and some hardened desktops) block bwrap from mounting proc;
+    # forcing the WebKit sandbox there aborts the whole app at startup. Probe
+    # the same operation first and fall back to an unsandboxed run with a
+    # clear message instead of dying silently.
+    'if "$this_dir"/usr/bin/bwrap --unshare-user --unshare-pid --ro-bind / / '
+    '--proc /proc true 2>/dev/null; then\n'
+    '  export WEBKIT_FORCE_SANDBOX=1\n'
+    'else\n'
+    '  echo "mirlo: WebKit sandbox unavailable here; continuing without it" >&2\n'
+    'fi\n\n' + launch))
 app_run.chmod(0o755)
 shutil.copyfile(pathlib.Path(__file__).with_name('bwrap'), target / 'usr/bin/bwrap')
 (target / 'usr/bin/bwrap').chmod(0o755)

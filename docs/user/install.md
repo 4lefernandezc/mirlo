@@ -30,10 +30,11 @@ extracted from the service (see [terms and scope](terms.md)).
   Mirlo logs a warning at startup when the codecs are missing (see
   `logs/mirlo.log`).
 
-Linux starts with WebKit's sandbox enabled. If a distribution policy blocks
-unprivileged user namespaces, startup may fail; use a distribution-supported
-sandbox policy rather than disabling isolation. Native GPU/PipeWire and
-signed-in Linux persistence have not yet been verified; WSLg playback has.
+Linux enables WebKit's sandbox with the bundled helpers. If the host blocks
+the required namespaces (some containers or hardened desktops), Mirlo logs a
+warning (`WebKit sandbox unavailable here`) and continues without it instead
+of refusing to start. Native GPU/PipeWire and signed-in Linux persistence
+have not yet been verified; WSLg playback has.
 
 ## Download
 

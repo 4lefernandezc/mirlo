@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- AppImage: probe the bundled bubblewrap at startup and continue without the
+  WebKit sandbox (with a warning) when the host blocks the required
+  namespaces, instead of exiting with no window (e.g. in CI containers and
+  the AppImage catalog test).
+
 ## [0.1.10] - 2026-11-01
 
 ### Changed

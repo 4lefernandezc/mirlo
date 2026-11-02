@@ -31,6 +31,17 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 
 ## Current state (2026-11-01)
 
+- **AppImage sandbox fallback (unreleased, 2026-11-02)**: the AppRun now
+  probes `bwrap --unshare-user --unshare-pid --ro-bind / / --proc /proc true`
+  and only exports `WEBKIT_FORCE_SANDBOX=1` when it succeeds; otherwise it
+  logs `WebKit sandbox unavailable here; continuing without it` and starts
+  unsandboxed. Fixes the AppImage catalog test (`appimage.github.io` PR
+  10937): the CI container blocks bwrap from mounting proc, WebKit aborted
+  with `readPIDFromPeer`, and the app exited without a window. Probe checked
+  in WSL (real bwrap -> sandbox, failing stub -> fallback); packaging tests
+  pass. Trade-off: restricted hosts lose renderer isolation instead of
+  failing to start. Needs a new release for the catalog `/retest`.
+
 - **v0.1.10 RELEASED (public, 2026-11-01)**: tag `v0.1.10` -> workflow
   `41353189275` green (Windows 5m10s, Linux 16m23s, checksums 15s) -> draft
   verified (12 assets; four updater signatures valid at version 0.1.10 with

@@ -31,12 +31,13 @@ extracted from the service (see [terms and scope](terms.md)).
   `logs/mirlo.log`).
 
 Linux enables WebKit's sandbox (bundled helpers in the AppImage, system
-helpers in `.deb`/source builds). **The published 0.1.11 AppImage still fails
-to start when the host blocks bubblewrap**, despite printing a fallback
-warning: Rust startup overrides the launcher's choice. The fix on the next
-release explicitly disables the sandbox after a failed probe and preserves
-that choice in Rust. This fallback loses renderer isolation; normal AppImage
-launches keep the sandbox. `.deb`/source builds do not run the AppImage probe.
+helpers in `.deb`/source builds). **AppImage 0.1.12+** explicitly disables the
+sandbox after a failed bubblewrap probe and preserves that choice in Rust,
+so hosts that block the required namespaces can still start Mirlo. This
+fallback loses renderer isolation and prints `WebKit sandbox unavailable
+here`; normal AppImage launches keep the sandbox. The fallback in 0.1.11
+was incomplete and still failed on those hosts; update to 0.1.12 or newer.
+`.deb`/source builds do not run the AppImage probe.
 Native GPU/PipeWire and signed-in Linux persistence have not yet been
 verified; WSLg playback has.
 

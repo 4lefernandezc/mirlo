@@ -2,6 +2,11 @@
 
 Date: 2026-11-02. Local correction, not a release.
 
+**Follow-up:** the correction shipped in [0.1.12](release-0.1.12.md), whose
+exact signed AppImage passed offline extracted/FUSE startup with and without
+nested mount denial. The owner authorized publication but explicitly asked
+for no catalog comment; no `/retest` was requested.
+
 ## Actual catalog failure
 
 PR: https://github.com/AppImage/appimage.github.io/pull/10937

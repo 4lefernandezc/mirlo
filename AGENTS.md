@@ -31,13 +31,24 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 
 ## Current state (2026-11-02)
 
-- **0.1.12 release authorized/in progress (2026-11-02)**: owner explicitly
-  requested publication, but **NO comment on the catalog PR or `/retest`**.
-  Release contains the corrected fallback below. Bump, CI draft, signatures,
-  checksums/sources and exact-artifact offline/isolation checks precede
-  publication. Do not treat the earlier candidate as final-artifact evidence.
+- **v0.1.12 RELEASED (public, 2026-11-02)**: owner authorized publication but
+  **NO catalog PR comment or `/retest`**; none was posted. Tag `v0.1.12` ->
+  `e93a53c`; workflow `41497668415` green (Windows 6m49s, Linux 11m52s,
+  checksums 45s); main CI `41497662562` green. 12 assets, four updater
+  signatures valid at exactly 0.1.12 + tamper rejection, ten external
+  checksums and 17,087 inner source checksums pass. Exact signed CI AppImage
+  tested offline in Debian without host GTK/WebKit/GStreamer: extracted and
+  real host FUSE mounts, each with/without nested mount denial, all show the
+  local recovery screen with a live WebProcess; normal paths retain Seccomp 2
+  and separate renderer mount/PID/network namespaces. Windows exact portable
+  passed version/GUI/profile, offline recovery and 40->41->42 volume smoke;
+  graceful close. Published latest 2026-11-02T18:27:04Z; anonymous updater
+  HTTP 200 at 0.1.12 with all six entries, four anonymous binary HEADs match
+  lengths. AppImage 81,562,104 bytes; deb 3,529,106; sources 526,526,503.
+  Catalog's exact Firejail, signed-in playback/hardware and installed-update
+  E2E still unverified. Evidence: `docs/research/release-0.1.12.md`.
 
-- **AppImage catalog fallback corrected locally (unreleased, 2026-11-02)**:
+- **AppImage catalog fallback corrected (released in 0.1.12, 2026-11-02)**:
   catalog run `41494406860` still fails on 0.1.11. The launcher only omitted
   FORCE on failure, and Rust then unconditionally forced the sandbox again.
   AppRun now explicitly clears FORCE/sets DISABLE=1 on probe failure; Rust
@@ -49,7 +60,8 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
   verified; published 0.1.11 fails the same restriction. Normal candidate
   path retains Seccomp 2 and separate renderer mount/PID/network namespaces.
   This is equivalent mount-denial testing, NOT the exact catalog Firejail or
-  a fresh CI release. No push/tag/release/comment authorized or performed.
+  a fresh CI release at that initial milestone; exact-artifact checks were
+  subsequently completed above. Owner authorized publishing, NOT commenting.
   Details/hashes/limits: `docs/research/appimage-catalog-fallback.md`.
 
 - **v0.1.11 RELEASED (public, 2026-11-02)**: tag `v0.1.11` -> workflow
@@ -1004,13 +1016,15 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 
 ## Next step — post-release verification
 
-v0.1.11 is public. Remaining owner/hardware checks: auto-update E2E from an
-installed 0.1.10 (tray *Check for updates…* or next launch; watch for
-`update available:` and `--- Mirlo 0.1.11 starting ---`), Linux sign-in and
+v0.1.12 is public. Remaining owner/hardware checks: auto-update E2E from an
+installed 0.1.11 (tray *Check for updates…* or next launch; watch for
+`update available:` and `--- Mirlo 0.1.12 starting ---`), Linux sign-in and
 persistence, native GPU/PipeWire, H.264 under forced sandbox, and namespace-
 restricted desktop policies. The AppImage catalog PR 10937 retest FAILED on
-0.1.11; the locally validated correction needs owner-authorized release,
-final-artifact checks and a new `/retest`/screenshot review. Future releases follow
+0.1.11; 0.1.12's exact signed artifacts passed local offline mount-denial
+checks, but the exact catalog environment is not verified. **Do not comment
+or request `/retest`**: the owner explicitly excluded it from this release
+authorization. Future releases follow
 `docs/release.md`. The signing key remains at
 `%USERPROFILE%\.tauri\mirlo.key`; keep it backed up and never include it in
 source snapshots or release assets.

@@ -8,7 +8,7 @@ of bundling an entire browser like Electron-based alternatives. Measurements:
 **371 MB vs 1179 MB** private memory (Mirlo vs the Electron v3.11.0 build of
 pear-desktop, idle, same machine).
 
-> **Status: v0.1.11 released** (Windows + Linux). Features: player, 20 plugins
+> **Status: v0.1.12 released** (Windows + Linux). Features: player, 20 plugins
 > (including custom themes), media keys, notifications, Discord presence,
 > ad-block, resume playback and signed auto-update. See
 > [docs/roadmap.md](docs/roadmap.md).

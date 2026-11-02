@@ -1,4 +1,6 @@
+import ast
 import importlib.util
+import os
 import pathlib
 import runpy
 import subprocess
@@ -70,6 +72,42 @@ class SourceTests(unittest.TestCase):
 
 
 class RepackTests(unittest.TestCase):
+    def test_generated_launcher_sets_both_sandbox_variables(self):
+        assembly = ast.parse(path.with_name('assemble.py').read_text())
+        start = next(i for i, node in enumerate(assembly.body)
+                     if isinstance(node, ast.Assign) and
+                     any(isinstance(t, ast.Name) and t.id == 'app_run' for t in node.targets))
+        end = next(i for i in range(start, len(assembly.body))
+                   if isinstance(assembly.body[i], ast.Expr) and
+                   isinstance(assembly.body[i].value, ast.Call) and
+                   isinstance(assembly.body[i].value.func, ast.Attribute) and
+                   assembly.body[i].value.func.attr == 'chmod')
+        launcher = compile(ast.Module(body=assembly.body[start:end + 1], type_ignores=[]),
+                           'assemble.py', 'exec')
+        with tempfile.TemporaryDirectory(prefix='mirlo launcher ') as temp:
+            root = pathlib.Path(temp)
+            (root / 'AppRun').write_text('#!/bin/bash\nset -e\nthis_dir=$(dirname "$0")\n'
+                                         'exec "$this_dir"/AppRun.wrapped "$@"\n')
+            (root / 'apprun-hooks').mkdir()
+            (root / 'apprun-hooks/linuxdeploy-plugin-gstreamer.sh').touch()
+            (root / 'usr/bin').mkdir(parents=True)
+            helper = root / 'usr/bin/bwrap'
+            helper.write_text('#!/bin/sh\nexit "$MIRLO_TEST_BWRAP_STATUS"\n')
+            helper.chmod(0o755)
+            wrapped = root / 'AppRun.wrapped'
+            wrapped.write_text('#!/bin/sh\nprintf "%s,%s" "${WEBKIT_FORCE_SANDBOX-unset}" '
+                               '"${WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS-unset}"\n')
+            wrapped.chmod(0o755)
+            exec(launcher, {'target': root})
+            for status, expected in [('0', '1,unset'), ('1', 'unset,1')]:
+                with self.subTest(probe_exit=status):
+                    env = dict(os.environ, MIRLO_TEST_BWRAP_STATUS=status,
+                               WEBKIT_FORCE_SANDBOX='1', WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS='1')
+                    result = subprocess.run([str(root / 'AppRun')], env=env, check=True,
+                                            text=True, capture_output=True)
+                    self.assertEqual(result.stdout, expected)
+                    self.assertEqual('sandbox unavailable' in result.stderr, status == '1')
+
     def test_runtime_preserved_and_payload_replaced(self):
         with tempfile.TemporaryDirectory() as temp:
             root = pathlib.Path(temp)

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- AppImage sandbox fallback now explicitly disables WebKit's sandbox after a
+  failed bubblewrap probe, and the Rust startup respects that choice instead
+  of forcing it back on. Fixes the incomplete 0.1.11 fallback; normal launches
+  still force the sandbox when the probe succeeds.
+
 ## [0.1.11] - 2026-11-02
 
 ### Fixed

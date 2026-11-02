@@ -126,6 +126,11 @@ The workflow builds both platforms and creates a **draft** release with:
    Do not enable unsafe sandbox/debug flags to make tests pass. Verify the
    source archive's internal checksums, notices and inventory. Test the
    `.deb` dependencies separately. Record hardware/sign-in limitations.
+   Also test startup offline with nested bubblewrap mounts denied: the
+   AppImage must select its own fallback (no manually injected disable
+   flags), show the local recovery screen and keep its WebProcess alive.
+   Check the normal path still has renderer isolation. Inspecting AppRun
+   or mocking the probe alone is not sufficient (0.1.11 regression).
 5. Confirm `SHA256SUMS.txt` matches every uploaded bundle
    (`Get-FileHash -Algorithm SHA256` / `sha256sum -c`).
 6. Verify updater signatures cryptographically against the embedded public

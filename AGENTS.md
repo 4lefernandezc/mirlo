@@ -29,7 +29,22 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 - If context runs out mid-task: commit WIP with a clear message and add a
   "Resume notes" bullet here before finishing.
 
-## Current state (2026-11-01)
+## Current state (2026-11-02)
+
+- **AppImage catalog fallback corrected locally (unreleased, 2026-11-02)**:
+  catalog run `41494406860` still fails on 0.1.11. The launcher only omitted
+  FORCE on failure, and Rust then unconditionally forced the sandbox again.
+  AppRun now explicitly clears FORCE/sets DISABLE=1 on probe failure; Rust
+  respects that explicit choice, otherwise still forces sandboxing. Nine
+  packaging tests + wrapper test pass; Linux 33 Rust tests pass (one
+  child-only helper invoked by its parent); Windows fmt/Clippy/32 Rust and
+  14 Node tests pass. Local complete repacked candidate tested offline under
+  Xvfb with nested mount syscalls denied: recovery screen and live WebProcess
+  verified; published 0.1.11 fails the same restriction. Normal candidate
+  path retains Seccomp 2 and separate renderer mount/PID/network namespaces.
+  This is equivalent mount-denial testing, NOT the exact catalog Firejail or
+  a fresh CI release. No push/tag/release/comment authorized or performed.
+  Details/hashes/limits: `docs/research/appimage-catalog-fallback.md`.
 
 - **v0.1.11 RELEASED (public, 2026-11-02)**: tag `v0.1.11` -> workflow
   `41485837763` green (Windows 8m43s, Linux 16m28s, checksums 29s) -> draft
@@ -38,7 +53,8 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
   0.1.11 with all six entries; the published AppRun contains the bwrap
   probe/fallback) -> published as latest (2026-11-02T17:13:53Z); anonymous
   updater HTTP 200. Contents: disable-autoplay intent fix and the AppImage
-  sandbox fallback that unblocks `appimage.github.io` PR 10937. AppImage
+  sandbox fallback intended to unblock `appimage.github.io` PR 10937 (the
+  actual retest failed; see the local follow-up above). AppImage
   81,562,104 bytes; deb 3,528,846; sources 526,522,337. Evidence:
   `docs/research/release-0.1.11.md`.
 - **Disable-autoplay fix (released in 0.1.11, 2026-11-02)**: the upstream port paused
@@ -49,16 +65,18 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
   `mirlo:user-intent` event (shell hotkeys, SMTC, MPRIS) within 1.5 s as an
   explicit choice, so clicking or hotkey-changing a track plays it. 5 Node
   tests in `tools/tests/disable-autoplay.test.mjs` (wired into CI).
-- **AppImage sandbox fallback (released in 0.1.11, 2026-11-02)**: the AppRun now
+- **AppImage sandbox fallback (incomplete in 0.1.11, 2026-11-02)**: the AppRun
   probes `bwrap --unshare-user --unshare-pid --ro-bind / / --proc /proc true`
   and only exports `WEBKIT_FORCE_SANDBOX=1` when it succeeds; otherwise it
-  logs `WebKit sandbox unavailable here; continuing without it` and starts
-  unsandboxed. Fixes the AppImage catalog test (`appimage.github.io` PR
+  logs `WebKit sandbox unavailable here; continuing without it`, but Rust
+  startup still forces the sandbox, so the published fallback does not work.
+  Intended to fix the AppImage catalog test (`appimage.github.io` PR
   10937): the CI container blocks bwrap from mounting proc, WebKit aborted
   with `readPIDFromPeer`, and the app exited without a window. Probe checked
   in WSL (real bwrap -> sandbox, failing stub -> fallback); packaging tests
-  pass. Trade-off: restricted hosts lose renderer isolation instead of
-  failing to start. Released in 0.1.11; comment `/retest` on the catalog PR.
+  pass, but those did not test actual startup. The local follow-up above
+  fixes both layers and verifies startup. Trade-off: restricted hosts lose
+  renderer isolation instead of failing to start. 0.1.11 `/retest` failed.
 
 - **v0.1.10 RELEASED (public, 2026-11-01)**: tag `v0.1.10` -> workflow
   `41353189275` green (Windows 5m10s, Linux 16m23s, checksums 15s) -> draft
@@ -984,8 +1002,9 @@ v0.1.11 is public. Remaining owner/hardware checks: auto-update E2E from an
 installed 0.1.10 (tray *Check for updates…* or next launch; watch for
 `update available:` and `--- Mirlo 0.1.11 starting ---`), Linux sign-in and
 persistence, native GPU/PipeWire, H.264 under forced sandbox, and namespace-
-restricted desktop policies. The AppImage catalog PR 10937 needs `/retest`
-(and a screenshot review) after 0.1.11. Future releases follow
+restricted desktop policies. The AppImage catalog PR 10937 retest FAILED on
+0.1.11; the locally validated correction needs owner-authorized release,
+final-artifact checks and a new `/retest`/screenshot review. Future releases follow
 `docs/release.md`. The signing key remains at
 `%USERPROFILE%\.tauri\mirlo.key`; keep it backed up and never include it in
 source snapshots or release assets.

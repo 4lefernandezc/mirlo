@@ -30,11 +30,15 @@ extracted from the service (see [terms and scope](terms.md)).
   Mirlo logs a warning at startup when the codecs are missing (see
   `logs/mirlo.log`).
 
-Linux enables WebKit's sandbox with the bundled helpers. If the host blocks
-the required namespaces (some containers or hardened desktops), Mirlo logs a
-warning (`WebKit sandbox unavailable here`) and continues without it instead
-of refusing to start. Native GPU/PipeWire and signed-in Linux persistence
-have not yet been verified; WSLg playback has.
+Linux enables WebKit's sandbox (bundled helpers in the AppImage, system
+helpers in `.deb`/source builds). **The published 0.1.11 AppImage still fails
+to start when the host blocks bubblewrap**, despite printing a fallback
+warning: Rust startup overrides the launcher's choice. The fix on the next
+release explicitly disables the sandbox after a failed probe and preserves
+that choice in Rust. This fallback loses renderer isolation; normal AppImage
+launches keep the sandbox. `.deb`/source builds do not run the AppImage probe.
+Native GPU/PipeWire and signed-in Linux persistence have not yet been
+verified; WSLg playback has.
 
 ## Download
 

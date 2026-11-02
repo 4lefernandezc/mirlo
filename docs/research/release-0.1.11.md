@@ -2,6 +2,13 @@
 
 Date: 2026-11-02. Patch release on top of 0.1.10.
 
+**Post-release correction:** catalog run `41494406860` failed on this exact
+release. The probe correctly reports failure, but the fallback does not work:
+`lib.rs::run()` unconditionally restores `WEBKIT_FORCE_SANDBOX=1`, and the
+launcher does not explicitly set WebKit's disable variable. The earlier
+claims below that restricted hosts successfully start were not supported by
+a runtime test. See [the follow-up investigation](appimage-catalog-fallback.md).
+
 ## Contents
 
 - **Disable autoplay**: no longer pauses a track the user just picked, and no
@@ -11,8 +18,8 @@ Date: 2026-11-02. Patch release on top of 0.1.10.
 - **AppImage sandbox fallback**: the AppRun probes
   `bwrap --unshare-user --unshare-pid --ro-bind / / --proc /proc true`; only
   when it succeeds does it export `WEBKIT_FORCE_SANDBOX=1`. Otherwise it logs
-  `WebKit sandbox unavailable here; continuing without it` and starts, instead
-  of aborting with no window.
+  `WebKit sandbox unavailable here; continuing without it`, but Rust then
+  forces the sandbox again, so this release still aborts on restricted hosts.
 
 ## AppImage catalog context
 
@@ -21,10 +28,10 @@ without network. There bwrap failed with
 `Can't mount proc on /newroot/proc: Operation not permitted`, WebKit aborted
 (`readPIDFromPeer`), and the test reported "The application exited within 11
 seconds instead of showing a window". 0.1.8 had passed because it did not
-force the sandbox. The fallback keeps the sandbox on normal desktops and only
-drops it where the host blocks the required namespaces (the catalog container,
-some hardened/containerized environments). The published 0.1.11 AppRun was
-extracted and inspected: the probe is present.
+force the sandbox. The intended fallback was to keep the sandbox on normal
+desktops and drop it where the host blocks the required namespaces. The
+published 0.1.11 AppRun was extracted and inspected: the probe is present,
+but that inspection did not prove the runtime behavior.
 
 ## CI
 
@@ -60,8 +67,7 @@ returns HTTP 200 with 0.1.11.
   signed-in session.
 - The intent heuristic is 1.5 s; a user action routed outside the page and
   the shell event could still be treated as autoplay.
-- Restricted hosts now run without the WebKit sandbox (with a warning): the
-  deliberate 0.1.9 "fail startup" policy was replaced by "sandbox when
-  possible" to satisfy the catalog's offline/window requirement.
-- Catalog `/retest` and the screenshot review are owner actions after this
-  release.
+- The intended "sandbox when possible" policy did not take effect on
+  restricted hosts. They still fail startup in 0.1.11.
+- The owner's catalog `/retest` failed; screenshot review remains pending a
+  corrected release.

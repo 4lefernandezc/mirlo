@@ -656,14 +656,58 @@ fn save_playback(app_state: &AppState) {
     }
 }
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub fn run() {
-    #[cfg(target_os = "linux")]
-    {
-        // Set before GTK or worker threads; packaged and system WebKit must be sandboxed.
+#[cfg(target_os = "linux")]
+fn configure_webkit_sandbox() {
+    // AppRun explicitly disables the sandbox only when its bwrap probe fails.
+    if std::env::var("WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS").as_deref() == Ok("1") {
+        std::env::remove_var("WEBKIT_FORCE_SANDBOX");
+    } else {
         std::env::remove_var("WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS");
         std::env::set_var("WEBKIT_FORCE_SANDBOX", "1");
     }
+}
+
+#[cfg(all(test, target_os = "linux"))]
+mod sandbox_tests {
+    #[test]
+    fn startup_preserves_explicit_fallback_but_otherwise_forces_sandbox() {
+        for (disabled, force) in [(None, None), (Some("0"), Some("0")), (Some("1"), Some("1"))] {
+            let mut child = std::process::Command::new(std::env::current_exe().unwrap());
+            child.args(["--exact", "sandbox_tests::environment_child", "--ignored"]);
+            child.env_remove("WEBKIT_FORCE_SANDBOX");
+            if let Some(value) = force {
+                child.env("WEBKIT_FORCE_SANDBOX", value);
+            }
+            child.env("MIRLO_TEST_SANDBOX_DISABLED", disabled.unwrap_or(""));
+            child.env_remove("WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS");
+            if let Some(value) = disabled {
+                child.env("WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS", value);
+            }
+            let output = child.output().unwrap();
+            assert!(output.status.success(), "{output:?}");
+        }
+    }
+
+    #[test]
+    #[ignore = "environment changes run in a dedicated child process"]
+    fn environment_child() {
+        super::configure_webkit_sandbox();
+        let disabled = std::env::var("MIRLO_TEST_SANDBOX_DISABLED").unwrap() == "1";
+        assert_eq!(
+            std::env::var("WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS").ok(),
+            disabled.then(|| "1".to_owned())
+        );
+        assert_eq!(
+            std::env::var("WEBKIT_FORCE_SANDBOX").ok(),
+            (!disabled).then(|| "1".to_owned())
+        );
+    }
+}
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    #[cfg(target_os = "linux")]
+    configure_webkit_sandbox(); // Before GTK or worker threads read the environment.
     logging::init();
     // Resolved log path (installed vs portable), for the fatal-error boxes.
     let log_file = data_root::root().join("logs").join("mirlo.log");

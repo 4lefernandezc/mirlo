@@ -115,8 +115,11 @@ app_run.write_text(text.replace(launch,
     # clear message instead of dying silently.
     'if "$this_dir"/usr/bin/bwrap --unshare-user --unshare-pid --ro-bind / / '
     '--proc /proc true 2>/dev/null; then\n'
+    '  unset WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS\n'
     '  export WEBKIT_FORCE_SANDBOX=1\n'
     'else\n'
+    '  unset WEBKIT_FORCE_SANDBOX\n'
+    '  export WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1\n'
     '  echo "mirlo: WebKit sandbox unavailable here; continuing without it" >&2\n'
     'fi\n\n' + launch))
 app_run.chmod(0o755)

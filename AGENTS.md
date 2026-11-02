@@ -31,6 +31,12 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 
 ## Current state (2026-11-02)
 
+- **0.1.12 release authorized/in progress (2026-11-02)**: owner explicitly
+  requested publication, but **NO comment on the catalog PR or `/retest`**.
+  Release contains the corrected fallback below. Bump, CI draft, signatures,
+  checksums/sources and exact-artifact offline/isolation checks precede
+  publication. Do not treat the earlier candidate as final-artifact evidence.
+
 - **AppImage catalog fallback corrected locally (unreleased, 2026-11-02)**:
   catalog run `41494406860` still fails on 0.1.11. The launcher only omitted
   FORCE on failure, and Rust then unconditionally forced the sandbox again.

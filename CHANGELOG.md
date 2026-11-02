@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Disable autoplay no longer pauses a track the user just picked, and no
+  longer blocks resuming after an autoplay pause (the previous one-shot
+  `timeupdate` listener stayed armed while paused and paused the next play).
+  Track changes from shell hotkeys/SMTC/MPRIS count as user intent too.
 - AppImage: probe the bundled bubblewrap at startup and continue without the
   WebKit sandbox (with a warning) when the host blocks the required
   namespaces, instead of exiting with no window (e.g. in CI containers and

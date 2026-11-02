@@ -31,6 +31,14 @@ with pear-desktop's plugin model, at a fraction of its memory/CPU footprint.
 
 ## Current state (2026-11-01)
 
+- **Disable-autoplay fix (unreleased, 2026-11-02)**: the upstream port paused
+  on the first `timeupdate` after a load; when the track was paused that
+  one-shot listener stayed armed and paused the next user play. The port now
+  pauses at `dataloaded`, catches a late auto-start with a 4 s `play`
+  listener, and treats pointer/keyboard input or the new
+  `mirlo:user-intent` event (shell hotkeys, SMTC, MPRIS) within 1.5 s as an
+  explicit choice, so clicking or hotkey-changing a track plays it. 5 Node
+  tests in `tools/tests/disable-autoplay.test.mjs` (wired into CI).
 - **AppImage sandbox fallback (unreleased, 2026-11-02)**: the AppRun now
   probes `bwrap --unshare-user --unshare-pid --ro-bind / / --proc /proc true`
   and only exports `WEBKIT_FORCE_SANDBOX=1` when it succeeds; otherwise it

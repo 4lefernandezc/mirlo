@@ -87,6 +87,8 @@ jobs:
             'deb-src http://security.ubuntu.com/ubuntu jammy-security main restricted universe multiverse' \
             | sudo tee /etc/apt/sources.list.d/mirlo-sources.list
           sudo apt-get update
+          # Firefox's Snap transition is unrelated to AppImage packaging.
+          sudo apt-mark hold firefox
           # Match installed runtime libraries to versions still in signed source indexes.
           sudo apt-get upgrade -y
           # The runner's LLVM unwinder conflicts with GStreamer's libunwind-dev.

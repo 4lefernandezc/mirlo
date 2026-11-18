@@ -6,6 +6,10 @@ Implemented changes by version. `[Unreleased]` is not included in published down
 
 ### Added
 
+- Playback shortcut editor in Settings for play/pause, next and previous.
+  Empty fields disable individual actions. Saves check syntax, duplicate
+  combinations (including volume shortcuts) and current OS availability;
+  changes apply after restarting Mirlo.
 - Settings follow the system UI language: Spanish for Spanish variants,
   English fallback. Five categories, accent-insensitive search, enabled-only
   filtering and reload/restart guidance.
@@ -16,6 +20,8 @@ Implemented changes by version. `[Unreleased]` is not included in published down
 
 ### Fixed
 
+- Automatic volume saves update only the volume field, preserving shortcut
+  edits and other extension preferences.
 - Settings save individual field patches under a shared write lock, preserving
   unrelated edits and plugin values. Failed writes leave memory unchanged
   and restore the edited control.

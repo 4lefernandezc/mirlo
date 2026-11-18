@@ -19,6 +19,14 @@ the following source-tree functionality is **unreleased**:
 - Native session-only 15/30/60-minute or end-of-current-track sleep timer.
   It works with Settings closed/player hidden, includes suspension in timed
   deadlines and cancels end-of-track mode on track changes.
+- Playback shortcut editor: `media_shortcuts` defaults preserve existing
+  bindings; empty strings disable actions. Syntax, duplicate aliases and OS
+  availability are checked on changed shortcut saves. Running bindings are
+  retained until app restart. Volume shortcuts remain in precise-volume config.
+  Playback bindings are editable only through local Settings patches; player
+  full-config writes preserve them.
+- Renderer extension writes merge field patches; automatic volume persistence
+  saves only `savedVolume`, preserving shortcut edits.
 
 The `MIRLO_DEV_SRC` renderer override is also available; its source edits apply
 on restart. Current verification limits are listed in
@@ -51,6 +59,7 @@ app/src-tauri/src/lib.rs      Shell, commands, tray, windows and hotkeys
 app/src-tauri/src/bridge.js   Player bridge and extension host
 app/src-tauri/src/config.rs   Configuration defaults, patches and persistence
 app/src-tauri/src/plugins.rs  Extension registry and Settings manifest
+app/src-tauri/src/hotkeys.rs  Playback/volume bindings and availability checks
 app/src-tauri/plugins/        Twenty renderer extensions
 app/src-tauri/capabilities/   Local/remote command permissions
 docs/user/                   Installation, settings, themes, FAQ and scope

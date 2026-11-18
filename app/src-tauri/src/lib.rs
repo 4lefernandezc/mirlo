@@ -10,6 +10,7 @@ mod data_root;
 #[cfg(target_os = "windows")]
 mod dialog;
 mod discord;
+mod hotkeys;
 mod locale;
 mod logging;
 mod media_controls;
@@ -23,8 +24,7 @@ mod updates;
 mod window_state;
 
 use std::path::Path;
-use std::str::FromStr;
-use std::sync::{Mutex, OnceLock};
+use std::sync::Mutex;
 
 use config::Config;
 use logging::{log_error, log_info};
@@ -32,9 +32,6 @@ use serde_json::Value;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
-use tauri_plugin_global_shortcut::{
-    Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutEvent, ShortcutState,
-};
 
 const MAIN_WINDOW: &str = "main";
 const SETTINGS_WINDOW: &str = "settings";
@@ -55,14 +52,6 @@ struct AppState {
     /// broken page cannot loop forever).
     resume_attempts: Mutex<u32>,
     sleep_timer: Mutex<sleep_timer::SleepTimer>,
-}
-
-/// The MVP hotkey set (matches the validated PoC).
-fn hotkey_set() -> (Shortcut, Shortcut, Shortcut) {
-    let play_pause = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::ALT), Code::Space);
-    let next = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::ALT), Code::ArrowRight);
-    let previous = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::ALT), Code::ArrowLeft);
-    (play_pause, next, previous)
 }
 
 fn main_window(app: &AppHandle) -> Option<WebviewWindow> {
@@ -114,103 +103,6 @@ fn player_is_focused(app: &AppHandle) -> bool {
             .and_then(|window| window.is_focused().ok())
             .unwrap_or(false)
     }
-}
-
-fn hotkey_handler(app: &AppHandle, shortcut: &Shortcut, event: ShortcutEvent) {
-    if event.state() != ShortcutState::Pressed {
-        return;
-    }
-    let (play_pause, next, previous) = hotkey_set();
-    let action = if shortcut == &play_pause {
-        Some("playPause")
-    } else if shortcut == &next {
-        Some("next")
-    } else if shortcut == &previous {
-        Some("previous")
-    } else {
-        None
-    };
-    if let Some(action) = action {
-        log_info!("hotkey: {action}");
-        eval_in_player(
-            app,
-            &format!("window.__mirlo && window.__mirlo.player.{action}()"),
-        );
-        return;
-    }
-
-    // Plugin-registered global shortcuts (e.g. precise-volume's volume steps).
-    let plugin_js = plugin_hotkey_table().lock().ok().and_then(|table| {
-        table
-            .iter()
-            .find(|(registered, _)| registered == shortcut)
-            .map(|(_, js)| js.clone())
-    });
-    if let Some(js) = plugin_js {
-        log_info!("hotkey: plugin ({js})");
-        eval_in_player(app, &js);
-    }
-}
-
-fn register_hotkeys(app: &AppHandle) {
-    let (play_pause, next, previous) = hotkey_set();
-    for (name, shortcut) in [
-        ("play/pause", play_pause),
-        ("next", next),
-        ("previous", previous),
-    ] {
-        if let Err(err) = app.global_shortcut().register(shortcut) {
-            log_error!("could not register hotkey {name}: {err}");
-        }
-    }
-}
-
-/// Global shortcuts configured by plugins (currently `precise-volume`).
-/// The config stores tauri accelerator strings (e.g. "Ctrl+Alt+ArrowUp");
-/// they are registered at startup, so changing them needs an app restart
-/// (upstream registers them in its backend at start too).
-fn register_plugin_hotkeys(app: &AppHandle, config: &Config) {
-    let Some(plugin) = config.plugins.get("precise-volume") else {
-        return;
-    };
-    if !plugin
-        .get("enabled")
-        .and_then(Value::as_bool)
-        .unwrap_or(false)
-    {
-        return;
-    }
-    let shortcuts = plugin.get("globalShortcuts");
-    for (key, increase) in [("volumeUp", true), ("volumeDown", false)] {
-        let accelerator = shortcuts
-            .and_then(|value| value.get(key))
-            .and_then(Value::as_str)
-            .unwrap_or("");
-        if accelerator.is_empty() {
-            continue;
-        }
-        match Shortcut::from_str(accelerator) {
-            Ok(shortcut) => {
-                let js = format!(
-                    "window.__mirlo.plugins.get('precise-volume')?.changeVolume({increase})"
-                );
-                if let Ok(mut table) = plugin_hotkey_table().lock() {
-                    table.push((shortcut, js));
-                }
-                if let Err(err) = app.global_shortcut().register(shortcut) {
-                    log_error!("could not register plugin hotkey {key} ({accelerator}): {err}");
-                }
-            }
-            Err(err) => {
-                log_error!("invalid accelerator for {key}: {accelerator} ({err})");
-            }
-        }
-    }
-}
-
-fn plugin_hotkey_table() -> &'static Mutex<Vec<(Shortcut, String)>> {
-    static TABLE: OnceLock<Mutex<Vec<(Shortcut, String)>>> = OnceLock::new();
-    TABLE.get_or_init(|| Mutex::new(Vec::new()))
 }
 
 fn create_tray(app: &tauri::App) -> tauri::Result<()> {
@@ -442,7 +334,8 @@ fn get_settings_locale() -> &'static str {
     locale::settings_language()
 }
 
-fn store_config(current: &mut Config, next: Config) -> Result<Config, String> {
+fn store_config(app: &AppHandle, current: &mut Config, next: Config) -> Result<Config, Value> {
+    hotkeys::check_changes(app, current, &next)?;
     config::save(&next)?;
     if current.adblock != next.adblock {
         adblock::set_enabled(next.adblock);
@@ -457,13 +350,17 @@ fn store_config(current: &mut Config, next: Config) -> Result<Config, String> {
 }
 
 #[tauri::command]
-fn patch_settings(state: tauri::State<'_, AppState>, patch: Value) -> Result<Config, String> {
+fn patch_settings(
+    app: AppHandle,
+    state: tauri::State<'_, AppState>,
+    patch: Value,
+) -> Result<Config, Value> {
     let mut current = state
         .config
         .lock()
         .map_err(|_| "config lock poisoned".to_string())?;
     let next = current.patched(patch)?;
-    store_config(&mut current, next)
+    store_config(&app, &mut current, next)
 }
 
 fn sync_sleep_timer(app: &AppHandle, timer: &Value) {
@@ -527,27 +424,33 @@ fn get_config(state: tauri::State<'_, AppState>) -> Result<Config, String> {
 }
 
 #[tauri::command]
-fn set_config(state: tauri::State<'_, AppState>, config: Config) -> Result<Config, String> {
+fn set_config(
+    app: AppHandle,
+    state: tauri::State<'_, AppState>,
+    mut config: Config,
+) -> Result<Config, Value> {
     let mut current = state
         .config
         .lock()
         .map_err(|_| "config lock poisoned".to_string())?;
-    store_config(&mut current, config)
+    // Only local Settings patches may edit native playback bindings.
+    config.media_shortcuts = current.media_shortcuts.clone();
+    store_config(&app, &mut current, config)
 }
 
 #[tauri::command]
 fn set_plugin_config(
+    app: AppHandle,
     state: tauri::State<'_, AppState>,
     plugin_id: String,
     config: Value,
-) -> Result<Config, String> {
+) -> Result<Config, Value> {
     let mut current = state
         .config
         .lock()
         .map_err(|_| "config lock poisoned".to_string())?;
-    let mut next = current.clone();
-    next.plugins.insert(plugin_id, config);
-    store_config(&mut current, next)
+    let next = current.patched(serde_json::json!({"plugins": {plugin_id: config}}))?;
+    store_config(&app, &mut current, next)
 }
 
 #[tauri::command]
@@ -827,7 +730,7 @@ pub fn run() {
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(|app, shortcut, event| {
-                    hotkey_handler(app, shortcut, event);
+                    hotkeys::handle(app, shortcut, event);
                 })
                 .build(),
         )
@@ -861,10 +764,7 @@ pub fn run() {
             create_main_window(app, &config, &config::profile_dir())?;
             start_sleep_timer_worker(handle.clone());
 
-            if config.hotkeys_enabled {
-                register_hotkeys(&handle);
-            }
-            register_plugin_hotkeys(&handle, &config);
+            hotkeys::register(&handle, &config);
             create_tray(app)?;
 
             // `mirlo.exe --settings` opens the settings window directly

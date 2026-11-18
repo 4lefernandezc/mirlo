@@ -14,6 +14,7 @@ app/
     src/data_root.rs        Installed/portable data-root resolution
     src/bridge.js           Player bridge and extension host
     src/plugins.rs          Extension sources and Settings metadata
+    src/hotkeys.rs          Playback/volume registration and conflict checks
     src/sleep_timer.rs      Session-only timer state
     plugins/                Renderer extensions
     capabilities/           Local/remote command permissions
@@ -76,12 +77,19 @@ See [Settings](../docs/user/settings.md) for enabled defaults and application ru
 
 Additional JSON options include:
 
+- `media_shortcuts.play_pause` / `next` / `previous`: playback accelerators;
+  empty disables an action. Settings exposes these fields.
 - `equalizer.filters`: array of `{type, frequency, Q, gain}`.
   Settings exposes the bass-booster preset, not individual filter sliders.
 - `precise-volume.globalShortcuts.volumeUp` / `volumeDown`: Tauri accelerator
   strings; empty disables the binding, restart applies changes.
 - `discord_client_id`: optional public application-ID override;
   empty uses Mirlo's built-in ID.
+
+Shortcut saves validate syntax/duplicates and probe OS availability without
+replacing the running bindings. Another application can claim a combination
+after the check. Renderer extension saves merge only changed fields under the
+configuration lock; volume persistence does not resend shortcut preferences.
 
 Edit configuration by hand only while the app is fully closed.
 

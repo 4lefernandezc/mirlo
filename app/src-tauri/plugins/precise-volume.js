@@ -367,7 +367,9 @@ ytmusic-player[player-ui-state_='MINIPLAYER'] #volumeHud {
 
     // Without this function it would rewrite config 20 time when volume change by 20
     this.writeOptions = this.debounce(() => {
-      ctx.setConfig(this.options);
+      ctx.setConfig({ savedVolume: this.options.savedVolume }).catch((error) => {
+        console.warn('[mirlo:precise-volume] could not save volume', error);
+      });
     }, 1000);
 
     this.hideVolumeHud = this.debounce((volumeHud) => {

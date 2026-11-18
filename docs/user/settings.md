@@ -1,8 +1,9 @@
 # Settings and sleep timer
 
 Settings and extension controls are available in 0.1.12. The language selection,
-categories, search, per-field save handling and sleep timer described below
-are implemented in the source tree but **not yet in published 0.1.12**.
+categories, search, shortcut editor, per-field save handling and sleep timer
+described below are implemented in the source tree but
+**not yet in published 0.1.12**.
 
 Open Settings with the sliders button in the player, from the tray menu or
 with `mirlo.exe --settings`.
@@ -14,6 +15,32 @@ presence, startup update checks, resume playback and close/minimize-to-tray.
 Ad blocking and minimize-to-tray default off; the other switches default on.
 Linux does not implement native notifications or Discord presence.
 Tray **Quit** exits the application even when close-to-tray is enabled.
+
+## Shortcut editor (unreleased)
+
+In **General → Playback shortcuts**, edit play/pause, next and previous.
+Enter a Tauri accelerator such as `Ctrl+Alt+K`, or leave a field empty to
+disable that action. Existing configurations retain these defaults:
+
+| Action | Default |
+| --- | --- |
+| Play/pause | `Ctrl+Alt+Space` |
+| Next | `Ctrl+Alt+ArrowRight` |
+| Previous | `Ctrl+Alt+ArrowLeft` |
+
+The **Global media hotkeys** switch controls these three playback actions.
+Optional volume bindings are separate, under **Sound → Precise volume**, and
+require that extension to be enabled.
+
+Saving rejects invalid syntax, duplicate enabled combinations (including
+aliases such as `Ctrl`/`Control`) and combinations the OS cannot register.
+On failure the field returns to its saved value. The check temporarily probes
+new combinations without replacing the running bindings.
+**Restart Mirlo to apply changes**; Reload player is not sufficient.
+
+Availability can change after the check if another application claims the
+combination. Startup registration failures are logged. Global app shortcuts
+on Linux require X11; desktop media keys use MPRIS independently.
 
 ## Extensions
 

@@ -76,3 +76,24 @@ test('wheel on the volume slider uses one precise step after a global hotkey', (
     item.removed && item.listener === registration.listener && item.capture === true
   ));
 });
+
+test('automatic volume persistence does not resend stale shortcuts or enable flags', async () => {
+  let plugin;
+  vm.runInNewContext(source, {
+    __MIRLO_PLUGINS__: { register(_id, definition) { plugin = definition; } },
+    console,
+  });
+  const saved = [];
+  plugin.debounce = (fn) => fn;
+  plugin.firstRun = async () => {};
+  await plugin.onPlayerApiReady({}, {
+    getConfig: async () => ({
+      enabled: true, savedVolume: 37,
+      globalShortcuts: { volumeUp: 'Ctrl+Alt+ArrowUp', volumeDown: '' },
+    }),
+    setConfig: async (patch) => { saved.push(JSON.parse(JSON.stringify(patch))); },
+  });
+  plugin.options.savedVolume = 42;
+  await plugin.writeOptions();
+  assert.deepEqual(saved, [{ savedVolume: 42 }]);
+});

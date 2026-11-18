@@ -389,8 +389,7 @@
         return effectivePluginConfig(id);
       },
       setConfig: async (partial) => {
-        const next = Object.assign({}, effectivePluginConfig(id), partial);
-        config = await invoke('set_plugin_config', { pluginId: id, config: next });
+        config = await invoke('set_plugin_config', { pluginId: id, config: partial });
         if (!config.plugins) config.plugins = {};
         const merged = effectivePluginConfig(id);
         const def = pluginRegistry.get(id);

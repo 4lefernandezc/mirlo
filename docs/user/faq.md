@@ -24,8 +24,9 @@ Use the sliders button in the player's top bar, tray → **Settings…**, or
 `mirlo.exe --settings`. Extension changes use **Reload player**; global shortcut
 changes require restarting the app.
 
-The source tree also has system-language Settings, categories, search and a
-sleep timer, **not yet in published 0.1.12**. See [Settings](settings.md).
+The source tree also has system-language Settings, categories, search, a
+shortcut editor and a sleep timer, **not yet in published 0.1.12**.
+See [Settings](settings.md).
 
 ## Which extensions are enabled by default?
 
@@ -46,13 +47,16 @@ depend on the provider's availability.
 
 ## What are the global shortcuts?
 
-| Shortcut | Action |
+| Default shortcut | Action |
 | --- | --- |
 | `Ctrl+Alt+Space` | Play/pause |
 | `Ctrl+Alt+Right` | Next track |
 | `Ctrl+Alt+Left` | Previous track |
 
 Disable them in Settings if another app uses the same combinations.
+The unreleased [shortcut editor](settings.md#shortcut-editor-unreleased) can
+change or clear each playback binding and reports conflicts when saving.
+Restart Mirlo to apply a new binding.
 Precise volume has optional global volume bindings, empty/disabled by default.
 App shortcuts work on X11, not Wayland; Linux media keys use MPRIS.
 

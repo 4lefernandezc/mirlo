@@ -44,7 +44,7 @@ async function load(language = 'es') {
   }
   const backend = {
     config: { version: 4, plugins: { 'precise-volume': { enabled: false, steps: 1, savedVolume: 37 } } },
-    calls: [], failNext: false, pending: 0, maxPending: 0,
+    calls: [], failNext: false, saveError: null, pending: 0, maxPending: 0,
     timer: { id: 0, mode: 'off' }, timerError: null, timerReadDelay: null,
   };
   function merge(target, patch) {
@@ -78,6 +78,7 @@ async function load(language = 'es') {
       await flush();
       backend.pending--;
       if (backend.failNext) { backend.failNext = false; throw new Error('disk unavailable'); }
+      if (backend.saveError) { const error = backend.saveError; backend.saveError = null; throw error; }
       merge(backend.config, copy(args.patch));
       return copy(backend.config);
     }
@@ -228,4 +229,47 @@ test('timer errors are translated and a delayed poll cannot overwrite a newly ar
   resolve();
   await flush();
   assert.equal(get('timer-countdown').textContent, 'Al terminar esta canción');
+});
+
+test('playback shortcut edits are queued field patches, support clearing and require restart', async () => {
+  const { backend, document, ids } = await load();
+  const play = document.getElementById('shortcut-play_pause');
+  const next = document.getElementById('shortcut-next');
+  assert.equal(play.value, 'Ctrl+Alt+Space');
+  assert.equal(next.value, 'Ctrl+Alt+ArrowRight');
+  assert.equal(play.maxLength, 128);
+  play.value = '  Ctrl+Alt+P  ';
+  const first = play.fire('change');
+  next.value = '';
+  await Promise.all([first, next.fire('change')]);
+  assert.deepEqual(backend.config.media_shortcuts, { play_pause: 'Ctrl+Alt+P', next: '' });
+  assert.equal(backend.config.plugins['precise-volume'].savedVolume, 37);
+  assert.equal(backend.maxPending, 1);
+  assert.match(ids.status.textContent, /Reinicia Mirlo/);
+  ids.search.value = 'siguiente cancion';
+  await ids.search.fire('input');
+  assert.equal(document.getElementById('media-shortcuts').hidden, false);
+});
+
+test('native shortcut errors are localized and restore the last saved binding', async () => {
+  const { backend, document, ids } = await load();
+  const next = document.getElementById('shortcut-next');
+  for (const [kind, message] of [
+    ['invalid-shortcut', /Atajo no válido/],
+    ['duplicate-shortcut', /otra acción activa/],
+    ['unavailable-shortcut', /no está disponible/],
+    ['shortcut-cleanup-failed', /Reinicia Mirlo antes/],
+  ]) {
+    backend.saveError = { kind, action: 'Next track',
+      ...(kind === 'duplicate-shortcut' ? { other: 'Play / pause' } : {}) };
+    next.value = 'Ctrl+Alt+P';
+    await next.fire('change');
+    assert.equal(next.value, 'Ctrl+Alt+ArrowRight');
+    assert.equal(next.disabled, false);
+    assert.equal(ids.status.dataset.error, 'true');
+    assert.match(ids.status.textContent, message);
+    assert.match(ids.status.textContent, /Siguiente canción/);
+    if (kind === 'duplicate-shortcut') assert.match(ids.status.textContent, /Reproducir \/ pausar/);
+    assert.equal(backend.config.media_shortcuts, undefined);
+  }
 });

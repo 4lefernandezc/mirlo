@@ -1,8 +1,8 @@
 # Architecture
 
 This describes the current source tree. System-language/searchable Settings,
-field-patch saves and the sleep timer are implemented but not included in
-published 0.1.12 downloads.
+the shortcut editor, field-patch saves and the sleep timer are implemented but
+not included in published 0.1.12 downloads.
 
 ## Components
 
@@ -43,6 +43,18 @@ Defaults fill missing fields and versioned migrations handle existing files.
 Settings queues field patches; Rust validates and merges them while holding
 the same write lock used by other configuration commands. Persistence succeeds
 before replacing in-memory state. Failure restores the edited Settings control.
+
+`media_shortcuts` stores play/pause, next and previous accelerators, with
+defaults for existing configurations. `hotkeys.rs` parses these and the
+precise-volume bindings, checks duplicates by normalized shortcut identity and
+probes new enabled combinations with the OS before saving changed bindings.
+Running assignments remain unchanged until restart. A competing application
+can claim a key after a successful check. Startup logs registration failures
+without stopping the player. Playback bindings are edited only through the
+local Settings patch command; full-config writes from the player preserve them.
+
+Renderer extension saves also send and merge field patches. Automatic volume
+persistence writes only `savedVolume`, not a stale snapshot of shortcut options.
 
 Playback state is mirrored at a throttled interval and flushed on exit/restart.
 Restoration uses the official player's router, verifies the target track and
@@ -132,3 +144,5 @@ assembled artifacts and includes [corresponding sources](linux-sources.md).
   forced sandbox are not verified across supported hardware.
 - Localized Settings has no Linux GUI verification. Timer tests do not establish
   real 15–60-minute waits, actual suspension or signed-in song/ad transitions.
+- The shortcut editor's OS-conflict and key-routing behavior has no Linux
+  desktop runtime verification.

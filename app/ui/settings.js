@@ -48,6 +48,17 @@
     target[path[path.length - 1]] = value;
   };
   const normalized = (text) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const shortcutErrors = {
+    'invalid-shortcut': 'Invalid shortcut. Use an accelerator such as Ctrl+Alt+K.',
+    'duplicate-shortcut': 'This combination is assigned to another enabled action.',
+    'unavailable-shortcut': 'This combination is unavailable. It may be reserved or used by another app.',
+    'shortcut-cleanup-failed': 'The shortcut check could not finish. Restart Mirlo before trying again.',
+  };
+  function saveError(error) {
+    if (!Object.hasOwn(shortcutErrors, error?.kind)) return String(error);
+    return `${translate(error.action)}: ${translate(shortcutErrors[error.kind])}` +
+      (error.other ? ` (${translate(error.other)})` : '');
+  }
 
   function filter() {
     const query = normalized(el('search').value.trim());
@@ -75,7 +86,7 @@
           apply === 'reload' ? 'Saved. Reload the player to apply.' : 'Saved. Applies immediately.'));
         filter();
       } catch (error) {
-        status(`${translate('Could not save. Your previous settings are unchanged.')} ${String(error)}`, true);
+        status(`${translate('Could not save. Your previous settings are unchanged.')} ${saveError(error)}`, true);
         throw error;
       }
     });
@@ -125,6 +136,38 @@
     }
   }
 
+  function renderMediaShortcuts() {
+    const article = node('article', undefined, 'plugin');
+    article.id = 'media-shortcuts';
+    article.append(node('strong', translate('Playback shortcuts')),
+      node('p', translate('Enter an accelerator such as Ctrl+Alt+K. Leave empty to disable an action. Restart Mirlo to apply.'), 'desc'));
+    const options = node('div', undefined, 'options');
+    for (const [key, title, fallback] of [
+      ['play_pause', 'Play / pause', 'Ctrl+Alt+Space'],
+      ['next', 'Next track', 'Ctrl+Alt+ArrowRight'],
+      ['previous', 'Previous track', 'Ctrl+Alt+ArrowLeft'],
+    ]) {
+      const label = node('label', translate(title), 'field');
+      const input = node('input');
+      input.type = 'text';
+      input.id = `shortcut-${key}`;
+      input.placeholder = translate('Disabled');
+      input.maxLength = 128;
+      input.spellcheck = false;
+      input.autocomplete = 'off';
+      bind(input, () => fullConfig.media_shortcuts?.[key] ?? fallback,
+        (value) => ({ media_shortcuts: { [key]: value.trim() } }), 'restart');
+      label.appendChild(input);
+      options.appendChild(label);
+    }
+    article.appendChild(options);
+    article.appendChild(node('small', translate('Availability is checked when saving. Another app may claim the combination later. Global app shortcuts on Linux require X11.')));
+    groups.get('General').plugins.appendChild(article);
+    rows.push({ element: article, category: 'General',
+      text: normalized(['Playback shortcuts', 'Play / pause', 'Next track', 'Previous track']
+        .map(translate).join(' ')), enabled: () => !!fullConfig.hotkeys_enabled });
+  }
+
   function renderOption(plugin, option) {
     const label = node('label', undefined, `field${option.type === 'boolean' ? ' inline' : ''}${option.type === 'textarea' ? ' wide' : ''}`);
     const control = node(option.type === 'select' ? 'select' : option.type === 'textarea' ? 'textarea' : 'input');
@@ -144,6 +187,12 @@
         if (option[property] !== undefined) control[property] = option[property];
       }
       if (option.type === 'number') control.required = true;
+      if (option.path[0] === 'globalShortcuts') {
+        control.maxLength = 128;
+        control.spellcheck = false;
+        control.autocomplete = 'off';
+        control.placeholder = 'Ctrl+Alt+ArrowUp';
+      }
     }
     const apply = option.path[0] === 'globalShortcuts' ? 'restart' : 'reload';
     bind(control, () => getPath(fullConfig.plugins[plugin.id], option.path) ?? option.default, (value) => {
@@ -298,6 +347,7 @@
       }
       renderTimer();
       renderGeneral();
+      renderMediaShortcuts();
       for (const plugin of manifest) renderPlugin(plugin);
       for (const id of ['search', 'category', 'enabled-only', 'reload']) el(id).disabled = false;
       filter();

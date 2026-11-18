@@ -18,6 +18,24 @@ use crate::logging::log_error;
 pub const CONFIG_VERSION: u32 = 4;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct MediaShortcuts {
+    pub play_pause: String,
+    pub next: String,
+    pub previous: String,
+}
+
+impl Default for MediaShortcuts {
+    fn default() -> Self {
+        Self {
+            play_pause: "Ctrl+Alt+Space".into(),
+            next: "Ctrl+Alt+ArrowRight".into(),
+            previous: "Ctrl+Alt+ArrowLeft".into(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Config {
     /// On-disk schema version.
@@ -26,6 +44,8 @@ pub struct Config {
     pub adblock: bool,
     /// Whether the global media hotkeys are registered.
     pub hotkeys_enabled: bool,
+    /// Empty accelerator strings disable individual playback shortcuts.
+    pub media_shortcuts: MediaShortcuts,
     /// Track-change toast notifications (shown only while the player window
     /// is not focused).
     pub notifications: bool,
@@ -58,6 +78,7 @@ impl Default for Config {
             version: CONFIG_VERSION,
             adblock: false,
             hotkeys_enabled: true,
+            media_shortcuts: MediaShortcuts::default(),
             notifications: true,
             discord_rpc: true,
             discord_client_id: String::new(),
@@ -81,6 +102,7 @@ impl Config {
                 "adblock" | "hotkeys_enabled" | "notifications" | "discord_rpc"
                 | "update_check" | "minimize_to_tray" | "close_to_tray" | "resume_playback"
                     if value.is_boolean() => {}
+                "media_shortcuts" if value.is_object() => {}
                 "plugins" => {
                     let plugins = value.as_object().ok_or("plugins patch must be an object")?;
                     for (id, options) in plugins {

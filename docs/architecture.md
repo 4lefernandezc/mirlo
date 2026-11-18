@@ -141,7 +141,8 @@ assembled artifacts and includes [corresponding sources](linux-sources.md).
 - Upstream player DOM/API changes can affect extensions.
 - Native Linux GPU/PipeWire, signed-in session persistence and H.264 under the
   forced sandbox are not verified across supported hardware.
-- Localized Settings has no Linux GUI verification. Timer tests do not establish
-  real 15–60-minute waits, actual suspension or signed-in song/ad transitions.
+- Linux Settings display/localization has startup checks, not full desktop
+  input or accessibility coverage. Timer tests do not establish real
+  15–60-minute waits, actual suspension or signed-in song/ad transitions.
 - The shortcut editor's OS-conflict and key-routing behavior has no Linux
   desktop runtime verification.

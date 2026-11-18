@@ -56,7 +56,7 @@ Installers are published on the GitHub Releases page
 In PowerShell, compare the file hash with the one in `SHA256SUMS.txt`:
 
 ```powershell
-Get-FileHash .\Mirlo_0.1.12_x64-setup.exe -Algorithm SHA256
+Get-FileHash .\Mirlo_0.1.13_x64-setup.exe -Algorithm SHA256
 ```
 
 ## Install
@@ -101,7 +101,7 @@ the extracted folder moves or deletes the whole copy, including your session.
   Download the new ZIP from the releases page and replace `mirlo.exe`,
   keeping your `data\` folder.
 - Verify the ZIP the same way as the installers:
-   `Get-FileHash .\Mirlo_0.1.12_portable_x64.zip -Algorithm SHA256` and compare
+   `Get-FileHash .\Mirlo_0.1.13_portable_x64.zip -Algorithm SHA256` and compare
   with `SHA256SUMS.txt`.
 
 ## Linux (AppImage / .deb)

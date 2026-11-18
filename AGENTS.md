@@ -7,7 +7,7 @@ Windows uses WebView2; Linux uses WebKitGTK. Twenty renderer extensions add
 appearance, playback and audio controls. See [architecture](docs/architecture.md)
 and [user documentation](docs/user/settings.md).
 
-Current source version: **0.1.13**. Latest published version: **0.1.12**.
+Current source and latest published version: **0.1.13** (Windows and Linux).
 Version 0.1.13 includes:
 
 - System-language Settings: Spanish variants → `es`, English fallback.

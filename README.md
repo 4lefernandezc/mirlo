@@ -7,7 +7,7 @@ WebView2 on Windows and WebKitGTK on Linux. The application has no Node.js
 runtime. Windows uses the installed WebView2 runtime; the Linux AppImage
 includes WebKitGTK and its multimedia dependencies.
 
-**Version 0.1.13 (Windows and Linux).** Includes localized, searchable Settings,
+**Latest release: 0.1.13 (Windows and Linux).** Includes localized, searchable Settings,
 the shortcut editor and sleep timer. See the [changelog](CHANGELOG.md).
 
 ## Install

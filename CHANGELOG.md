@@ -4,6 +4,8 @@ Implemented changes by version. `[Unreleased]` is not included in published down
 
 ## [Unreleased]
 
+## [0.1.13] - 2026-11-18
+
 ### Added
 
 - Playback shortcut editor in Settings for play/pause, next and previous.

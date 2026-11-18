@@ -7,9 +7,8 @@ WebView2 on Windows and WebKitGTK on Linux. The application has no Node.js
 runtime. Windows uses the installed WebView2 runtime; the Linux AppImage
 includes WebKitGTK and its multimedia dependencies.
 
-**Latest release: 0.1.12 (Windows and Linux).** Localized, searchable Settings,
-the shortcut editor and sleep timer are implemented in the source tree but
-**not yet released**. See the [changelog](CHANGELOG.md).
+**Version 0.1.13 (Windows and Linux).** Includes localized, searchable Settings,
+the shortcut editor and sleep timer. See the [changelog](CHANGELOG.md).
 
 ## Install
 
@@ -48,7 +47,7 @@ Full instructions, checksums, dependencies and removal:
 - Local connection-recovery screen with automatic retry.
 - Signed updates installed only after confirmation.
 
-The source tree also includes system-language Settings (Spanish/English),
+Mirlo also includes system-language Settings (Spanish/English),
 categories, search, enabled-only filtering, reliable per-field saves,
 shortcut editing/conflict checks and a session-only sleep timer for
 15/30/60 minutes or the end of the current track.

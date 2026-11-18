@@ -1,9 +1,7 @@
 # Settings and sleep timer
 
-Settings and extension controls are available in 0.1.12. The language selection,
-categories, search, shortcut editor, per-field save handling and sleep timer
-described below are implemented in the source tree but
-**not yet in published 0.1.12**.
+Version 0.1.13 includes system-language Settings, categories, search, the
+shortcut editor, per-field save handling and the sleep timer.
 
 Open Settings with the sliders button in the player, from the tray menu or
 with `mirlo.exe --settings`.
@@ -16,7 +14,7 @@ Ad blocking and minimize-to-tray default off; the other switches default on.
 Linux does not implement native notifications or Discord presence.
 Tray **Quit** exits the application even when close-to-tray is enabled.
 
-## Shortcut editor (unreleased)
+## Shortcut editor
 
 In **General → Playback shortcuts**, edit play/pause, next and previous.
 Enter a Tauri accelerator such as `Ctrl+Alt+K`, or leave a field empty to
@@ -71,7 +69,7 @@ User overrides take precedence. Silence skipping and SponsorBlock can remove
 natural gaps, intros or outros. Equalizer filter arrays are configured through
 JSON; Settings has a bass-booster option, not band sliders.
 
-## Language (unreleased)
+## Language
 
 Settings follow the **system UI language**: Spanish variants use Spanish;
 other languages currently use English. This does not change YouTube Music's
@@ -79,7 +77,7 @@ own language or your regional number/date format. Windows uses the OS user's
 UI language, not the WebView's browser-language preference. Linux uses the
 inherited `LC_ALL`, `LANGUAGE`, `LC_MESSAGES`, then `LANG` preference.
 
-## Find and save preferences (unreleased)
+## Find and save preferences
 
 - Categories: General, Playback, Sound, Appearance and Integrations.
 - Search by extension name, identifier, description or option label. Spanish
@@ -92,7 +90,7 @@ inherited `LC_ALL`, `LANGUAGE`, `LC_MESSAGES`, then `LANG` preference.
 - The appearance palette and custom CSS still use the original stored values;
   translating their labels does not rename configuration keys.
 
-## Sleep timer (unreleased)
+## Sleep timer
 
 In **Playback → Sleep timer**, choose:
 

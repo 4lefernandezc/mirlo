@@ -1,8 +1,7 @@
 # Architecture
 
-This describes the current source tree. System-language/searchable Settings,
-the shortcut editor, field-patch saves and the sleep timer are implemented but
-not included in published 0.1.12 downloads.
+This describes version 0.1.13, including system-language/searchable Settings,
+the shortcut editor, field-patch saves and the sleep timer.
 
 ## Components
 

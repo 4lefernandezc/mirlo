@@ -1,9 +1,8 @@
-//! Mirlo application shell (Phase A).
+//! Mirlo application shell.
 //!
 //! Owns the main window (which loads the official YouTube Music player), the
 //! injected bridge, the settings store, global hotkeys, single-instance
-//! behavior and the tray icon. See `docs/architecture.md` and
-//! `docs/research/ipc-contract.md` for the design context.
+//! behavior and the tray icon. See `docs/architecture.md`.
 
 mod adblock;
 mod config;
@@ -396,7 +395,7 @@ fn create_main_window(
     }
 
     // Persistent WebView2 user-data folder: keeps the Google session across
-    // restarts (validated in the Phase 0 PoC).
+    // restarts.
     #[cfg(target_os = "windows")]
     {
         builder = builder.data_directory(profile_dir.to_path_buf());
@@ -928,9 +927,8 @@ pub fn run() {
                 }
                 _ => {}
             }
-            // Graceful shutdown when the *player* window closes (Phase 0
-            // note: WebView2 trees tear down slowly after force kills). The
-            // settings window just closes/destroys itself.
+            // Player close hides to tray or shuts down gracefully; Settings
+            // closes independently.
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 if window.label() == MAIN_WINDOW {
                     let app_state = window.app_handle().state::<AppState>();

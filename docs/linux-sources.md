@@ -78,7 +78,7 @@ follow their included build instructions for a modified version.
 
 For a complete Mirlo build, use Rust, the pinned Tauri CLI 2.12.3 and the
 Linux prerequisites in `.github/workflows/release.yml`. Run the release
-recipe from `mirlo/app/`; build outputs must be outside source and synced folders.
+recipe from `mirlo/app/`; keep build outputs outside source and synced folders.
 `tools/linux/release.sh` builds first, assembles licenses/sources and finalizes
 the AppImage, then signs the **final bytes**. A locally modified build can
 use its own updater key/public key pair, or disable updater artifacts for

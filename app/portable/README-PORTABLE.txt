@@ -6,9 +6,9 @@ No installation: Mirlo runs from this folder.
   1. Extract this ZIP anywhere you can write to.
   2. Run mirlo.exe.
 
-Everything Mirlo stores (settings, logs and the browser profile with your
-Google session) lives in the "data" folder created next to mirlo.exe. To
-remove every trace, delete the whole extracted folder. Keep the files
+Mirlo settings, logs and the browser profile with your Google session live
+in the "data" folder next to mirlo.exe, unless MIRLO_DATA_DIR overrides it.
+Deleting that folder removes this application data. Keep the files
 together: if you move the portable copy, move the "data" folder with it.
 
 Updates are manual

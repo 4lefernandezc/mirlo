@@ -1,8 +1,7 @@
 /*
  * Mirlo bridge — injected at document start into the official player.
  *
- * Phase A implements the MVP subset of the inherited `ytmd:*` contract
- * (docs/research/ipc-contract.md):
+ * Player bridge (see docs/architecture.md):
  *   - config:            get / set (through the shell's JSON store)
  *   - player state:      reported to the shell as `report_player_state`
  *                        `{kind, data}` messages (play-or-paused, time-changed,
@@ -16,9 +15,9 @@
  *                        the WebView2 network block) plus pruning of the ad
  *                        metadata from `/youtubei/v1/player` responses;
  *                        always installed, gated by the live config flag
- *                        (ships OFF by default, ADR-0003)
+ *                        (ships OFF by default)
  *
- * Phase B adds the renderer plugin host (`window.__MIRLO_PLUGINS__`):
+ * Renderer plugin host (`window.__MIRLO_PLUGINS__`):
  *   - plugins register themselves (`register(id, def)`), the host starts the
  *     enabled ones after DOM ready and calls `onPlayerApiReady` once the
  *     YouTube player element (`#movie_player`) exists;
@@ -53,7 +52,7 @@
   // same technique as uBlock Origin's json-prune filters on YouTube,
   // implemented independently). The wrappers are always installed and
   // consult the live `config.adblock` flag, so the settings toggle applies
-  // without a page reload (ships OFF by default, ADR-0003).
+  // without a page reload (ships OFF by default).
   const AD_RE =
     /(doubleclick\.net|googlesyndication|googleadservices|\/pagead\/|\/api\/stats\/ads|activeview)/i;
   const PRUNED_KEYS = ['playerAds', 'adPlacements', 'adSlots'];

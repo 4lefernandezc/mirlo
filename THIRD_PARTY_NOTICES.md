@@ -7,7 +7,8 @@ code and material included in this repository, with their license terms.
 
 - Source: https://github.com/pear-devs/pear-desktop (formerly th-ch/youtube-music)
 - License: MIT, © pear-devs
-- Usage: adapted plugin code, with upstream attribution in each ported file.
+- Usage: adapted plugin code. Each ported file carries an attribution header
+  with its upstream path and commit/tag.
 
 **Ported plugin code included in this repository:**
 

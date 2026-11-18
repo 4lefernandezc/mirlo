@@ -1,4 +1,4 @@
-//! Windows System Media Transport Controls (SMTC) integration — Phase C.
+//! Windows System Media Transport Controls (SMTC) integration.
 //!
 //! Creates a Windows media session for the player window so the taskbar media
 //! flyout, the lock screen and the hardware media keys control YouTube Music:

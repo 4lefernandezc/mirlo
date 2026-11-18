@@ -22,8 +22,7 @@ pub const CONFIG_VERSION: u32 = 4;
 pub struct Config {
     /// On-disk schema version.
     pub version: u32,
-    /// Ad-block v0 (request blocking through injected script wrappers).
-    /// Ships OFF by default (ADR-0003).
+    /// Optional script/network ad blocking. Ships OFF by default.
     pub adblock: bool,
     /// Whether the global media hotkeys are registered.
     pub hotkeys_enabled: bool,
@@ -242,7 +241,7 @@ mod tests {
     fn defaults_are_conservative() {
         let config = Config::default();
         assert_eq!(config.version, CONFIG_VERSION);
-        assert!(!config.adblock, "ad-block must ship off (ADR-0003)");
+        assert!(!config.adblock, "ad-block must ship off");
         assert!(config.hotkeys_enabled);
         assert!(config.notifications);
         assert!(

@@ -5,7 +5,7 @@
 .DESCRIPTION
   Launches an executable (or attaches to an existing process name), waits for a
   settle period, then sums WorkingSetPrivate of the process and all descendants.
-  Intended for Mirlo performance testing (see docs/research/measurements.md).
+  Includes the web engine's child processes in Mirlo memory measurements.
 
 .EXAMPLE
   powershell -NoProfile -File tools/measure-memory.ps1 -ExePath "C:\path\mirlo.exe" -SettleSeconds 45

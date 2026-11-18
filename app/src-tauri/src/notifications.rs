@@ -1,4 +1,4 @@
-//! Windows toast notifications on track change — Phase C.
+//! Windows toast notifications on track change.
 //!
 //! Shows a toast with the track title + artist (and the artwork when a video
 //! id is available) when `video-src-changed` reports a **new** track. The

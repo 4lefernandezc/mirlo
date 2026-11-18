@@ -2,8 +2,8 @@
 //!
 //! Used by the updater (confirm/notify) and the fatal-error path so that,
 //! under `windows_subsystem = "windows"` (no console), the user still sees
-//! what happened. The module is compiled on Windows only (the shell is
-//! Windows-first until Phase E); callers gate their usage with `cfg`.
+//! what happened. The module is compiled on Windows only; callers gate their
+//! usage with `cfg`.
 
 use windows::core::HSTRING;
 use windows::Win32::Foundation::HWND;

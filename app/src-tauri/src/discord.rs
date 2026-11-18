@@ -1,4 +1,4 @@
-//! Discord Rich Presence over the local IPC pipe — Phase C.
+//! Discord Rich Presence over the local IPC pipe.
 //!
 //! The official Discord client exposes a local named pipe
 //! (`\\.\pipe\discord-ipc-0` .. `-9`); this module implements the small IPC

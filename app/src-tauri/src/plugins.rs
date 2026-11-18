@@ -1,4 +1,4 @@
-//! Renderer plugin sources (Phase B).
+//! Renderer plugin sources.
 //!
 //! Each plugin is a plain JS file under `app/src-tauri/plugins/`. The files are
 //! compiled into the injected bridge in this exact order: a plugin may rely on

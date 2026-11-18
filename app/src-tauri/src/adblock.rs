@@ -11,12 +11,10 @@
 //! Gating: the handler is registered unconditionally at window creation and
 //! consults a live `AtomicBool` mirroring `config.adblock` on every request,
 //! so toggling the setting in the settings UI applies immediately — a page
-//! reload is not even needed (deviation from the original plan, which
-//! registered only when enabled at startup; the filter matching is a
-//! negligible per-request cost and this avoids window recreation). The flag
-//! starts `false`; ad-block ships OFF by default (ADR-0003).
+//! reload or window recreation is not needed. The flag
+//! starts `false`; ad-block ships OFF by default.
 //!
-//! Patterns: the conservative host/substring set validated in the Phase 0 PoC
+//! Patterns: a conservative host/substring set
 //! (doubleclick.net, googlesyndication, googleadservices, /pagead/,
 //! /api/stats/ads, activeview). No allowlist is needed because every pattern
 //! targets pure ad/telemetry endpoints, never playback or session traffic.

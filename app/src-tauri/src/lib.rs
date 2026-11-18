@@ -11,6 +11,7 @@ mod data_root;
 #[cfg(target_os = "windows")]
 mod dialog;
 mod discord;
+mod locale;
 mod logging;
 mod media_controls;
 mod mpris;
@@ -18,6 +19,7 @@ mod notifications;
 mod offline;
 mod playback;
 mod plugins;
+mod sleep_timer;
 mod updates;
 mod window_state;
 
@@ -53,6 +55,7 @@ struct AppState {
     /// How many times the resume was handed to the page this run (cap so a
     /// broken page cannot loop forever).
     resume_attempts: Mutex<u32>,
+    sleep_timer: Mutex<sleep_timer::SleepTimer>,
 }
 
 /// The MVP hotkey set (matches the validated PoC).
@@ -279,7 +282,11 @@ fn open_settings_window(app: &AppHandle) {
         SETTINGS_WINDOW,
         WebviewUrl::App("settings.html".into()),
     )
-    .title("Mirlo - Settings")
+    .title(if locale::settings_language() == "es" {
+        "Mirlo - Ajustes"
+    } else {
+        "Mirlo - Settings"
+    })
     .inner_size(960.0, 700.0)
     .min_inner_size(640.0, 480.0)
     .background_color(tauri::window::Color(18, 18, 18, 255));
@@ -432,6 +439,86 @@ fn get_plugin_manifest() -> Value {
 }
 
 #[tauri::command]
+fn get_settings_locale() -> &'static str {
+    locale::settings_language()
+}
+
+fn store_config(current: &mut Config, next: Config) -> Result<Config, String> {
+    config::save(&next)?;
+    if current.adblock != next.adblock {
+        adblock::set_enabled(next.adblock);
+    }
+    if current.discord_rpc != next.discord_rpc
+        || current.discord_client_id != next.discord_client_id
+    {
+        discord::set_config(next.discord_rpc, next.discord_client_id.clone());
+    }
+    *current = next;
+    Ok(current.clone())
+}
+
+#[tauri::command]
+fn patch_settings(state: tauri::State<'_, AppState>, patch: Value) -> Result<Config, String> {
+    let mut current = state
+        .config
+        .lock()
+        .map_err(|_| "config lock poisoned".to_string())?;
+    let next = current.patched(patch)?;
+    store_config(&mut current, next)
+}
+
+fn sync_sleep_timer(app: &AppHandle, timer: &Value) {
+    eval_in_player(
+        app,
+        &format!("window.__mirlo?.sleepTimer.configure({timer})"),
+    );
+}
+
+#[tauri::command]
+fn get_sleep_timer(state: tauri::State<'_, AppState>) -> Result<Value, String> {
+    state
+        .sleep_timer
+        .lock()
+        .map(|timer| timer.snapshot())
+        .map_err(|_| "timer lock poisoned".into())
+}
+
+#[tauri::command]
+fn set_sleep_timer(
+    app: AppHandle,
+    state: tauri::State<'_, AppState>,
+    preset: String,
+) -> Result<Value, String> {
+    let player = state
+        .last_player_state
+        .lock()
+        .map_err(|_| "player lock poisoned")?
+        .clone();
+    let snapshot = state
+        .sleep_timer
+        .lock()
+        .map_err(|_| "timer lock poisoned")?
+        .set(&preset, player.as_ref(), sleep_timer::now_ms())?;
+    sync_sleep_timer(&app, &snapshot);
+    Ok(snapshot)
+}
+
+fn start_sleep_timer_worker(app: AppHandle) {
+    std::thread::spawn(move || loop {
+        std::thread::sleep(std::time::Duration::from_secs(1));
+        let snapshot = app
+            .state::<AppState>()
+            .sleep_timer
+            .lock()
+            .ok()
+            .and_then(|mut timer| timer.tick(sleep_timer::now_ms()).then(|| timer.snapshot()));
+        if let Some(snapshot) = snapshot {
+            sync_sleep_timer(&app, &snapshot);
+        }
+    });
+}
+
+#[tauri::command]
 fn get_config(state: tauri::State<'_, AppState>) -> Result<Config, String> {
     state
         .config
@@ -442,15 +529,11 @@ fn get_config(state: tauri::State<'_, AppState>) -> Result<Config, String> {
 
 #[tauri::command]
 fn set_config(state: tauri::State<'_, AppState>, config: Config) -> Result<Config, String> {
-    config::save(&config)?;
-    adblock::set_enabled(config.adblock);
-    discord::set_config(config.discord_rpc, config.discord_client_id.clone());
     let mut current = state
         .config
         .lock()
         .map_err(|_| "config lock poisoned".to_string())?;
-    *current = config.clone();
-    Ok(config)
+    store_config(&mut current, config)
 }
 
 #[tauri::command]
@@ -463,9 +546,9 @@ fn set_plugin_config(
         .config
         .lock()
         .map_err(|_| "config lock poisoned".to_string())?;
-    current.plugins.insert(plugin_id, config);
-    config::save(&current)?;
-    Ok(current.clone())
+    let mut next = current.clone();
+    next.plugins.insert(plugin_id, config);
+    store_config(&mut current, next)
 }
 
 #[tauri::command]
@@ -485,6 +568,15 @@ fn report_player_state(
     kind: String,
     data: Value,
 ) {
+    let timer_snapshot = state.sleep_timer.lock().ok().and_then(|mut timer| {
+        (timer.on_state(&kind, &data) || kind == "bridge-ready").then(|| timer.snapshot())
+    });
+    if let Some(snapshot) = timer_snapshot {
+        sync_sleep_timer(&app, &snapshot);
+    }
+    if kind.starts_with("sleep-timer-") {
+        return;
+    }
     match kind.as_str() {
         "time-changed" => {}
         "bridge-ready" => {
@@ -764,9 +856,11 @@ pub fn run() {
                 resume_target: Mutex::new(resume_target),
                 bridge_ready_at: Mutex::new(None),
                 resume_attempts: Mutex::new(0),
+                sleep_timer: Mutex::new(sleep_timer::SleepTimer::default()),
             });
 
             create_main_window(app, &config, &config::profile_dir())?;
+            start_sleep_timer_worker(handle.clone());
 
             if config.hotkeys_enabled {
                 register_hotkeys(&handle);
@@ -799,6 +893,10 @@ pub fn run() {
             set_plugin_config,
             get_path,
             get_plugin_manifest,
+            get_settings_locale,
+            patch_settings,
+            get_sleep_timer,
+            set_sleep_timer,
             report_player_state,
             reload_player,
             open_settings,

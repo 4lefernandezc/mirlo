@@ -9,472 +9,116 @@
         color-scheme: dark;
         --bg: #0f1115;
         --card: #16191f;
-        --card-border: #262b33;
+        --card-border: #303640;
         --text: #e8e8e8;
-        --muted: #9aa0a6;
+        --muted: #adb3bd;
         --accent: #f5a524;
       }
-      * {
-        box-sizing: border-box;
-      }
+      * { box-sizing: border-box; }
+      [hidden] { display: none !important; }
       body {
         margin: 0;
         background: var(--bg);
         color: var(--text);
-        font: 13px/1.5 "Segoe UI", system-ui, sans-serif;
+        font: 14px/1.5 "Segoe UI", system-ui, sans-serif;
       }
+      header, main, footer { padding: 20px 24px; }
       header {
-        position: sticky;
-        top: 0;
-        z-index: 2;
         display: flex;
         align-items: center;
-        gap: 12px;
-        padding: 14px 20px;
-        background: rgba(15, 17, 21, 0.92);
+        flex-wrap: wrap;
+        gap: 16px;
         border-bottom: 1px solid var(--card-border);
-        backdrop-filter: blur(6px);
       }
-      header h1 {
-        margin: 0;
-        font-size: 15px;
-        font-weight: 600;
-      }
-      header .spacer {
-        flex: 1;
-      }
-      footer#status {
-        position: sticky;
-        bottom: 0;
-        z-index: 2;
-        padding: 8px 20px;
-        background: rgba(15, 17, 21, 0.92);
-        border-top: 1px solid var(--card-border);
-        color: var(--muted);
-        font-size: 12px;
-        min-height: 18px;
-      }
-      main {
-        max-width: 860px;
-        margin: 0 auto;
-        padding: 16px 20px 32px;
-      }
-      h2 {
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--muted);
-        margin: 22px 0 10px;
-      }
-      card,
-      article.plugin,
-      section.general {
-        display: block;
+      header > div { flex: 1; }
+      h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.025em; }
+      header p { margin: 4px 0 0; color: var(--muted); }
+      main { max-width: 960px; margin: 0 auto; padding-bottom: 80px; }
+      .toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin-bottom: 28px; }
+      .search { flex: 1; min-width: 220px; }
+      h2 { font-size: 17px; font-weight: 600; margin: 28px 0 12px; }
+      article.plugin, .general {
         background: var(--card);
         border: 1px solid var(--card-border);
         border-radius: 10px;
-        padding: 14px 16px;
-        margin: 0 0 12px;
+        padding: 16px;
+        margin-bottom: 12px;
       }
-      .head {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-      .head strong {
-        font-weight: 600;
-      }
-      .head code {
-        color: var(--muted);
-        font-size: 11px;
-      }
-      .badge {
-        margin-left: auto;
-        font-size: 10px;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: var(--accent);
-        border: 1px solid rgba(245, 165, 36, 0.4);
-        border-radius: 999px;
-        padding: 1px 8px;
-      }
-      p.desc {
-        color: var(--muted);
-        margin: 6px 0 0;
-      }
-      .options {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 10px 18px;
-        margin-top: 12px;
-      }
-      .options:empty {
-        display: none;
-      }
-      label.field {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        font-size: 12px;
-        color: var(--muted);
-      }
-      label.field.inline {
-        flex-direction: row;
-        align-items: center;
-        gap: 8px;
-        color: var(--text);
-      }
-      input[type="text"],
-      input[type="number"],
-      textarea,
-      select {
+      .head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+      .head strong { font-size: 15px; font-weight: 600; }
+      .badge { color: var(--accent); font-size: 12px; margin-left: auto; }
+      p.desc { color: var(--muted); max-width: 70ch; margin: 6px 0 0; }
+      .options { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px 20px; margin-top: 16px; }
+      .options:empty { display: none; }
+      label.field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+      label.inline { flex-direction: row; align-items: center; gap: 10px; }
+      .general > label { padding: 12px 0; border-bottom: 1px solid var(--card-border); }
+      .general > label:first-child { padding-top: 0; }
+      .general > label:last-child { padding-bottom: 0; border-bottom: 0; }
+      small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+      input, textarea, select, button { font: inherit; }
+      input[type="text"], input[type="search"], input[type="number"], textarea, select {
+        width: 100%;
         background: #0d0f13;
         border: 1px solid var(--card-border);
         border-radius: 6px;
         color: var(--text);
-        font: inherit;
-        padding: 6px 8px;
+        padding: 8px 10px;
       }
-      input[type="text"],
-      textarea {
-        font-family: Consolas, monospace;
+      input[type="checkbox"] { accent-color: var(--accent); width: 17px; height: 17px; flex-shrink: 0; }
+      textarea { font-family: Consolas, monospace; resize: vertical; min-height: 110px; }
+      .wide { grid-column: 1 / -1; }
+      .timer-actions { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; margin-top: 16px; }
+      .timer-actions label { flex: 1; min-width: 190px; }
+      .countdown { display: block; margin-top: 12px; font-variant-numeric: tabular-nums; }
+      button { background: #22262e; color: var(--text); border: 1px solid var(--card-border); border-radius: 6px; padding: 8px 14px; cursor: pointer; }
+      button.primary { background: var(--accent); border-color: var(--accent); color: #1a1408; font-weight: 600; }
+      button:hover { border-color: var(--accent); }
+      button:active { transform: translateY(1px); }
+      :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+      :disabled { opacity: 0.55; cursor: wait; }
+      footer {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        min-height: 44px;
+        padding: 12px 24px;
+        background: var(--bg);
+        border-top: 1px solid var(--card-border);
+        color: var(--muted);
+        font-size: 13px;
       }
-      textarea {
-        resize: vertical;
-        min-height: 90px;
-      }
-      .options label.wide {
-        grid-column: 1 / -1;
-      }
-      input[type="checkbox"] {
-        accent-color: var(--accent);
-        width: 15px;
-        height: 15px;
-      }
-      button {
-        background: #22262e;
-        color: var(--text);
-        border: 1px solid var(--card-border);
-        border-radius: 6px;
-        font: inherit;
-        padding: 6px 12px;
-        cursor: pointer;
-      }
-      button:hover {
-        border-color: var(--accent);
-      }
-      button.primary {
-        background: var(--accent);
-        border-color: var(--accent);
-        color: #1a1408;
-        font-weight: 600;
-      }
-      .general .row {
-        display: flex;
-        gap: 24px;
-        flex-wrap: wrap;
-      }
+      footer[data-error="true"] { color: #ffb4ab; }
     </style>
+    <script defer src="settings-i18n.js"></script>
+    <script defer src="settings.js"></script>
   </head>
   <body>
     <header>
-      <h1>Mirlo — Settings</h1>
-      <div class="spacer"></div>
-      <button id="reload" class="primary" title="Reloads the player page so plugin changes apply">Reload player</button>
+      <div>
+        <h1 data-i18n="Mirlo — Settings">Mirlo — Settings</h1>
+        <p data-i18n="Your preferences, saved on this device.">Your preferences, saved on this device.</p>
+      </div>
+      <button id="reload" class="primary" disabled data-i18n="Reload player">Reload player</button>
     </header>
-
     <main>
-      <h2>General</h2>
-      <section class="general">
-        <div class="row">
-          <label class="field inline">
-            <input type="checkbox" id="adblock" />
-            Ad-block (network-level; applies immediately)
-          </label>
-          <label class="field inline">
-            <input type="checkbox" id="hotkeys" />
-            Global media hotkeys (applies after an app restart)
-          </label>
-          <label class="field inline">
-            <input type="checkbox" id="notifications" />
-            Track-change notifications (only while the window is not focused)
-          </label>
-          <label class="field inline">
-            <input type="checkbox" id="discord-rpc" />
-            Discord Rich Presence (shows what you are listening to)
-          </label>
-          <label class="field inline">
-            <input type="checkbox" id="update-check" />
-            Check for updates on startup (updates install only after you confirm)
-          </label>
-          <label class="field inline">
-            <input type="checkbox" id="minimize-to-tray" />
-            Hide to the tray when the window is minimized
-          </label>
-          <label class="field inline">
-            <input type="checkbox" id="close-to-tray" />
-            Closing the window hides to the tray (Quit from the tray menu to exit)
-          </label>
-          <label class="field inline">
-            <input type="checkbox" id="resume-playback" />
-            Resume playback where you left off (on app start)
-          </label>
-        </div>
-      </section>
-
-      <h2>Plugins</h2>
-      <div id="plugins"></div>
+      <div class="toolbar">
+        <label class="field search">
+          <span data-i18n="Search settings">Search settings</span>
+          <input id="search" type="search" disabled />
+        </label>
+        <label class="field">
+          <span data-i18n="Category">Category</span>
+          <select id="category" disabled></select>
+        </label>
+        <label class="field inline">
+          <input id="enabled-only" type="checkbox" disabled />
+          <span data-i18n="Enabled only">Enabled only</span>
+        </label>
+      </div>
+      <div id="groups"></div>
+      <p id="empty" hidden data-i18n="No matching settings.">No matching settings.</p>
     </main>
-
-    <footer id="status"></footer>
-
-    <script>
-      (() => {
-        'use strict';
-        const invoke = (cmd, args) => window.__TAURI_INTERNALS__.invoke(cmd, args);
-        const status = (text) => {
-          document.getElementById('status').textContent = text;
-        };
-
-        // --- dotted-path helpers ------------------------------------------
-        const getPath = (object, path) =>
-          path.reduce((value, key) => (value == null ? undefined : value[key]), object);
-        const setPath = (object, path, value) => {
-          let target = object;
-          for (const key of path.slice(0, -1)) {
-            if (typeof target[key] !== 'object' || target[key] === null) target[key] = {};
-            target = target[key];
-          }
-          target[path[path.length - 1]] = value;
-        };
-
-        let fullConfig = null;
-
-        async function savePlugin(pluginId, pluginConfig) {
-          try {
-            fullConfig = await invoke('set_plugin_config', {
-              pluginId,
-              config: pluginConfig,
-            });
-            status(`Saved "${pluginId}". Reload the player to apply changes.`);
-          } catch (err) {
-            status(`Could not save "${pluginId}": ${err}`);
-          }
-        }
-
-        function renderGeneral() {
-          const adblock = document.getElementById('adblock');
-          const hotkeys = document.getElementById('hotkeys');
-          const notifications = document.getElementById('notifications');
-          const discordRpc = document.getElementById('discord-rpc');
-          const updateCheck = document.getElementById('update-check');
-          const minimizeToTray = document.getElementById('minimize-to-tray');
-          const closeToTray = document.getElementById('close-to-tray');
-          const resumePlayback = document.getElementById('resume-playback');
-          adblock.checked = !!fullConfig.adblock;
-          hotkeys.checked = !!fullConfig.hotkeys_enabled;
-          notifications.checked = !!fullConfig.notifications;
-          discordRpc.checked = !!fullConfig.discord_rpc;
-          updateCheck.checked = fullConfig.update_check !== false;
-          minimizeToTray.checked = !!fullConfig.minimize_to_tray;
-          closeToTray.checked = fullConfig.close_to_tray !== false;
-          resumePlayback.checked = fullConfig.resume_playback !== false;
-
-          const save = async () => {
-            try {
-              fullConfig = await invoke('set_config', {
-                config: {
-                  ...fullConfig,
-                  adblock: adblock.checked,
-                  hotkeys_enabled: hotkeys.checked,
-                  notifications: notifications.checked,
-                  discord_rpc: discordRpc.checked,
-                  update_check: updateCheck.checked,
-                  minimize_to_tray: minimizeToTray.checked,
-                  close_to_tray: closeToTray.checked,
-                  resume_playback: resumePlayback.checked,
-                },
-              });
-              status('General settings saved.');
-            } catch (err) {
-              status(`Could not save general settings: ${err}`);
-            }
-          };
-          adblock.addEventListener('change', save);
-          hotkeys.addEventListener('change', save);
-          notifications.addEventListener('change', save);
-          discordRpc.addEventListener('change', save);
-          updateCheck.addEventListener('change', save);
-          minimizeToTray.addEventListener('change', save);
-          closeToTray.addEventListener('change', save);
-          resumePlayback.addEventListener('change', save);
-        }
-
-        function renderOption(plugin, state, option) {
-          const current = getPath(state, option.path);
-          const value = current !== undefined ? current : option.default;
-
-          const apply = (newValue) => {
-            const next = JSON.parse(JSON.stringify(state));
-            setPath(next, option.path, newValue);
-            return savePlugin(plugin.id, next).then(() => {
-              state = next;
-            });
-          };
-
-          if (option.type === 'boolean') {
-            const label = document.createElement('label');
-            label.className = 'field inline';
-            const input = document.createElement('input');
-            input.type = 'checkbox';
-            input.checked = !!value;
-            input.addEventListener('change', () => apply(input.checked));
-            label.appendChild(input);
-            label.appendChild(document.createTextNode(option.label));
-            return label;
-          }
-
-          const label = document.createElement('label');
-          label.className = 'field';
-          label.appendChild(document.createTextNode(option.label));
-
-          if (option.type === 'select') {
-            const select = document.createElement('select');
-            for (const choice of option.choices) {
-              const opt = document.createElement('option');
-              opt.value = choice;
-              opt.textContent = choice;
-              if (choice === value) opt.selected = true;
-              select.appendChild(opt);
-            }
-            select.addEventListener('change', () => apply(select.value));
-            label.appendChild(select);
-            return label;
-          }
-
-          if (option.type === 'textarea') {
-            label.className = 'field wide';
-            const textarea = document.createElement('textarea');
-            textarea.rows = option.rows || 6;
-            textarea.spellcheck = false;
-            textarea.value = value ?? '';
-            textarea.addEventListener('change', () => apply(textarea.value));
-            label.appendChild(textarea);
-            return label;
-          }
-
-          const input = document.createElement('input');
-          if (option.type === 'number') {
-            input.type = 'number';
-            if (option.min !== undefined) input.min = option.min;
-            if (option.max !== undefined) input.max = option.max;
-            if (option.step !== undefined) input.step = option.step;
-            input.value = value;
-            input.addEventListener('change', () => {
-              const parsed = Number(input.value);
-              apply(Number.isFinite(parsed) ? parsed : option.default);
-            });
-          } else {
-            input.type = 'text';
-            input.value = value ?? '';
-            input.addEventListener('change', () => apply(input.value));
-          }
-          label.appendChild(input);
-          return label;
-        }
-
-        function renderPlugin(plugin) {
-          const article = document.createElement('article');
-          article.className = 'plugin';
-
-          const head = document.createElement('div');
-          head.className = 'head';
-
-          const toggle = document.createElement('input');
-          toggle.type = 'checkbox';
-          toggle.title = 'Enable plugin';
-
-          const name = document.createElement('strong');
-          name.textContent = plugin.name;
-
-          const id = document.createElement('code');
-          id.textContent = plugin.id;
-
-          head.appendChild(toggle);
-          head.appendChild(name);
-          head.appendChild(id);
-          if (plugin.reloadNeeded) {
-            const badge = document.createElement('span');
-            badge.className = 'badge';
-            badge.textContent = 'reload needed';
-            head.appendChild(badge);
-          }
-          article.appendChild(head);
-
-          if (plugin.description) {
-            const desc = document.createElement('p');
-            desc.className = 'desc';
-            desc.textContent = plugin.description;
-            article.appendChild(desc);
-          }
-
-          const options = document.createElement('div');
-          options.className = 'options';
-          article.appendChild(options);
-
-          let state = Object.assign({}, fullConfig.plugins[plugin.id] || {});
-          if (plugin.always) {
-            toggle.remove();
-          } else {
-            toggle.checked =
-              state.enabled !== undefined ? !!state.enabled : plugin.enabled !== false;
-            toggle.addEventListener('change', () => {
-              const next = JSON.parse(JSON.stringify(state));
-              next.enabled = toggle.checked;
-              savePlugin(plugin.id, next).then(() => {
-                state = next;
-              });
-            });
-          }
-
-          for (const option of plugin.options || []) {
-            options.appendChild(renderOption(plugin, state, option));
-          }
-
-          return article;
-        }
-
-        async function init() {
-          try {
-            const [manifest, config] = await Promise.all([
-              invoke('get_plugin_manifest'),
-              invoke('get_config'),
-            ]);
-            fullConfig = config;
-            if (!fullConfig.plugins) fullConfig.plugins = {};
-
-            renderGeneral();
-            const container = document.getElementById('plugins');
-            for (const plugin of manifest) {
-              container.appendChild(renderPlugin(plugin));
-            }
-            status('');
-          } catch (err) {
-            status(`Could not load configuration: ${err}`);
-          }
-        }
-
-        document.getElementById('reload').addEventListener('click', async () => {
-          try {
-            await invoke('reload_player');
-            status('Player reloaded.');
-          } catch (err) {
-            status(`Could not reload the player: ${err}`);
-          }
-        });
-
-        init();
-      })();
-    </script>
+    <footer id="status" role="status" aria-live="polite">Loading settings…</footer>
   </body>
 </html>

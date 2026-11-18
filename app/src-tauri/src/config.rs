@@ -71,6 +71,48 @@ impl Default for Config {
     }
 }
 
+impl Config {
+    /// Merge only fields editable by the local settings page, not stale snapshots.
+    pub fn patched(&self, patch: Value) -> Result<Self, String> {
+        let fields = patch
+            .as_object()
+            .ok_or("settings patch must be an object")?;
+        for (key, value) in fields {
+            match key.as_str() {
+                "adblock" | "hotkeys_enabled" | "notifications" | "discord_rpc"
+                | "update_check" | "minimize_to_tray" | "close_to_tray" | "resume_playback"
+                    if value.is_boolean() => {}
+                "plugins" => {
+                    let plugins = value.as_object().ok_or("plugins patch must be an object")?;
+                    for (id, options) in plugins {
+                        if !crate::plugins::PLUGINS.iter().any(|p| p.id == id)
+                            || !options.is_object()
+                        {
+                            return Err("unknown plugin or invalid options".into());
+                        }
+                    }
+                }
+                _ => return Err(format!("invalid settings field: {key}")),
+            }
+        }
+        fn merge(target: &mut Value, patch: Value) {
+            if let Value::Object(fields) = patch {
+                if !target.is_object() {
+                    *target = serde_json::json!({});
+                }
+                for (key, value) in fields {
+                    merge(&mut target[&key], value);
+                }
+            } else {
+                *target = patch;
+            }
+        }
+        let mut next = serde_json::to_value(self).map_err(|e| e.to_string())?;
+        merge(&mut next, patch);
+        serde_json::from_value(next).map_err(|e| e.to_string())
+    }
+}
+
 /// The app-data root (installed: `%LOCALAPPDATA%\Mirlo`; portable:
 /// `<exe_dir>\data`; override: `MIRLO_DATA_DIR`). See `data_root.rs`.
 pub fn app_data_dir() -> PathBuf {
@@ -150,6 +192,51 @@ pub fn ensure_stored(config: &Config) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn settings_patches_preserve_toggles_siblings_and_renderer_updates() {
+        let mut config = Config::default();
+        config.plugins.insert(
+            "precise-volume".into(),
+            serde_json::json!({
+                "enabled": false, "steps": 1, "savedVolume": 37,
+                "globalShortcuts": {"volumeUp": "Ctrl+Alt+ArrowUp", "volumeDown": ""}
+            }),
+        );
+        for patch in [
+            serde_json::json!({"plugins": {"precise-volume": {"enabled": true}}}),
+            serde_json::json!({"plugins": {"precise-volume": {"steps": 2}}}),
+            serde_json::json!({"plugins": {"precise-volume": {"globalShortcuts": {"volumeDown": "Ctrl+Alt+ArrowDown"}}}}),
+            serde_json::json!({"notifications": false}),
+        ] {
+            config = config.patched(patch).unwrap();
+        }
+        assert_eq!(
+            config.plugins["precise-volume"],
+            serde_json::json!({
+                "enabled": true, "steps": 2, "savedVolume": 37,
+                "globalShortcuts": {"volumeUp": "Ctrl+Alt+ArrowUp", "volumeDown": "Ctrl+Alt+ArrowDown"}
+            })
+        );
+        assert!(!config.notifications);
+        assert!(config.hotkeys_enabled);
+    }
+
+    #[test]
+    fn invalid_settings_patches_do_not_modify_the_original() {
+        let config = Config::default();
+        for patch in [
+            serde_json::json!([]),
+            serde_json::json!({"version": 0}),
+            serde_json::json!({"notifications": "false"}),
+            serde_json::json!({"plugins": null}),
+            serde_json::json!({"plugins": {"unknown": {}}}),
+            serde_json::json!({"plugins": {"precise-volume": false}}),
+        ] {
+            assert!(config.patched(patch).is_err());
+            assert_eq!(config, Config::default());
+        }
+    }
 
     #[test]
     fn defaults_are_conservative() {

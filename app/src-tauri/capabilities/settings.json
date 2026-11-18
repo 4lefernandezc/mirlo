@@ -10,6 +10,10 @@
     "allow-set-plugin-config",
     "allow-get-path",
     "allow-get-plugin-manifest",
+    "allow-get-settings-locale",
+    "allow-patch-settings",
+    "allow-get-sleep-timer",
+    "allow-set-sleep-timer",
     "allow-reload-player"
   ]
 }

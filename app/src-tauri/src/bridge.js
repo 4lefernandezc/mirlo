@@ -214,6 +214,8 @@
         time: v ? Math.round(v.currentTime * 10) / 10 : null,
         duration: v && isFinite(v.duration) ? Math.round(v.duration) : null,
         volume: v ? Math.round(v.volume * 100) / 100 : null,
+        isAd: !!p?.classList?.contains('ad-showing'),
+        ended: v ? v.ended : false,
         src: v && v.src ? v.src.slice(0, 120) : null,
       };
     },
@@ -223,6 +225,49 @@
     invoke('report_player_state', { kind, data }).catch((err) => {
       console.warn('[mirlo] report failed:', kind, err);
     });
+  }
+
+  function createSleepTimer() {
+    let timer = { id: 0, mode: 'off' };
+    let holdUntil = 0;
+    const pause = () => {
+      const video = findVideo();
+      if (!video) return false;
+      // shortcut: catch late auto-starts for 4 s; extend if upstream delays transitions further.
+      holdUntil = Date.now() + 4000;
+      try { q('#movie_player')?.pauseVideo?.(); } catch (_) {}
+      video.pause();
+      return video.paused;
+    };
+    const release = (event) => {
+      if (event.isTrusted || event.type === 'mirlo:user-intent') holdUntil = 0;
+    };
+    document.addEventListener('pointerdown', release, true);
+    document.addEventListener('keydown', release, true);
+    document.addEventListener('mirlo:user-intent', release);
+    document.addEventListener('play', (event) => {
+      if (event.target === findVideo() && Date.now() < holdUntil) event.target.pause();
+    }, true);
+    // Capture before the site's ended handlers can start the next track.
+    document.addEventListener('ended', (event) => {
+      if (timer.mode !== 'track' || event.target !== findVideo()) return;
+      const current = player.state();
+      if (current.isAd || current.videoId !== timer.videoId) return;
+      timer = { ...timer, mode: 'expired' };
+      pause();
+      report('sleep-timer-ended', { timerId: timer.id });
+    }, true);
+    return {
+      configure(snapshot) {
+        if (snapshot.id < timer.id) return;
+        timer = snapshot;
+        if (timer.mode === 'expired') {
+          if (pause()) report('sleep-timer-paused', { timerId: timer.id });
+        } else {
+          holdUntil = 0;
+        }
+      },
+    };
   }
 
   // --- Shell API surface (hotkeys use player.* through eval) ------------
@@ -692,6 +737,7 @@
   window.__mirlo = {
     version: boot.version || null,
     player,
+    sleepTimer: createSleepTimer(),
     plugins: window.__MIRLO_PLUGINS__,
     adblockStats,
     async getConfig() {

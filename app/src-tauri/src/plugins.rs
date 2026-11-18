@@ -98,7 +98,8 @@ pub const PLUGINS: &[PluginSource] = &[
 
 /// Development-only source override: when `MIRLO_DEV_SRC` points at
 /// `app/src-tauri`, renderer sources are read from disk so edits apply on a
-/// page reload instead of a Rust rebuild. Unset in release and CI.
+/// app restart instead of a Rust rebuild. Reload player reuses the script
+/// already attached to the window. Unset in release and CI.
 pub fn dev_read(rel: &str) -> Option<String> {
     let root = std::env::var("MIRLO_DEV_SRC").ok()?;
     std::fs::read_to_string(std::path::Path::new(&root).join(rel)).ok()
